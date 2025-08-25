@@ -1,0 +1,15 @@
+cls();
+Input.Start();
+Input.EnableMouse();
+let list spot = [];
+while (true) {
+    spot = Input.Mouse();
+    pos(ListGet(spot, 2), ListGet(spot, 3));
+    if (ListGet(spot, 0) == "down"){
+        print(randInt(1,5));
+    }
+    print(", " + ListGet(spot, 2) + ", " + ListGet(spot, 3));
+    sleep(5);
+}
+Input.DisableMouse();
+Input.Stop();
