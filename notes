@@ -116,3 +116,46 @@ Terminal.Print() does.
 Temrinal.print() doesn't
 It's complex.. Alone, a word looks bad upper case, with others, if every word is uppercase
 it looks awesome
+
+I plan to add a for (), since I've realized the language at this point isn't ready for production...
+I also intent to change getList(list, 0) to list[0].
+I will be keeping listPush, since it allows placing an item in a list at a specific point.
+There will also be string indices, like "hello"[0]
+Minis is also going to use clone for duplicating a variable.
+
+There's also going to be a file for Minis, that doesn't include a compiler, just how to run it.
+Avocado is also something like VIM. So, now, I have to add settings, such as:
+
+in-line coloring - Adds coloring to text for built-in functions, variables, and so on
+[I'll add more later]
+
+We also have to implement not just saving the compiled code as code.ms, but [file name].ms
+The version with a compiler and runner with Minis will be called MinisDev.
+The version with just a runner will just be called Minis.
+
+I've also thought about security implementations, such as an encoded sha256 hash of the code. The runner will generate a hash (Removing the hash info first of course), and make sure it matches the included hash.
+Although, this is likely pointless, as byte written code isn't human-readable, and there aren't features that can damage a computer.
+The name will also have the first four characters of a hash of the entire compiled minis file.
+This is to ensure the naming convention is unique.
+
+The new naming scheme is:
+Minis-1072-Dev-82md
+Minis-1072-Use-fei3
+Minis-line numbers-Minis type-hash
+
+for
+operators
+import // Doesn't work :( [Or maybe it does.. It's untested]
+try
+except
+class
+with
+as
+in
+lambda
+yield
+raise
+assert
+from
+
+These are some of the features I want to add :)

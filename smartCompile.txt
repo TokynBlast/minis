@@ -1,0 +1,5 @@
+var never used; no declare
+var declared -> delted; no declare
+var never changes; pass to where used
+math operation, known variables; do math
+function never used; no include

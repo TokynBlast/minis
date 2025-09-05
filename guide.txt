@@ -1,93 +1,144 @@
+# Avocado + Minis — Modern Guide (2025)
 
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⣶⣾⣿⣿⣷⢰⣆
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⡏⠀⢿⡄
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⢸⡇
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⢸⡇
-⠀⠀⠀⠀⠀⠀⢀⣠⣾⣿⣿⡿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⣾⠃
-⠀⠀⠀⠀⢀⣴⣿⣿⠟⠋⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⠃⠀⠀⠀⢠⡟
-⠀⠀⠀⢠⣿⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⡿⠃⠀⠀⠀⠀⣼⠃
-⠀⠀⢠⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⣿⡟⠁⠀⠀⠀⠀⣼⠇
-⠀⠀⣾⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⣠⣶⣿⣿⡿⠋⠀⠀⠀⠀⢀⣼⠏
-⠀⢸⣿⣿⣧⠀⠀⠀⠀⢀⣠⣴⣿⣿⣿⠿⠋⠀⠀⠀⠀⠀⣠⡾⠃
-⠀⢸⣿⣿⣿⣷⣶⣶⣿⣿⣿⡿⠟⠋⠁⠀⠀⠀⠀⠀⣠⡾⠋
-⠀⠀⠙⠿⠿⠿⠿⠟⠛⠉⠁⠀⠀⠀⠀⠀⠀⢀⣤⡾⠋
-⠀⠀⠀⠀⠀⠒⠶⢶⣤⣤⣤⣤⣤⣤⣴⠶⠞⠋⠁
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠁
 
-The Avocado is quite simple to use!
+2) SHELL COMMANDS
+  show                 Clear the screen and list your buffer with line numbers
+  run                  Compile `code` to bytecode and execute it
+  save <file>          Save the buffer to <file>
+  load <file>          Replace the buffer with <file> and write it to `code`
+  replace OLD || NEW   On each line, replace the first OLD with NEW (mind the spaces and pipes)
+  info                 Show line count and byte size of `code`
+  clear mem [-y]       Clear buffer and truncate `code` (`-y` skips confirmation)
+  cls                  Clear the terminal
+  help                 Print this guide (reads `guide.txt`)
+  dir                  Show absolute paths for `code`, `guide.txt`, and `pref`
+  exit                 Quit Avocado
 
-Here's a legend to the programming:
-	AVC - AVoCado
-	CHAR - CHARacter
-	IDE - Integrated Development Environment
-	VAR - VARiable
-	V - Version
-	S - Style
-	UW - UnknoWn
-	EX - EXample
-	... - code
+Editing basics:
+  - N <text> creates/replaces line N (1-based).
+  - Skipped numbers create blank lines. The editor persists to `code`.
 
-If you want to change the prefrences on how to use the Avocado, open up pref, and change it to either True or False
-Here is a guide to what everything does! and what you can set it to!:
+--------------------------------------------------------------------
 
-    1. Prompt Character - Shows up on line for command input
-	  2. Opened Before - boolean, first letter capitalized
-    3. Terminal Default Color - HEX code, without #
+3) MINIS LANGUAGE QUICK REF
 
-Lets get to the basics...
-Depending on which variation you have, you will have either 'Avocado.py', or 'Avocado.exe'
-They both do the EXACT same thing, run youre new AVC!
-Double click the Avocado file, or right click and press run
+3.1 Comments
+  // line comment
+  /* block comment */
 
-IF you do not have Python installed on youre device already, you will need to install it.
+3.2 Statements & Types
+  - End each statement with a semicolon.
+  - Types: int, float, bool, str, list, and void (for function returns).
+  - `auto` lets the value decide the type.
 
-avocado is open-sourced!
-A random knight in this guide: Who is this open-sourced you speak of? Is thy a WIZARD... Harry?
-Open-sourced just means you can add to or modify the source code, make youre OWN avocado, fix bugs, or EVEN make it better!
+  let int a = 1;
+  let auto s = "hello";
+  a = a + 1;
 
-Lets get to commands now!
-Saving the code
-    export [file name]
+3.3 Expressions & Operators
+  + - * /              arithmetic ( + concatenates strings too )
+  == != < <= > >=      comparisons
+  && ||                logical and / or
+  ( ... )              grouping
 
-Exitting Avocado
-     quit
+3.4 Lists
+  Literal: [1, 2, "a", true]
+  0-based indexing
+  Built-ins:
+    len(x)                 // works for strings and lists
+    ListGet(xs, i)
+    ListSet(xs, i, v)
+    ListPush(xs, v)
 
-Running the code
-     run
+3.5 Control Flow
+  if (cond) { ... } elif (cond) { ... } else { ... }
+  while (cond) { ... }
+  continue;               // next loop iteration
+  break;                  // exit nearest loop
+  break N;                // exit N nested loops (e.g., break 2;)
 
-Displaying your code
-     show
+3.6 Functions (Typed Returns)
+  // Void return: no return needed
+  func void greet(str who) {
+    print("Hello, " + who + "!\n");
+  }
 
-Clear Screen
-     clr scr
+  // Value return: return a value of the declared type
+  func int add(int a, int b) {
+    return a + b;
+  }
 
-Clear Memory
-     clr mem
+  // Legacy: func name(...) { ... } still works; return if you produce a value.
 
-Help
-     help
+3.7 Misc
+  exit;                   // stop the program immediately
+  import "name";          // parsed, no-op (use shell `load` to open files)
 
-Replace
-	1. replace
-	2. rep
+--------------------------------------------------------------------
 
-Printing text
-	   write
+4) BUILT-INS (COMMON)
+  print(str)             // does NOT add newline; use "\n"
+  cls()
+  pos(x, y)
+  len(x)
+  ListGet(xs, i) / ListSet(xs, i, v) / ListPush(xs, v)
 
-Statistics on the file
-	   stats
+  // Raw input mode utilities:
+  Input.Start()
+  Input.Stop()
+  Input.EnableMouse()
+  Input.DisableMouse()
+  Input.Key() -> str
 
-Loading another file
-	   import
+--------------------------------------------------------------------
 
-Entering Graphics Mode
-	   graphics
+6) EXAMPLES
 
-Avocado History
+Hello
+  1 print("Hello, world!\n");
 
-The first Unofficial Avocado (it was a puzzle game) came out before November 8th, and after October 31st, but even then, the first avocado wasnt actually finished, the working AVC IDE that came with it had many bugs, the source code was terribley formatted, and there were MANY errors.
-The first OFFICIAL avocado, v0.0.0.1 sI came out on November 8th, 2023 at 5:22 PST
-Avocado v0.0.0.1 sI - November 11th, 2023 at [time] PST
-From here on, we will call the first OFFICIAL Avocado the 'first avocado'
-The first avocado came with some basic features, saving, printing text, replacing, clearing the screen and memory, list, run, quit,and this guide.
-The first Avocado was also based off of the Apple ][ (2), even this guide is heavily based off of the Applesoft Basic Guide!
+Loop
+  1 let int n = 3;
+  2 while (n != 0) {
+  3   print("tick\n");
+  4   n = n - 1;
+  5 }
+
+Lists
+  1 let list xs = [1, 2, 3];
+  2 ListPush(xs, 7);
+  3 print("len=" + len(xs) + "\n");
+  4 print("first=" + ListGet(xs, 0) + "\n");
+
+Raw key echo (ESC quits)
+  1 let bool go = true;
+  2 Input.Start();
+  3 print("Press keys (ESC to quit)\\n");
+  4 while (go) {
+  5   let str k = Input.Key();
+  6   if (k != "") {
+  7     if (k == "\x1B") { go = false; }
+  8     else { print("You pressed: " + k + "\n"); }
+  9   }
+ 10 }
+ 11 Input.Stop();
+
+--------------------------------------------------------------------
+
+7) A NOTE FROM THE AUTHOR
+This project has been a 5+ year journey. I’ve been programming since Wednesday,
+July 13th, 2019, and Minis + Avocado has taken most of that time. It began as a
+general-purpose tool, then a Python game library (PyTools → pyTGM), and today it’s
+a full language and engine. I don’t ship many games—I love building the tools
+behind them. I’ve built lots of sites (some finished, some not), and I think in
+logic: optimize, adapt, change, use the tools I have.
+
+Programming has been a long hyperfocus for me (ADHD), and I’m planning a PhD in
+Software Engineering at NDSU. I’m more “open source most of the time” now: some
+projects stay closed to protect years of work—you get the compiled version. After
+a scary loss (pyTGM was accidentally deleted), backups on USBs + GitHub saved it.
+When pyTGM stalled, I rebuilt an old Python game—Avocado—in C++ and used it as the
+base. Now we have Minis, and the Avocado interface with numbered-line editing or a
+vim-like editor written in Minis.
+
+Thanks for being here. Build something cool. :)

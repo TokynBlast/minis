@@ -56,6 +56,34 @@ inline static bool is_ident_char(char c){
     return std::isalnum((unsigned char)c) || c=='_' || c=='.';
 }
 
+inline static size_t find_last_token_outside_comments(const std::string& s,
+                                                      const std::string& tok);
+
+inline static size_t find_last_assignment_outside_comments(const std::string& s){
+    const size_t n = s.size();
+    bool in_line=false, in_block=false, in_str=false; char q=0;
+    size_t last = std::string::npos;
+    for (size_t i=0;i<n;++i){
+        char c = s[i], nxt = (i+1<n? s[i+1] : '\0');
+
+        if (in_line){ if (c=='\n') in_line=false; continue; }
+        if (in_block){ if (c=='*' && nxt=='/'){ in_block=false; ++i; } continue; }
+        if (in_str){ if (c=='\\' && i+1<n){ ++i; continue; } if (c==q) in_str=false; continue; }
+
+        if (c=='/' && nxt=='/'){ in_line=true; ++i; continue; }
+        if (c=='/' && nxt=='*'){ in_block=true; ++i; continue; }
+        if (c=='"' || c=='\''){ in_str=true; q=c; continue; }
+
+        // lone '=' (not ==, <=, >=, !=)
+        if (c=='=' && nxt!='=' && (i==0 || (s[i-1]!='!' && s[i-1]!='=' && s[i-1]!='<' && s[i-1]!='>'))){
+            last = i;
+        }
+    }
+    return last;
+}
+
+
+
 inline static size_t find_last_call_site_outside_comments(const std::string& s, const std::string& name){
     const size_t n = s.size();
     size_t last = std::string::npos;
@@ -144,6 +172,9 @@ inline static bool infer_empty_span(const Source& src, const ScriptError& err, S
     std::string callee;
     if (extract_note_callee(err.notes, callee)){
         size_t pos = find_last_call_site_outside_comments(src.text, callee);
+        if (pos == std::string::npos){
+            pos = find_last_token_outside_comments(src.text, callee);
+        }
         if (pos != std::string::npos){
             outSpan = { pos, pos + callee.size() };
             return true;
@@ -159,28 +190,66 @@ inline static bool infer_empty_span(const Source& src, const ScriptError& err, S
         // Find last occurrence outside comments/strings (best effort)
         size_t pos = find_last_call_site_outside_comments(src.text, id);
         if (pos == std::string::npos){
-            // fall back to plain search of last token "id" (not necessarily a call)
-            size_t last = std::string::npos;
-            for (size_t p = 0; ; ){
-                p = src.text.find(id, p);
-                if (p == std::string::npos) break;
-                // ensure token boundary
-                bool leftOk  = (p==0) || !is_ident_char(src.text[p-1]);
-                bool rightOk = (p+id.size()>=src.text.size()) || !is_ident_char(src.text[p+id.size()]);
-                if (leftOk && rightOk) last = p;
-                ++p;
-            }
-            pos = last;
+            // token-aware fallback that skips comments/strings
+            pos = find_last_token_outside_comments(src.text, id);
         }
         if (pos != std::string::npos){
             outSpan = { pos, pos + id.size() };
             return true;
         }
     }
-
-    // 3) Give up
+    // after your existing name/callee heuristics
+{
+    // assignment-ish fallback: handle 'assign', 'assigned', 'assignment' and generic 'type mismatch'
+    const std::string& m = err.message;
+    auto has = [&](const char* s){ return m.find(s) != std::string::npos; };
+    if (has("assign") || has("assigned") || has("assignment") || has("type mismatch")){
+        size_t pos = find_last_assignment_outside_comments(src.text);
+        if (pos != std::string::npos){
+            outSpan = { pos, pos+1 };  // highlight the '='
+            return true;
+        }
+    }
+}
+// 3) Give up
     return false;
 }
+
+
+inline static size_t find_last_token_outside_comments(const std::string& s, const std::string& tok){
+    if (tok.empty()) return std::string::npos;
+    const size_t n = s.size();
+    bool in_line=false, in_block=false, in_str=false; char q=0;
+    size_t last = std::string::npos;
+
+    for (size_t i=0; i<n; ++i){
+        char c = s[i];
+
+        // Leave states
+        if (in_line)  { if (c=='\n') in_line=false; continue; }
+        if (in_block) { if (c=='*' && i+1<n && s[i+1]=='/'){ in_block=false; ++i; } continue; }
+        if (in_str)   {
+            if (c=='\\'){ if (i+1<n) ++i; continue; }
+            if (c==q) in_str=false;
+            continue;
+        }
+
+        // Enter states
+        if (c=='/' && i+1<n && s[i+1]=='/'){ in_line=true; ++i; continue; }
+        if (c=='/' && i+1<n && s[i+1]=='*'){ in_block=true; ++i; continue; }
+        if (c=='"' || c=='\''){ in_str=true; q=c; continue; }
+
+        // Token boundary check
+        if (c==tok[0] && i+tok.size()<=n && s.compare(i, tok.size(), tok)==0){
+            auto is_ident = [](char ch){ return std::isalnum((unsigned char)ch) || ch=='_' || ch=='.'; };
+            bool leftOk  = (i==0) || !is_ident(s[i-1]);
+            bool rightOk = (i+tok.size()>=n) || !is_ident(s[i+tok.size()]);
+            if (leftOk && rightOk) last = i;
+        }
+    }
+    return last;
+}
+
 
 // Render: one primary span, + up to N notes/suggestions.
 inline std::string render_diagnostic(const Source& src, const ScriptError& err, int context_lines=1) {
