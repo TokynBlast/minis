@@ -1,0 +1,41 @@
+TODO:
+Split up compiler and runner
+Tokenize (Faster than strings comparison)
+Rename all variables in bytecode
+Add compiler grouping
+Add reviving to errors
+
+IDEAS FOR COMPILER:
+var never used; no declare
+var declared -> delted; no declare
+var never changes; pass to where used
+math operation, known variables; do math
+function never used; no include
+
+for
+class
+with
+as
+in
+from
+repeat
+match
+case
+struct
+enum
+async
+
+Add cross-endian to bytecode_io
+AOT pre-linking for imports (cache held in ~/.minis/cache/)
+Memory mapping (virtual memory)
+64KB sized packets for custom TCP (delete after use)
+pool file handles for closing
+
+const on variables
+type long long (Instead of int, same purpose as C++)
+
+add inline on functions
+
+Strongly typed; explicit preffered; explicit optional
+
+let file = open("test.txt") ? throw NameError("File missing!") : print(file);
