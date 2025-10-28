@@ -4,6 +4,11 @@ Tokenize (Faster than strings comparison)
 Rename all variables in bytecode
 Add compiler grouping
 Add reviving to errors
+Add personal scopes
+     (organizing for compiler & developer)
+Change ++int to int++
+Add file opening
+     + read/write/binary flags
 
 IDEAS FOR COMPILER:
 var never used; no declare
