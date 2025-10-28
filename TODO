@@ -36,7 +36,6 @@ Memory mapping (virtual memory)
 64KB sized packets for custom TCP (delete after use)
 pool file handles for closing
 
-const on variables
 type long long (Instead of int, same purpose as C++)
 
 add inline on functions
