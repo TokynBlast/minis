@@ -25,7 +25,7 @@ namespace minis {
     return false;
   };
 
-  void diag(Diagnostic::Kind k,
+  void diag(Diagnostic::EKind k,
             size_t beg, size_t end,
             std::string msg);
 
