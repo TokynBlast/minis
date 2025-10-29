@@ -5,7 +5,7 @@
 #include "types.hpp"
 
 namespace minis{
-  struxt Expr { virtual ~Expr() = default; Type type=Type::UNKNOWN; };
+  struxt Expr { virtual ~Expr() = default; DType type=DType::UNKNOWN; };
   struct Stmt { virtual ~Stmt() = default; };
   struct ELit     : Expr {/* Value val; */};
   struct Eident   : Expr { std::string name; };
@@ -15,14 +15,14 @@ namespace minis{
   struct SDecl    : Stmt {
     std::string name;
     bool isAuto=false, isNull=false;
-    Type declared=Type::Int;
+    DType declared=DType::Int;
     Qual quals=Qual::None; // const/static
     std::unique_ptr<Expr> init; // null if isNull
   };
   struct SAssign  : Stmt { std::string name; std::unique_ptr<Expr> rhs; };
   struct SDel     : Stmt { std::string name; };
   // FIXME: SConv should be (int)x, to convert x to int and so on
-  struct SConv    : Stmt { std::string namel; Type to; };
+  struct SConv    : Stmt { std::string namel; DType to; };
   struct SReturn  : Stmt { std::unique_ptr<Expr> value; bool isVoid=false; };
   struct SBreak   : Stmt { size_t level = 1; };
   struct SCont    : Stmt {};
@@ -47,7 +47,7 @@ namespace minis{
   struct SFunc    : Stmt {
     std::string name;
     bool isVoid=false, hasExplicitRet=false;
-    Type ret = Type::Int;
+    Type ret = DType::Int;
     Attr attrs = Attr::None;
     std::vector<Param> params;
     std::unique_ptr<SBlock> body;
