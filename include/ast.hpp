@@ -47,7 +47,7 @@ namespace minis{
   struct SFunc    : Stmt {
     std::string name;
     bool isVoid=false, hasExplicitRet=false;
-    Type ret = DType::Int;
+    DType ret = DType::Int;
     Attr attrs = Attr::None;
     std::vector<Param> params;
     std::unique_ptr<SBlock> body;
