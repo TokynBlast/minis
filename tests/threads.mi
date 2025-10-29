@@ -1,0 +1,15 @@
+let static int IntOne = 0;
+let static int IntTwo = 0;
+let int Hold = 0;
+
+while(Hold < 3){
+  with {
+    ++IntOne;
+  } and {
+    ++IntTwo;
+    ++IntTwo;
+  }
+  ++Hold;
+}
+print("Int one (3): " + TstOne);
+print("Int two (6): " + TstTwo);
