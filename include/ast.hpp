@@ -54,5 +54,5 @@ namespace minis{
     //FIXME: add quality
   }
 
-  struct SProgram : Node { std::vector<std::unique_ptr<Stmt>> items; };
+  struct Program : Node { std::vector<std::unique_ptr<Stmt>> items; };
 }
