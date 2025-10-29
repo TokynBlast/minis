@@ -5,7 +5,7 @@
 
 namespace minis {
 
-enum class TKind {
+enum class Kind {
   Id, Num, Str,
   LParen, RParen, LBrace, RBrace, LBracket, RBracket,
   Comma, Semicolon, Colon, Equal,
@@ -21,15 +21,15 @@ enum class TKind {
   Eof
 };
 
-struct Token { TKind k; size_t s; size_t e; std::string text; };
+struct Token { Kind k; size_t s; size_t e; std::string text; };
 
 struct TokStream {
   const std::vector<Token>* t=nullptr; size_t i=0;
   TokStream()=default;
   explicit TokStream(const std::vector<Token>& v){ t=&v; }
   const Token& peek(size_t k=0) const { return (*t)[std::min(i+k, t->size()-1)]; }
-  bool match(TKind k){ if (peek().k==k){ ++i; return true; } return false; }
-  const Token& expect(TKind k, const char* msg);
+  bool match(Kind k){ if (peek().k==k){ ++i; return true; } return false; }
+  const Token& expect(Kind k, const char* msg);
 };
 
 } // namespace minis
