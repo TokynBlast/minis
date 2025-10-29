@@ -1,4 +1,4 @@
-#inclide "../include/io.hpp"
+#include "../include/io.hpp"
 
 struct Compiler {
   Pos P;
@@ -16,13 +16,13 @@ struct Compiler {
 
   explicit Compiler(const ::Source& s) { minis::src = &s; P.src = &s.text; }
 
-  inline Type parseType(){
-    if(StartsWithKW(P,"int")){ P.i+=3; return Type::Int;}
-    if(StartsWithKW(P,"float")){ P.i+=5; return Type::Float;}
-    if(StartsWithKW(P,"bool")){ P.i+=4; return Type::Bool;}
-    if(StartsWithKW(P,"str")){ P.i+=3; return Type::Str;}
-    if(StartsWithKW(P,"list")){ P.i+=4; return Type::List;}
-    if(StartsWithKW(P, "null")){ P.i+=4; return Type::Null;}
+  inline DType parseType(){
+    if(StartsWithKW(P,"int")){ P.i+=3; return DType::Int;}
+    if(StartsWithKW(P,"float")){ P.i+=5; return DType::Float;}
+    if(StartsWithKW(P,"bool")){ P.i+=4; return DType::Bool;}
+    if(StartsWithKW(P,"str")){ P.i+=3; return DType::Str;}
+    if(StartsWithKW(P,"list")){ P.i+=4; return DType::List;}
+    if(StartsWithKW(P, "null")){ P.i+=4; return DType::Null;}
     MINIS_ERR("{S5}", *src, P.i, "unknown type (use int|float|bool|str|list|null)");
   }
 
@@ -198,7 +198,7 @@ struct Compiler {
         // Track if types were specified for warning
         bool hasExplicitTypes = false;
         bool isVoid = false, typed = false;
-        Type rt = Type::Int;
+        DType rt = DType::Int;
         std::string fname;
 
         // Return type parsing with better error messages
@@ -223,7 +223,7 @@ struct Compiler {
           while (true) {
         // Check for type annotation
         Pos typeCheck = P;
-        Type paramType = Type::Int; // Default type if none specified
+        DType paramType = DType::Int; // Default type if none specified
         if (StartsWithKW(typeCheck,"int") || StartsWithKW(typeCheck,"float") ||
             StartsWithKW(typeCheck,"bool") || StartsWithKW(typeCheck,"str") ||
             StartsWithKW(typeCheck,"list")) {
@@ -315,7 +315,7 @@ struct Compiler {
         SkipWS(P);
         auto name = ParseIdent(P);
         SkipWS(P); Expect(P,':'); SkipWS(P);
-        Type newType = parseType();
+        DType newType = parseType();
         Expect(P,';');
 
         // redeclare the variable with new type
@@ -422,7 +422,7 @@ struct Compiler {
               fnNames.push_back(fnName);
 
               // register
-              FnInfo fni{fnName, 0, /*params*/{}, /*isVoid*/true, /*typed*/false, Type::Null};
+              FnInfo fni{fnName, 0, /*params*/{}, /*isVoid*/true, /*typed*/false, DType::Null};
               fni.tail = true;
               std::size_t idx = fns.size();
               fns.push_back(fni);
@@ -575,7 +575,7 @@ struct Compiler {
         std::string lambdaName = "__lambda_" + std::to_string(lambdaCount++);
 
         // Register lambda as a function
-        FnInfo fni{lambdaName, 0, params, false, false, Type::Int};
+        FnInfo fni{lambdaName, 0, params, false, false, DType::Int};
         size_t idx = fns.size();
         fns.push_back(fni);
         fnIndex[lambdaName] = idx;
@@ -666,7 +666,7 @@ struct Compiler {
 
         bool isAuto=false;
         bool isNull=false;
-        Type T=Type::Int;
+        DType T=DType::Int;
 
         if(StartsWithKW(P,"auto")) {
           isAuto=true;
@@ -752,7 +752,7 @@ struct Compiler {
       bool isRef = false;
       std::string owner;
       size_t lastUsed = 0;
-      Type type;
+      DType type;
       Value initialValue;
     };
 
@@ -797,7 +797,7 @@ struct Compiler {
     scopeStack.push_back(Scope{});
 
     // Top-level as __main__
-    FnInfo mainFn{"__main__", 0, {}, true, false, Type::Int};
+    FnInfo mainFn{"__main__", 0, {}, true, false, DType::Int};
     fns.push_back(mainFn);
     fnIndex["__main__"] = 0;
     fns[0].entry = tell();
