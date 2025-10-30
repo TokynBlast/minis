@@ -1,8 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <cstddef>
-
 #include "diagnose.hpp"
 
 namespace minis {
@@ -23,7 +21,7 @@ namespace minis {
     Eof
   };
 
-  struct Token { Tok k; size_t s; size_t e; std::string text; };
+  struct Token { Tok k; size_t s, e; std::string text; };
 
   struct TokStream {
     const std::vector<Token>* t=nullptr;
