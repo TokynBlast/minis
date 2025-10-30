@@ -10,6 +10,6 @@ namespace minis{
         explicit     Lexer(const std::strinf& s){ src=&s; n=s.size(); run(); }
         static bool  isIdStart(char c);
         static bool  isIdCont(char c);
-        static TKind keyword(const std::string& t)
+        static Tok keyword(const std::string& t)
     };
 }
