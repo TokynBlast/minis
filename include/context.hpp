@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include "err.hpp"
+#include "diagnose.hpp"
 
 namespace minis {
   struct Context {
