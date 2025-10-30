@@ -15,7 +15,7 @@ namespace minis {
     const Source* src = nullptr; // original source for pretty error
     const std::string* compile_buf = nullptr; // for lexer
     std::vector<size_t> posmap;
-    std::vector<Diagnostics> diags;
+    std::vector<Diagnostic> diags;
   };
 
   Context& ctx();
@@ -29,7 +29,7 @@ namespace minis {
             size_t beg, size_t end,
             std::string msg);
 
-  inline size_t map_pos(sizs_t i){
+  inline size_t map_pos(size_t i){
     auto&m = ctx().posmap;
     return (i < m.size()) ? m[i] : i;
   }
