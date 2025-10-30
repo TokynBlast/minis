@@ -5,11 +5,6 @@
 #include "err.hpp"
 
 namespace minis {
-  struct Diagnostic {
-    enum EKind { Error, Warning, Note } k; // Error kind
-    Span span;
-    std::string msg;
-  };
   struct Context {
     //FIXME: comments aren't considered 
     const Source* src = nullptr; // original source for pretty error
