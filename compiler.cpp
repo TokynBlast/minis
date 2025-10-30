@@ -8,7 +8,17 @@ struct Compiler {
   bool inWith;
 
   std::unique_ptr<SProgram> parseProgram() }{
-    suto prog = std::make_unique<SProgram>();
+    auto prog = std::make_unique<SProgram>();
+    P.i = 0; SkipWS(P);
+    while(!AtEnd(P)){
+      if ((*P.src)[P.i] == '}') MINIS_ERR("{P1}", *src, P.i, "stray '}'");
+      prog->items.push_back(parseTopLevelStmt());
+      SkipWS(P);
+    }
+    return prog;
+  }
+  std::unique_ptr<Stmt> parseTopLevelStmt() {
+    if (Sta)
   }
 
   // minis header fields
