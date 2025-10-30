@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstddef>
 
+#include "diagnose.hpp"
+
 namespace minis {
   enum class Tok {
     Id, Num, Str,
