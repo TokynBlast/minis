@@ -1,9 +1,9 @@
 #include "../include/context.hpp"
+#include "../include/diagnose.hpp"
 namespace minis {
-  static Context* G = nullptr;
-  Context& ctx(){ static Context C; if(!G) G=&C; return *G; }
-
-  void diag(Diagnostic::EKind k, size_t beg, size_t end, std::string msg){
-    ctx().diags.push_back({k, Span{map_pos(beg), map_pos(end)}, std::move(msg)});
+  std::vector<std::size_t> g_posmap;
+  inline bool hasErrors(){
+    for (auto& d : g_diags) if (d.k==Diagnostic::Error) return true;
+    return false;
   }
 }
