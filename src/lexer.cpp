@@ -3,9 +3,7 @@
 #include <vector>
 
 #include "../include/lexer.hpp"
-#include "../include/token.hpp"
 #include "../include/diagnose.hpp"
-
 
 namespace minis {
   struct Lexer {
