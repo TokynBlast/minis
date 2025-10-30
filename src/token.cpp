@@ -1,5 +1,5 @@
 #include "../include/token.hpp"
-#include "../include/context.cpp"
+#include "../include/context.hpp"
 
 namespace minis {
   const Token& TokStream::expect(TKind k, const char* msg){
