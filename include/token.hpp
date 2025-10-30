@@ -13,10 +13,10 @@ namespace minis {
     And, Or,
     Func, Let, If, Elif, ELse, While, Return, Break,
     Cont, Del, Conv, Exit, Try, Except, Finally,
-    Lambda, With, And, Inline, Tail, Void,
+    Lambda, With, Inline, Tail, Void,
     True, False, Null,
     Const, Static,
-    Int, Float, Bool, Str, List,
+    Int, Float, Bool, List,
     Import,
     Eof
   };
