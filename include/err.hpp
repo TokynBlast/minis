@@ -28,7 +28,8 @@ struct Source {
   std::string line_str(int ln) const {
     if (ln<1 || (size_t)ln>line_starts.size()) return {};
     size_t s=line_starts[ln-1], e=(size_t)ln<line_starts.size()?line_starts[ln]:text.size();
-    if (e> s && text[e-1]=='\n') --e; return text.substr(s,e-s);
+    if (e> s && text[e-1]=='\n') --e;
+    return text.substr(s,e-s);
   }
 };
 
@@ -52,7 +53,8 @@ inline std::string render_diagnostic(const Source& src, const ScriptError& err, 
     if (ln==lc.line){
       size_t ls = src.line_starts[ln-1];
       int cb = (int)(sp.beg - ls) + 1, ce = (int)(sp.end - ls) + 1;
-      if (cb<1) cb=1; if (ce<cb) ce=cb;
+      if (cb<1) cb=1;
+      if (ce<cb) ce=cb;
       out << " " << std::string(std::to_string(ln).size(),' ')
           << " | " << std::string(cb-1,' ') << "^" << std::string(std::max(0, ce-cb),'~') << "\n";
     }
