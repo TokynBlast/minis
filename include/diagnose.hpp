@@ -6,7 +6,7 @@
 
 namespace minis {
   struct Diagnostic {
-    enum EKind { Error, Warning, Note };
+    enum EKind { Error, Warning, Note } EKind;
     std::size_t beg;
     std::size_t end;
     std::string msg;
