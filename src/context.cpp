@@ -3,7 +3,7 @@
 namespace minis {
   std::vector<std::size_t> g_posmap;
   inline bool hasErrors(){
-    for (auto& d : g_diags) if (d.k==Diagnostic::Error) return true;
+    for (auto& d : g_diags) if (d.EKind==Diagnostic::Error) return true;
     return false;
   }
 }
