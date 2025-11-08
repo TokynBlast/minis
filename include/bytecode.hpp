@@ -1,3 +1,4 @@
+#pragma once
 enum Op : std::uint16_t {
   IMPORTED_FUNC  = 0xE0, // 224
   IMPORTED_LOAD  = 0xE1, // 225
