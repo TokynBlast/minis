@@ -40,14 +40,14 @@ namespace lang{
     std::vector<Arm> arms;
   };
 
-  struct SWhile   : Stmt {
+  struct While   : Stmt {
     std::unique_ptr<Expr> cond;
     std::unique_ptr<Block> body;
     //FIXME: add with/and blocks
     std::vector<std::unique_ptr<Block>> withBlocks;
   };
 
-  struct SFunc    : Stmt {
+  struct Func    : Stmt {
     std::string name;
     bool isVoid=false, hasExplicitRet=false;
     Type ret = Type::Int;
