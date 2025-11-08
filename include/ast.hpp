@@ -36,15 +36,15 @@ namespace lang{
   struct Block   : Stmt { std::vector<std::unique_ptr<Stmt>> stmts; };
   
   struct If      : Stmt { 
-    struct Arm { std::unique_ptr<Expr> cond; std::unique_ptr<SBlock> body; };
+    struct Arm { std::unique_ptr<Expr> cond; std::unique_ptr<Block> body; };
     std::vector<Arm> arms;
   };
 
   struct SWhile   : Stmt {
     std::unique_ptr<Expr> cond;
-    std::unique_ptr<SBlock> body;
+    std::unique_ptr<Block> body;
     //FIXME: add with/and blocks
-    std::vector<std::unique_ptr<SBlock>> withBlocks;
+    std::vector<std::unique_ptr<Block>> withBlocks;
   };
 
   struct SFunc    : Stmt {
@@ -52,9 +52,9 @@ namespace lang{
     bool isVoid=false, hasExplicitRet=false;
     Type ret = Type::Int;
     std::vector<Param> params;
-    std::unique_ptr<SBlock> body;
+    std::unique_ptr<Block> body;
     //FIXME: add quality
-  }
+  };
 
-  struct Program : Node { std::vector<std::unique_ptr<Stmt>> items; };
+  struct Program { std::vector<std::unique_ptr<Stmt>> items; };
 }
