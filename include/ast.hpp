@@ -4,7 +4,7 @@
 #include <string>
 #include "types.hpp"
 
-namespace minis{
+namespace lang{
   struxt Expr { virtual ~Expr() = default; DType type=DType::UNKNOWN; };
   struct Stmt { virtual ~Stmt() = default; };
   struct ELit     : Expr {/* Value val; */};
