@@ -1,38 +1,41 @@
+#include <fstream>
+#include <iterator>
+#include <stdexcept>
+
 #include "../include/driver.hpp"
 #include "../include/context.hpp"
 #include "../include/err.hpp"
 #include "../include/io.hpp"
+#include "../include/token.hpp"
+#include "../include/lexer.hpp"
+#include "../include/compiler.hpp"
+#include "../include/process.hpp"
+#include "../include/vm.hpp"
+#include "../include/sso.hpp"
 
-namespace minis {
-  #include "compiler.cpp"
-  #include "vm.cpp"
-  #include "process.cpp"
-}
-
-#include <fstream>
-#include <iterator>
-
-namespace minsi {
-  inline std::string ReadFile(const std::string& path){
-    std::ifstream in(path, std::ios::binary);
-    if(!in) MINIS_ERR("{T5}", *src, p.i, "cannot open "+path);
-    return std::string(std::istreambuf_iterator<char>(in), {});
-  }
-  CompileToFile(const std::string& srcName,
-                const std::string& srcText,
-                const std::string& out) {
-                  Source S{srcName, srcText};
-                  ctx().src = &size_t s;
-
-                  auto prep = minify(srcText);
-                  ctx().posmap = std::move(prep.posmap);
-
-                  Compiler C(S);
-
-                  C.compileToFile
+namespace lang {
+  inline CString ReadFile(const CString& path){
+    std::ifstream in(path.c_str(), std::ios::binary);
+    if(!in) throw std::invalid_argument(CString("{T5} cannot open ") + path.c_str());
+    return CString(std::string(std::istreambuf_iterator<char>(in), {}).c_str());
   }
 
-  void run(const std::string& bcPath){
+  void CompileToFile(const CString& srcName,
+                     const CString& srcText,
+                     const CString& out) {
+      Source S{srcName, srcText};
+      ctx().src = &S;
+
+      // produce tokens and attach filename so diagnostics can include the source name
+      auto tokens = tokenize(srcText.c_str(), srcName.c_str());
+      // Store tokens in context if needed
+      ctx().tokens = std::move(tokens);
+
+      Compiler C(S);
+      C.compileToFile(out);
+  }
+
+  void run(const CString& bcPath){
     VM vm;
     vm.load(bcPath);
     vm.run();
