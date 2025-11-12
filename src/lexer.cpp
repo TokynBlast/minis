@@ -232,7 +232,7 @@ namespace lang {
           loc.col  = tmp.col;
           char msg[64];
           snprintf(msg, sizeof(msg), "unknown char '%c'", ch);
-          WARN(loc, std::string(msg));
+          WARN(loc, CString(msg));
           continue;
         }
       }
