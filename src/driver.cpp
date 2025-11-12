@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+#include <vector>
+#include <string>
 
 #include "../include/driver.hpp"
 #include "../include/context.hpp"
@@ -16,8 +18,11 @@
 namespace lang {
   inline CString ReadFile(const CString& path){
     std::ifstream in(path.c_str(), std::ios::binary);
-    if(!in) throw std::invalid_argument(CString("{T5} cannot open ") + path.c_str());
-    return CString(std::string(std::istreambuf_iterator<char>(in), {}).c_str());
+    if(!in) throw std::invalid_argument(CString("cannot open ") + path);
+
+    std::string content((std::istreambuf_iterator<char>(in)), 
+                        std::istreambuf_iterator<char>());
+    return CString(content.c_str());
   }
 
   void CompileToFile(const CString& srcName,
@@ -26,12 +31,9 @@ namespace lang {
       Source S{srcName, srcText};
       ctx().src = &S;
 
-      // produce tokens and attach filename so diagnostics can include the source name
       auto tokens = tokenize(srcText.c_str(), srcName.c_str());
-      // Store tokens in context if needed
-      ctx().tokens = std::move(tokens);
 
-      Compiler C(S);
+      Compiler C(tokens);
       C.compileToFile(out);
   }
 
