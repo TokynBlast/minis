@@ -1,9 +1,13 @@
+#include <utility>
 #include "../include/context.hpp"
-#include "../include/diagnose.hpp"
-namespace minis {
-  std::vector<std::size_t> g_posmap;
-  inline bool hasErrors(){
-    for (auto& d : g_diags) if (d.EKind==Diagnostic::Error) return true;
-    return false;
+#include "../include/err.hpp"
+
+namespace lang {
+  static Context g_ctx;
+
+  Context& ctx() { return g_ctx; }
+
+  bool HasErrors() {
+    return has_error;
   }
 }
