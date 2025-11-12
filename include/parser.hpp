@@ -3,7 +3,7 @@
 #include <vector>
 #include "token.hpp"
 
-namespace minis{
+namespace lang{
   struct Stmt; struct Program;
 
   std::unique_ptr<Program> parseProgram(const std::vector<Token>& toks);

@@ -1,5 +1,5 @@
 #pragma once
 #include "ast.hpp"
-namespace minis {
+namespace lang {
   void FoldProgram(Program& p);
 }

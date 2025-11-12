@@ -1,9 +1,8 @@
-
 #pragma once
 #include "ast.hpp"
 
-namespace minis {
+namespace lang {
   struct Semantics {
     void run(Program& p);
-  }
+  };
 }

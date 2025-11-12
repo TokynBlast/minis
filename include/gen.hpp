@@ -2,10 +2,10 @@
 #include <cstdio>
 #include "ast.hpp"
 
-namespace minis {
+namespace lang {
   struct gen {
     FILE* out = nullptr;
-    explicit Codegen(FILE* f): out(f) {}
+    explicit gen(FILE* f): out(f) {}
     void run(Program& p); // AST -> bytecode
   };
 }
