@@ -2,7 +2,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
-#include <string>
 #include <vector>
 #include <memory>
 #include <unordered_map>
@@ -11,6 +10,7 @@
 #include "../include/token.hpp"
 #include "../include/err.hpp"
 #include "../include/ast.hpp"
+#include "../include/sso.hpp"
 
 namespace lang {
 
@@ -21,7 +21,7 @@ namespace lang {
     return isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
   }
 
-  static const std::unordered_map<std::string, Tok> keywords = {
+  static const std::unordered_map<CString, Tok> keywords = {
     {"func", Tok::Func},
     {"let", Tok::Let},
     {"if", Tok::If},
@@ -58,7 +58,7 @@ namespace lang {
     {"yield", Tok::Yield}
   };
 
-  static Tok keywordTok(const std::string& t) {
+  static Tok keywordTok(const CString& t) {
     auto it = keywords.find(t);
     return it != keywords.end() ? it->second : Tok::Id;
   }
@@ -80,7 +80,7 @@ namespace lang {
       // whitespace
       if (isspace(c)) {
         while (i < n && isspace(static_cast<unsigned char>(src[i]))) ++i;
-        out.emplace_back(Tok::WS, std::string(src + s, i - s));
+        out.emplace_back(Tok::WS, CString(src + s, i - s));
         set_pos_from_offsets(out.back(), s, src);
         auto m = std::make_shared<Stmt>();
         m->s = i - s;
@@ -93,7 +93,7 @@ namespace lang {
         const size_t start = i;
         i += 2;
         while (i < n && src[i] != '\n') ++i;
-        out.emplace_back(Tok::WS, std::string(src + start, i - start));
+        out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
         m->s = i - start;
@@ -111,7 +111,7 @@ namespace lang {
           else if (src[i] == '*' && src[i+1] == '/') { depth--; i += 2; }
           else ++i;
         }
-        out.emplace_back(Tok::WS, std::string(src + start, i - start));
+        out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
         m->s = i - start;
@@ -130,7 +130,7 @@ namespace lang {
           if (ch == '\\') { esc = true; continue; }
           if (ch == q) break;
         }
-        out.emplace_back(Tok::Str, std::string(src + start, i - start));
+        out.emplace_back(Tok::Str, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         continue;
       }
@@ -141,7 +141,7 @@ namespace lang {
         const size_t start = i;
         ++i;
         while (i < n && (isdigit(static_cast<unsigned char>(src[i])) || src[i] == '.')) ++i;
-        out.emplace_back(Tok::Num, std::string(src + start, i - start));
+        out.emplace_back(Tok::Num, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         continue;
       }
@@ -151,7 +151,7 @@ namespace lang {
         const size_t start = i;
         ++i;
         while (i < n && IsIdCont(src[i])) ++i;
-        std::string text(src + start, i - start);
+        CString text(src + start, i - start);
         const Tok k = keywordTok(text);
         out.emplace_back(k, std::move(text));
         set_pos_from_offsets(out.back(), start, src);
@@ -223,20 +223,27 @@ namespace lang {
         case '.': tk = Tok::Dot; break;
         case '\'': tk = Tok::SQuote; break;
         case '"': tk = Tok::DQuote; break;
+        case '=': tk = Tok::Equal; break;  // Added missing assign token
         default: {
-          Token tmp(Tok::WS, std::string(1, ch));
-          set_pos_from_offsets(tmp, start, src);
+          // Create single character string using pointer + length constructor
+          char single_char_str[2] = {ch, '\0'};
+          out.emplace_back(Tok::WS, CString(single_char_str));
+          set_pos_from_offsets(out.back(), start, src);
           Loc loc;
-          strncpy(loc.src, "", sizeof(loc.src)-1);
-          loc.line = tmp.line;
-          loc.col  = tmp.col;
-          char msg[64];
-          snprintf(msg, sizeof(msg), "unknown char '%c'", ch);
-          WARN(loc, CString(msg));
+          loc.src = "";
+          loc.line = static_cast<int>(out.back().line);
+          loc.col  = static_cast<int>(out.back().col);
+
+          // Create error message using string concatenation
+          char char_str[2] = {ch, '\0'};
+          CString msg = CString("unknown char '") + char_str + "'";
+          WARN(loc, msg.c_str());
           continue;
         }
       }
-      out.emplace_back(tk, std::string(1, ch));
+      // Create single character string for known tokens
+      char single_char_str[2] = {ch, '\0'};
+      out.emplace_back(tk, CString(single_char_str));
       set_pos_from_offsets(out.back(), start, src);
     }
 
@@ -245,12 +252,13 @@ namespace lang {
     return out;
   }
 
-  // Overload for std::string compatibility
-  std::vector<Token> tokenize(const std::string& src, const char* filename) {
-    return tokenize(src.c_str(), src.size(), filename);
+  // Overload for const char* with filename
+  std::vector<Token> tokenize(const char* src, const char* filename) {
+    return tokenize(src, strlen(src), filename);
   }
 
-  lang::Lexer::Lexer(const std::string& s) {
+  // Lexer class implementation
+  lang::Lexer::Lexer(const CString& s) {
     src = &s;
     i = 0;
     n = s.size();
@@ -258,11 +266,11 @@ namespace lang {
   }
 
   void lang::Lexer::run() {
-    out = tokenize(*src, nullptr);
+    out = tokenize(src->c_str(), src->size(), nullptr);
   }
 
-  Tok lang::Lexer::keyword(const std::string& t) {
+  Tok lang::Lexer::keyword(const CString& t) {
     return keywordTok(t);
   }
 
-} // namespace lang
+}
