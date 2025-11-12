@@ -51,7 +51,7 @@ struct Source {
 
 static bool has_error = false;
 
-void err(const Loc& loc, const CStringr& msg, int type = 1) {
+void err(const Loc& loc, const CString& msg, int type = 1) {
   const char* colors[] = {"", "\x1b[1;31merror\x1b[0m", "\x1b[1;36mwarning\x1b[0m", "\x1b[1;32mnote\x1b[0m"};
   if (type == 1) has_error = true;
   std::cout << loc.src << ":" << loc.line << ":" << loc.col << ": " << colors[type] << ": " << msg << "\n";
