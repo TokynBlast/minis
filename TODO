@@ -1,9 +1,5 @@
 TODO:
-Split up compiler and runner
-Tokenize (Faster than strings comparison)
-Rename all variables in bytecode
 Add compiler grouping
-Add reviving to errors
 Add personal scopes
      (organizing for compiler & developer)
 Change ++int to int++
@@ -12,14 +8,13 @@ Add file opening
 
 IDEAS FOR COMPILER:
 var never used; no declare
-var declared -> delted; no declare
+var declared -> instantly delted; no declare
 var never changes; pass to where used
 math operation, known variables; do math
 function never used; no include
 
 for
 class
-with
 as
 in
 from
@@ -30,11 +25,8 @@ struct
 enum
 async
 
-Add cross-endian to bytecode_io
 AOT pre-linking for imports (cache held in ~/.minis/cache/)
-Memory mapping (virtual memory)
 64KB sized packets for custom TCP (delete after use)
-pool file handles for closing
 
 type long long (Instead of int, same purpose as C++)
 
