@@ -30,7 +30,6 @@ namespace lang {
     return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
   }
 
-  // Fixed: Use const char* instead of std::string to avoid std::string dependency
   static bool is_builtin(const char* s) {
     static const std::unordered_set<const char*> bi = {
       "print", "abs", "neg", "range", "len", "input",
