@@ -27,7 +27,7 @@ struct Value {
     bool,                    // Bool
     std::vector<Value>,      // List
     long long,               // Int
-    CString,                 // Str - now using CString instead of std::string
+    CString,                 // Str
     double                   // Float
   > v;
 
