@@ -1,16 +1,23 @@
 #pragma once
 #include <vector>
-#include <string>
 #include "token.hpp"
+#include "sso.hpp"
 
-namespace minis{
+namespace lang{
   struct Lexer{
-    const std::string* src=nullptr; size_t i=0, n=0;
+    const CString* src = nullptr;
+    size_t i = 0, n = 0;
     std::vector<Token> out;
-    explicit Lexer(const std::string& s){ src=&s; n=s.size(); run(); }
-    // static bool isIdStart(char c);
-    // static bool isIdCont(char c);
+    explicit Lexer(const CString& s);
     void run();
-    static Tok keyword(const std::string& t);
+    static Tok keyword(const CString& t);
+    private:
+      void ws();
+      void sym();
+      void num();
+      void str();
+      void id();
   };
+
+  std::vector<Token> tokenize(const CString& src, const char* filename = nullptr);
 }

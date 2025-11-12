@@ -1,10 +1,12 @@
 #pragma once
-#include <string>
+#include "sso.hpp"
 
-namespace minis {
-  std::string ReadFile(std::string& path);
-  void ComplieFile(const std::string& SrcName,
-                   const std::string& SrcText,
-                   const std::string& OutLoc);
-  void RunMini(const std::string& path);
+namespace lang {
+  CString ReadFile(const CString& path);
+
+  void CompileToFile(const CString& srcName,
+                     const CString& srcText,
+                     const CString& out);
+
+  void run(const CString& path);
 }
