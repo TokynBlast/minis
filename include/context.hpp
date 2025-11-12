@@ -2,27 +2,45 @@
 // GENERAL: Is this even needed..?
 #include <vector>
 #include <unordered_set>
-#include "diagnose.hpp"
+#include <cstdint>
+#include <cctype>
 #include "err.hpp"
+#include "token.hpp"
+#include "sso.hpp"
 
 namespace lang {
   struct Context {
-    std::vector<Diagnostic> diags;
+    // current source
     const Source* src = nullptr;
+    // last produced token stream
+    std::vector<Token> tokens;
     std::vector<size_t> posmap;
   };
 
-  inline Context& ctx();
+  Context& ctx();
 
   bool HasErrors();
 
-  inline bool IsIdStart(char c){ return std::isalpha((unsigned char)c)||c=='_'; }
-  inline bool IsIdCont (char c){ return std::isalnum((unsigned char)c)||c=='_'||c=='.'; }
 
-  static bool is_builtin(const std::string& s){
-    static const std::unordered_set<std::string> bi={ "print","abs","neg","range","len","input","max","min","sort","reverse","sum" };
-    return bi.count(s)!=0;
+  inline bool IsIdStart(char c) {
+    return std::isalpha(static_cast<unsigned char>(c)) || c == '_';
   }
-  
-  void diag(DiagKind kind, size_t beg, size_t end, std::string msg);
+
+  inline bool IsIdCont(char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
+  }
+
+  // Fixed: Use const char* instead of std::string to avoid std::string dependency
+  static bool is_builtin(const char* s) {
+    static const std::unordered_set<const char*> bi = {
+      "print", "abs", "neg", "range", "len", "input",
+      "max", "min", "sort", "reverse", "sum"
+    };
+    return bi.count(s) != 0;
+  }
+
+  // Overload for CString convenience
+  inline bool is_builtin(const CString& s) {
+    return is_builtin(s.c_str());
+  }
 }
