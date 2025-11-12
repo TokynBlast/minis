@@ -1,9 +1,11 @@
 #include <vector>
 #include <unordered_map>
 #include <cstring>
+#include <cctype>
 #include "../include/token.hpp"
 #include "../include/context.hpp"
 #include "../include/ugly.hpp"
+#include "../include/sso.hpp"
 
 using namespace lang;
 
@@ -13,20 +15,22 @@ static std::vector<Token> lex(const char* src, size_t src_len){
   size_t i=0;
 
   auto push = [&](Tok k, size_t s) {
-    ts.emplace_back(k, std::string(src + s, i - s));
-    ts.back().set_pos_from_offsets(s, i, std::string(src, src_len));
+    ts.emplace_back(k, CString(src + s, i - s));
+    ts.back().set_pos_from_offsets(s, i, CString(src, src_len));
   };
 
   while(i<src_len){
     size_t s=i;
     if(std::isspace((unsigned char)src[i])){
       while(i<src_len && std::isspace((unsigned char)src[i])) ++i;
-      ts.emplace_back(Tok::WS, std::string(src + s, i - s));
-      ts.back().set_pos_from_offsets(s, i, std::string(src, src_len));
+      ts.emplace_back(Tok::WS, CString(src + s, i - s));
+      ts.back().set_pos_from_offsets(s, i, CString(src, src_len));
 
-      const std::string& w = ts.back().text;
+      const CString& w = ts.back().text;
       int nl = 0;
-      for (char c : w) if (c == '\n') ++nl;
+      for (size_t j = 0; j < w.size(); ++j) {
+        if (w[j] == '\n') ++nl;
+      }
 
       if (nl > 0) {
         auto ws = std::make_shared<WS>();
@@ -73,9 +77,9 @@ static std::vector<Token> lex(const char* src, size_t src_len){
       continue;
     }
 
-    if(IsIdStart(src[i])){
+    if(lang::IsIdStart(src[i])){
       ++i;
-      while(i<src_len && IsIdCont(src[i])) ++i;
+      while(i<src_len && lang::IsIdCont(src[i])) ++i;
       push(Tok::Id,s);
       continue;
     }
@@ -84,55 +88,65 @@ static std::vector<Token> lex(const char* src, size_t src_len){
     push(Tok::Sym,s);
   }
   ts.emplace_back(Tok::Eof,"");
-  ts.back().set_pos_from_offsets(src_len, src_len, std::string(src, src_len));
+  ts.back().set_pos_from_offsets(src_len, src_len, CString(src, src_len));
   return ts;
 }
 
-static std::vector<Token> lex(const std::string& src){
+static std::vector<Token> lex(const CString& src){
   return lex(src.c_str(), src.size());
 }
 
 // Preprocessing and minification
 struct PreprocResult {
-  std::string out;
-  std::vector<size_t> posmap;   // out[i] -> raw offset
+  CString out;
+  std::vector<size_t> posmap;
 };
 
-static PreprocResult uglify(const char* raw, size_t raw_len) {
+static PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   auto toks = lex(raw, raw_len);
 
-  // auto plan = uglify(toks);
+  char* minified_result = lang::Ugly(toks);
+  if (!minified_result) {
+    return { CString(raw, raw_len), std::vector<size_t>() };
+  }
 
-  // fallback empty mapping if plan doesn't provide one yet
-  std::unordered_map<std::string, std::string> id2mini;
-  // If `plan` actually has a mapping (e.g. plan.id2mini), assign it here:
-  // id2mini = plan.id2mini; // uncomment/adapt when plan's type is known
+  CString minified(minified_result);
+  std::free(minified_result);
 
-  // Rebuild with spacing logic, but track positions.
+  // Create position mapping
+  std::vector<size_t> posmap(minified.size(), 0);
+
+  return { std::move(minified), std::move(posmap) };
+}
+
+static PreprocResult uglify_fallback(const char* raw, size_t raw_len) {
+  auto toks = lex(raw, raw_len);
+
+  // Fallback empty mapping
+  std::unordered_map<CString, CString> id2mini;
+
+  // Rebuild with spacing logic
   auto need_space = [](const Token& a, const Token& b)->bool{
     auto idlike = [](Tok k){ return k==Tok::Id || k==Tok::Num; };
     return idlike(a.k) && idlike(b.k);
   };
 
-  std::string out;
+  std::vector<char> buffer;
+  buffer.reserve(raw_len/2);
   std::vector<size_t> posmap;
-  out.reserve(raw_len/2);
   posmap.reserve(raw_len/2);
 
   Token prev{Tok::Sym,""};
-  size_t toks_count = toks.size();
-  for (size_t i=0; i<toks_count; ++i) {
-    const Token& t = toks[i];
+  for (const Token& t : toks) {
     if (t.k == Tok::Eof) break;
     if (t.k == Tok::WS) continue;
 
     const char* chunk_data;
     size_t chunk_len;
-    std::string mapped_id;
+    CString mapped_id;
 
     switch (t.k) {
       case Tok::Id: {
-        // Use id2mini mapping if available, otherwise preserve original identifier.
         auto it = id2mini.find(t.text);
         if (it != id2mini.end()) {
           mapped_id = it->second;
@@ -155,25 +169,36 @@ static PreprocResult uglify(const char* raw, size_t raw_len) {
         break;
     }
 
-    // space if needed
-    if (!out.empty() && need_space(prev, t)) {
-      out.push_back(' ');
-      // best effort: map space to the start of next token
+    // Add space if needed
+    if (!buffer.empty() && need_space(prev, t)) {
+      buffer.push_back(' ');
       posmap.push_back(posmap.empty() ? 0 : posmap.back());
     }
 
-    // copy chunk and attach positions
+    // Copy chunk
     for (size_t k = 0; k < chunk_len; ++k) {
-      out.push_back(chunk_data[k]);
-      // Since we don't have direct offset access anymore, use incremental mapping
+      buffer.push_back(chunk_data[k]);
       posmap.push_back(posmap.empty() ? k : posmap.back() + (k == 0 ? 1 : 0));
     }
 
     prev = t;
   }
+
+  // Convert buffer to CString
+  buffer.push_back('\0');
+  CString out(buffer.data());
+
   return { std::move(out), std::move(posmap) };
 }
 
-static PreprocResult uglify(const std::string& raw) {
-  return uglify(raw.c_str(), raw.size());
+static PreprocResult uglify(const CString& raw) {
+  return uglify_tokens(raw.c_str(), raw.size());
+}
+
+// Public API
+namespace lang {
+  CString process(const CString& source) {
+    PreprocResult result = uglify(source);
+    return std::move(result.out);
+  }
 }
