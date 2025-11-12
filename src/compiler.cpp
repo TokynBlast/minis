@@ -1,126 +1,270 @@
+#include <unordered_map>
+
 #include "../include/io.hpp"
+#include "../include/token.hpp"
+#include "../include/err.hpp"
+#include "../include/types.hpp"
+#include "../include/value.hpp"
+#include "../include/bytecode.hpp"
+#include "../include/cursor.hpp"
+#include "../include/sso.hpp"
+
+using namespace lang;
+
+struct CompilerFnInfo{
+  CString name;
+  uint64_t entry=0;
+  std::vector<CString> params;
+  bool isVoid=false;
+  bool typed=false;
+  Type ret=Type::Int;
+  bool isInline=false;
+  bool tail=false;
+  std::vector<std::pair<Type, std::optional<Value>>> param_types;
+};
 
 struct Compiler {
-  Pos P;
   FILE* out=nullptr;
-  std::vector<FnInfo> fns;
-  std::unordered_map<std::string,size_t> fnIndex;
+  std::vector<CompilerFnInfo> fns;
+  std::unordered_map<CString,size_t> fnIndex;
   bool inWith;
 
-  std::unique_ptr<SProgram> parseProgram() }{
-    auto prog = std::make_unique<SProgram>();
-    P.i = 0; SkipWS(P);
-    while(!AtEnd(P)){
-      if ((*P.src)[P.i] == '}') MINIS_ERR("{P1}", *src, P.i, "stray '}'");
-      prog->items.push_back(parseTopLevelStmt());
-      SkipWS(P);
+  std::vector<Token> toks;
+  size_t i = 0; // Current token index (replacing Pos)
+
+  Compiler(const std::vector<Token>& tokens): toks(tokens) {}
+
+  const Token& t() const { return toks[i]; } // Helper to get current token
+
+  // Helper to get current location from token
+  // Token contains: line, col from AST
+  // AST will have WS nodes with space count for accurate positioning
+  inline Loc getCurrentLoc() const {
+    if (i >= toks.size()) {
+      // End of file case - use last token or default
+      if (toks.empty()) {
+        return Loc{1, 1, "SRCNAME"}; // line, col, filename
+      }
+      const auto& lastTok = toks.back();
+      return Loc{static_cast<int>(lastTok.line), static_cast<int>(lastTok.col), "SRCNAME"};
     }
-    return prog;
-  }
-  std::unique_ptr<Stmt> parseTopLevelStmt() {
-    if (Sta)
+
+    const auto& tok = toks[i];
+    return Loc{static_cast<int>(tok.line), static_cast<int>(tok.col), "SRCNAME"};
   }
 
-  // minis header fields
   uint64_t table_offset_pos=0, fn_count_pos=0, entry_main_pos=0;
 
-  explicit Compiler(const ::Source& s) { minis::src = &s; P.src = &s.text; }
-
-  inline DType parseType(){
-    if(StartsWithKW(P,"int")){ P.i+=3; return DType::Int;}
-    if(StartsWithKW(P,"float")){ P.i+=5; return DType::Float;}
-    if(StartsWithKW(P,"bool")){ P.i+=4; return DType::Bool;}
-    if(StartsWithKW(P,"str")){ P.i+=3; return DType::Str;}
-    if(StartsWithKW(P,"list")){ P.i+=4; return DType::List;}
-    if(StartsWithKW(P, "null")){ P.i+=4; return DType::Null;}
-    MINIS_ERR("{S5}", *src, P.i, "unknown type (use int|float|bool|str|list|null)");
+  inline Type parseType(){
+    if(t().k==Tok::Int) return Type::Int;
+    if(t().k==Tok::Float) return Type::Float;
+    if(t().k==Tok::Bool) return Type::Bool;
+    if(t().k==Tok::Str) return Type::Str;
+    if(t().k==Tok::List) return Type::List;
+    if(t().k==Tok::Null) return Type::Null;
+    ERR(getCurrentLoc(), "unknown type (Types are int|float|bool|str|list|null)");
+    return Type::Int;
   }
 
   inline void emit_u8 (uint8_t v){ write_u8(out,v); }
   inline void emit_u64(uint64_t v){ write_u64(out,v); }
   inline void emit_s64(int64_t v){ write_s64(out,v); }
   inline void emit_f64(double v){ write_f64(out,v); }
-  inline void emit_str(const std::string&s){ write_str(out,s); }
+  inline void emit_str(const CString& s){ write_str(out, s.c_str()); }
   inline uint64_t tell() const { return (uint64_t)ftell(out); }
   inline void seek(uint64_t pos){ fseek(out,(long)pos,SEEK_SET); }
 
   // --- Expressions -> bytecode ---
   inline void Expr(){ LogicOr(); }
-  inline void LogicOr(){ LogicAnd(); while(MatchStr(P,"||")){ LogicAnd(); emit_u64(OR); } }
-  inline void LogicAnd(){ Equality(); while(MatchStr(P,"&&")){ Equality(); emit_u64(AND); } }
+  inline void LogicOr(){ LogicAnd(); while(t().k ==Tok::OR){ ++i; LogicAnd(); this->emit_u64(OR); } }
+  inline void LogicAnd(){ Equality(); while(t().k==Tok::AND){ ++i; Equality(); this->emit_u64(AND); } }
   inline void Equality(){
     AddSub();
     while(true){
-      if(MatchStr(P,"==")){ AddSub(); emit_u64(EQ); }
-      else if(MatchStr(P,"!=")){ AddSub(); emit_u64(NE); }
-      else if(MatchStr(P,">=")){ AddSub(); emit_u64(LE); emit_u64(MUL); emit_u64(PUSH_I); emit_s64(-1); emit_u64(MUL); }
-      else if(MatchStr(P,">")) { AddSub(); emit_u64(LT); emit_u64(MUL); emit_u64(PUSH_I); emit_s64(-1); emit_u64(MUL); }
-      else if(MatchStr(P,"<=")){ AddSub(); emit_u64(LE); }
-      else if(MatchStr(P,"<")) { AddSub(); emit_u64(LT); }
+      if(t().k==Tok::EQ){ ++i; AddSub(); this->emit_u64(EQ); }
+      else if(t().k==Tok::NE){ ++i; AddSub(); this->emit_u64(NE); }
+      else if(t().k==Tok::GE){ ++i; AddSub(); this->emit_u64(LE); this->emit_u64(MUL); this->emit_u64(PUSH_I); this->emit_s64(-1); this->emit_u64(MUL); }
+      else if(t().k==Tok::GT) { ++i; AddSub(); this->emit_u64(LT); this->emit_u64(MUL); this->emit_u64(PUSH_I); this->emit_s64(-1); this->emit_u64(MUL); }
+      else if(t().k==Tok::LE){ ++i; AddSub(); this->emit_u64(LE); }
+      else if(t().k==Tok::LT) { ++i; AddSub(); this->emit_u64(LT); }
       else break;
     }
   }
+
   inline void AddSub(){
     MulDiv();
     while(true){
-      if(Match(P,'+')){ MulDiv(); emit_u64(ADD); }
-      else if(Match(P,'-')){ MulDiv(); emit_u64(SUB); }
+      if(t().k==Tok::Plus){ ++i; MulDiv(); this->emit_u64(ADD); } // +
+      else if(t().k==Tok::Minus){ ++i; MulDiv(); this->emit_u64(SUB); } // -
       else break;
     }
   }
+
   inline void MulDiv(){
     Factor();
     while(true){
-      if(Match(P,'*')){ Factor(); emit_u64(MUL); }
-      else if(Match(P,'/')){ Factor(); emit_u64(DIV); }
+      if(t().k==Tok::Star){ ++i; Factor(); this->emit_u64(MUL); } // *
+      else if(t().k==Tok::FSlash){ ++i; Factor(); this->emit_u64(DIV); } // /
       else break;
     }
   }
-  inline void ListLit(){
-    size_t count=0;
-    if(Match(P,']')){ emit_u64(MAKE_LIST); emit_u64(0); return; }
-    while(true){ Expr(); ++count; SkipWS(P); if(Match(P,']')) break; Expect(P,','); }
-    emit_u64(MAKE_LIST); emit_u64(count);
-  }
-  inline void Factor(){
-    SkipWS(P);
-    if(!AtEnd(P)&&(*P.src)[P.i]=='('){ ++P.i; Expr(); Expect(P,')'); return; }
-    if(!AtEnd(P) && ((*P.src)[P.i]=='"'||(*P.src)[P.i]=='\'')){ auto s=ParseQuoted(P); emit_u64(PUSH_S); emit_str(s); return; }
-    if(P.i+4<=P.src->size() && P.src->compare(P.i,4,"true")==0 && (P.i+4==P.src->size()||!IsIdCont((*P.src)[P.i+4]))){ P.i+=4; emit_u64(PUSH_B); emit_u8(1); return; }
-    if(P.i+5<=P.src->size() && P.src->compare(P.i,5,"false")==0&& (P.i+5==P.src->size()||!IsIdCont((*P.src)[P.i+5]))){ P.i+=5; emit_u64(PUSH_B); emit_u8(0); return; }
-    if(!AtEnd(P)&&(*P.src)[P.i]=='['){ ++P.i; ListLit(); return; }
-    if(!AtEnd(P)&&(std::isdigit((unsigned char)(*P.src)[P.i])||(*P.src)[P.i]=='+'||(*P.src)[P.i]=='-')){
-      auto s=ParseNumberText(P); if(s.find('.')!=std::string::npos){ emit_u64(PUSH_F); emit_f64(std::stod(s)); }
-      else{ emit_u64(PUSH_I); emit_s64(std::stoll(s)); } return;
+
+  inline void ListLit() {
+    size_t count = 0;
+
+    if (t().k == Tok::RBracket) {
+      this->emit_u64(MAKE_LIST);
+      this->emit_u64(0);
+      ++i;
+      return;
     }
-    if(!AtEnd(P)&&IsIdStart((*P.src)[P.i])){
-      auto id=ParseIdent(P); SkipWS(P);
-      if(!AtEnd(P)&&(*P.src)[P.i]=='('){ // call
-        ++P.i; size_t argc=0;
-        if(!Match(P,')')){
-          while(true){
-            Expr(); ++argc; SkipWS(P);
-            if(Match(P,')')) break;
-            Expect(P,',');
+
+    while (i < toks.size()) {
+      Expr();
+      ++count;
+
+      if (t().k == Tok::RBracket) break;
+
+      // This way, we can determine if it's all commas and warn that a dead list is better to use
+      size_t spot=1;
+      while(t().k != Tok::RBracket){
+        if(i + spot >= toks.size() || toks[i + spot].k != Tok::Comma) break;
+        ++spot;
+        if (t().k == Tok::Semicolon||t().k==Tok::RBrace||t().k==Tok::Eof) { // list cut off early
+          ERR(getCurrentLoc(), "List statement unfinished");
+          while (i < toks.size() &&
+                 t().k != Tok::RBracket &&
+                 t().k != Tok::RBrace &&
+                 t().k != Tok::Semicolon &&
+                 t().k != Tok::Eof) {
+            ++i;
           }
+          break;
         }
-        emit_u64(CALL);
-        emit_str(id);
-        emit_u64(argc);
-        return;
-      } else {
-        emit_u64(GET);
-        emit_str(id);
+      }
+      // Empty values are assigned null
+      // TESTME: Giving a list empty values set to null (Meaning we already know how big the list will be)
+      NOTE(getCurrentLoc(), "Empty list values are assigned null");
+      // rather than updating size and adding a value
+      if (i + 1 < toks.size() && toks[i].k == Tok::Comma && toks[i + 1].k == Tok::Comma) {
+        NOTE(getCurrentLoc(), "Empty list values are assigned null");
+        ++i;
+        continue;
+      }
+
+      if (t().k == Tok::Comma) {
+        ++i;
+        continue;
+      }
+
+      ERR(getCurrentLoc(), "Expected ',' or ']'");
+      ++i;
+    }
+
+    this->emit_u64(MAKE_LIST);
+    this->emit_u64(count);
+  }
+
+  inline void Factor() {
+    if (i >= toks.size()) return;
+
+    switch (t().k) {
+      // --- Grouped expressions: ( expr )
+      case Tok::LParen: {
+        ++i;
+        Expr();
+
+        // expect ')'
+        if (i >= toks.size() || toks[i].k != Tok::RParen) {
+          ERR(getCurrentLoc(), "Missing closing ')'");
+          // Recover to next likely token
+          while (i < toks.size()) {
+            Tok k = toks[i].k;
+            if (k == Tok::RParen || k == Tok::Comma || k == Tok::Semicolon ||
+                k == Tok::RBracket || k == Tok::RBrace || k == Tok::Eof)
+              break;
+            ++i;
+          }
+          if (i < toks.size() && toks[i].k == Tok::RParen) ++i;
+          return;
+        }
+
+        ++i; // consume ')'
         return;
       }
-    for(;;) {
-      SkipWS(P);
-      if (!Match(P, '[')) break;
-      Expr();
-      Expect(P, ']');
-      emit_u64(INDEX);
-    }
-    MINIS_ERR("{P?}", *src, P.i, "unexpected token in expression");
+
+      case Tok::Int: {
+        this->emit_u64(PUSH_I);
+        this->emit_s64(std::stoll(t().text.c_str()));
+        ++i;
+        return;
+      }
+
+      case Tok::Float: {
+        this->emit_u64(PUSH_F);
+        double f = std::stod(t().text.c_str());
+        this->emit_f64(f);
+        ++i;
+        return;
+      }
+
+      case Tok::Str: {
+        this->emit_u64(PUSH_S);
+        this->emit_str(t().text);
+        ++i;
+        return;
+      }
+
+      case Tok::True:
+      case Tok::False: {
+        this->emit_u64(PUSH_B);
+        this->emit_u64(t().k == Tok::True ? 1 : 0);
+        ++i;
+        return;
+      }
+
+      case Tok::Null: {
+        this->emit_u64(PUSH_N);
+        ++i;
+        return;
+      }
+
+      case Tok::Id: {
+        this->emit_u64(GET);
+        this->emit_str(t().text);
+        ++i;
+        return;
+      }
+
+      case Tok::Minus: {
+        ++i;
+        Factor();
+        this->emit_u64(NEG);
+        return;
+      }
+
+      // --- Logical not
+      case Tok::NE: {
+        ++i;
+        Factor();
+        this->emit_u64(NOT);
+        return;
+      }
+
+      // --- Error / unexpected token
+      default: {
+        ERR(getCurrentLoc(), "Expected value, identifier, or '(' expression ')'");
+        // Recovery: skip to next likely resync token
+        while (i < toks.size()) {
+          Tok k = toks[i].k;
+          if (k == Tok::RParen || k == Tok::Comma || k == Tok::Semicolon ||
+              k == Tok::RBracket || k == Tok::RBrace || k == Tok::Eof)
+            break;
+          ++i;
+        }
+        if (i < toks.size()) ++i;
+        return;
+      }
     }
   }
 
@@ -134,166 +278,239 @@ struct Compiler {
   inline void patchJump(uint64_t at, uint64_t target){ auto cur=tell(); seek(at); write_u64(out,target); seek(cur); }
 
   inline void StmtSeq(){
-    while(true){
-      SkipWS(P); if(AtEnd(P)) break;
-      if (!AtEnd(P) && (*P.src)[P.i] == '}') break;
+    while(i < toks.size()){
+      if (toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) break;
 
-      if (!AtEnd(P) && (*P.src)[P.i] == '{') {
-        ++P.i;
+      if (toks[i].k == Tok::LBrace) {
+        ++i;
         StmtSeqUntilBrace();
         continue;
       }
-      else if(StartsWithKW(P,"exit")){ P.i+=4; Expect(P,';'); emit_u64(HALT); continue; }
-
-      else if(StartsWithKW(P,"import")){ P.i+=6; SkipWS(P);
-        if(!AtEnd(P)&&((*P.src)[P.i]=='"'||(*P.src)[P.i]=='\'')) (void)ParseQuoted(P); else (void)ParseIdent(P);
-        Expect(P,';'); continue; }
-
-      else if(StartsWithKW(P,"del")){ P.i+=3; SkipWS(P); auto n=ParseIdent(P); Expect(P,';');
-        emit_u64(UNSET); emit_str(n); continue; }
-
-      else if(StartsWithKW(P,"return")){
-        P.i+=6; SkipWS(P);
-        if(Match(P,';')){ emit_u64(RET_VOID); continue; }
-        Expr(); Expect(P,';'); emit_u64(RET); continue;
-      }
-
-      else if(MatchStr(P,"++")) {
-        SkipWS(P);
-        auto name = ParseIdent(P);
-        Expect(P,';');
-        emit_u64(GET);  emit_str(name);
-        emit_u64(PUSH_I); emit_s64(1);
-        emit_u64(ADD);
-        emit_u64(SET);  emit_str(name);
+      else if(toks[i].k == Tok::Exit){
+        ++i;
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        this->emit_u64(HALT);
         continue;
       }
 
-      else if(StartsWithKW(P,"continue")){
-        P.i+=8; SkipWS(P); Expect(P,';');
-        if(loopStack.empty()) MINIS_ERR("{V5}", *src, P.i, "'continue' outside of loop");
-        emit_u64(JMP); emit_u64(loopStack.back().contTarget);
+      else if(toks[i].k == Tok::Import){
+        ++i;
+        // Skip import target
+        if (i < toks.size() && (toks[i].k == Tok::Str || toks[i].k == Tok::Id)) ++i;
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
         continue;
       }
 
-      else if(StartsWithKW(P,(const char*)"break")){
-        P.i+=5; size_t levels=1; SkipWS(P);
-        if(!AtEnd(P) && std::isdigit((unsigned char)(*P.src)[P.i])){ auto num=ParseNumberText(P); levels=(size_t)std::stoll(num); }
-        Expect(P,';');
-        if(loopStack.size()<levels) MINIS_ERR("{V5}", *src, P.i, "'break' outside of loop");
+      else if(toks[i].k == Tok::Del){
+        ++i;
+        if (i >= toks.size() || toks[i].k != Tok::Id) {
+          ERR(getCurrentLoc(), "Expected identifier after 'del'");
+          continue;
+        }
+        CString name = toks[i].text;
+        ++i;
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        this->emit_u64(UNSET);
+        this->emit_str(name);
+        continue;
+      }
+
+      else if(toks[i].k == Tok::Return){
+        ++i;
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) {
+          ++i;
+          this->emit_u64(RET_VOID);
+          continue;
+        }
+        Expr();
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        this->emit_u64(RET);
+        continue;
+      }
+
+      else if(toks[i].k == Tok::PP) {
+        ++i;
+        if (i >= toks.size() || toks[i].k != Tok::Id) {
+          ERR(getCurrentLoc(), "Expected identifier after '++'");
+          continue;
+        }
+        CString name = toks[i].text;
+        ++i;
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        this->emit_u64(PUSH_I);
+        this->emit_s64(1);
+        this->emit_u64(ADD);
+        this->emit_u64(SET);
+        this->emit_str(name);
+        continue;
+      }
+
+      else if(toks[i].k == Tok::Cont){
+        ++i;
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        if(this->loopStack.empty()) {
+          ERR(getCurrentLoc(), "'continue' outside of loop");
+          continue;
+        }
+        this->emit_u64(JMP);
+        this->emit_u64(loopStack.back().contTarget);
+        continue;
+      }
+
+      else if(toks[i].k == Tok::Break){
+        ++i;
+        size_t levels=1;
+        if(i < toks.size() && toks[i].k == Tok::Int){
+          levels = (size_t)std::stoll(toks[i].text.c_str());
+          ++i;
+        }
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+        if(this->loopStack.size()<levels) {
+          ERR(getCurrentLoc(), "'break' outside of loop");
+          continue;
+        }
         size_t idx=loopStack.size()-levels;
-        emit_u64(JMP); auto at=tell(); emit_u64(0);
+        this->emit_u64(JMP);
+        auto at=tell();
+        this->emit_u64(0);
         loopStack[idx].breakPatchSites.push_back(at);
         continue;
       }
 
-      else if(StartsWithKW(P, "func")) {
-        P.i += 4; SkipWS(P);
+      else if(toks[i].k == Tok::Func) {
+        ++i;
 
         // Parse function attributes now as keywords
         bool isInline = false;
         bool tailCallOpt = false;
 
-        if (StartsWithKW(P, "inline")) {
-          P.i += 6;
+        if (i < toks.size() && toks[i].k == Tok::Inline) {
+          ++i;
           isInline = true;
-          SkipWS(P);
         }
-        if (StartsWithKW(P, "tailcall")) {
-          P.i += 8;
+        if (i < toks.size() && toks[i].k == Tok::Tail) {
+          ++i;
           tailCallOpt = true;
-          SkipWS(P);
         }
 
         // Track if types were specified for warning
         bool hasExplicitTypes = false;
         bool isVoid = false, typed = false;
-        DType rt = DType::Int;
-        std::string fname;
+        Type rt = Type::Int;
+        CString fname;
 
         // Return type parsing with better error messages
-        Pos look = P;
-        if (StartsWithKW(look,"void") || StartsWithKW(look,"int") || StartsWithKW(look,"float") ||
-        StartsWithKW(look,"bool") || StartsWithKW(look,"str") || StartsWithKW(look,"list")) {
+        if (i < toks.size() && (toks[i].k == Tok::Void || toks[i].k == Tok::Int ||
+            toks[i].k == Tok::Float || toks[i].k == Tok::Bool ||
+            toks[i].k == Tok::Str || toks[i].k == Tok::List)) {
           hasExplicitTypes = true;
-          if (StartsWithKW(P,"void")) { P.i += 4; isVoid = true; }
-          else { rt = parseType(); typed = true; }
-          SkipWS(P);
+          if (toks[i].k == Tok::Void) {
+            ++i;
+            isVoid = true;
+          } else {
+            rt = parseType();
+            ++i;
+            typed = true;
+          }
         }
 
-        fname = ParseIdent(P);
+        if (i >= toks.size() || toks[i].k != Tok::Id) {
+          ERR(getCurrentLoc(), "Expected function name");
+          continue;
+        }
+        fname = toks[i].text;
+        ++i;
 
         // Parameter parsing with Python-style defaults
-        SkipWS(P); Expect(P,'(');
-        std::vector<std::string> params;
+        if (i >= toks.size() || toks[i].k != Tok::LParen) {
+          ERR(getCurrentLoc(), "Expected '(' after function name");
+          continue;
+        }
+        ++i; // consume '('
+
+        std::vector<CString> params;
         std::vector<std::pair<Type, std::optional<Value>>> paramTypes; // Track param types & defaults
 
-        SkipWS(P);
-        if(!Match(P,')')) {
+        if(i < toks.size() && toks[i].k != Tok::RParen) {
           while (true) {
-        // Check for type annotation
-        Pos typeCheck = P;
-        DType paramType = DType::Int; // Default type if none specified
-        if (StartsWithKW(typeCheck,"int") || StartsWithKW(typeCheck,"float") ||
-            StartsWithKW(typeCheck,"bool") || StartsWithKW(typeCheck,"str") ||
-            StartsWithKW(typeCheck,"list")) {
-          paramType = parseType();
-          hasExplicitTypes = true;
-          SkipWS(P);
+            // Check for type annotation
+            Type paramType = Type::Int; // Default type if none specified
+            if (i < toks.size() && (toks[i].k == Tok::Int || toks[i].k == Tok::Float ||
+                toks[i].k == Tok::Bool || toks[i].k == Tok::Str ||
+                toks[i].k == Tok::List)) {
+              paramType = parseType();
+              ++i;
+              hasExplicitTypes = true;
+            }
+
+            if (i >= toks.size() || toks[i].k != Tok::Id) {
+              ERR(getCurrentLoc(), "Expected parameter name");
+              break;
+            }
+            params.push_back(toks[i].text);
+            ++i;
+
+            // Handle default value
+            std::optional<Value> defaultVal;
+            if (i < toks.size() && toks[i].k == Tok::Equal) {
+              ++i;
+              // Parse literal value for default
+              if (i < toks.size()) {
+                if (toks[i].k == Tok::Str) {
+                  defaultVal = Value::S(toks[i].text.c_str());
+                  ++i;
+                } else if (toks[i].k == Tok::Int) {
+                  defaultVal = Value::I(std::stoll(toks[i].text.c_str()));
+                  ++i;
+                } else if (toks[i].k == Tok::Float) {
+                  defaultVal = Value::F(std::stod(toks[i].text.c_str()));
+                  ++i;
+                } else if (toks[i].k == Tok::True) {
+                  defaultVal = Value::B(true);
+                  ++i;
+                } else if (toks[i].k == Tok::False) {
+                  defaultVal = Value::B(false);
+                  ++i;
+                }
+              }
+            }
+
+            paramTypes.push_back({paramType, defaultVal});
+
+            if (i >= toks.size()) break;
+            if (toks[i].k == Tok::RParen) break;
+            if (toks[i].k == Tok::Comma) {
+              ++i;
+              continue;
+            }
+            ERR(getCurrentLoc(), "Expected ',' or ')' in parameter list");
+            break;
+          }
         }
 
-        params.push_back(ParseIdent(P));
-        SkipWS(P);
-
-        // Handle default value
-        std::optional<Value> defaultVal;
-        if (Match(P, '=')) {
-          Pos saveP = P;
-          try {
-            // Parse literal value for default
-            if (Match(P, '"') || Match(P, '\'')) {
-          defaultVal = Value::S(ParseQuoted(P));
-            }
-            else if (std::isdigit((unsigned char)(*P.src)[P.i]) ||
-             (*P.src)[P.i] == '-' || (*P.src)[P.i] == '+') {
-          std::string num = ParseNumberText(P);
-          if (num.find('.') != std::string::npos) {
-            defaultVal = Value::F(std::stod(num));
-          } else {
-            defaultVal = Value::I(std::stoll(num));
-          }
-            }
-            else if (StartsWithKW(P, "true")) {
-          P.i += 4;
-          defaultVal = Value::B(true);
-            }
-            else if (StartsWithKW(P, "false")) {
-          P.i += 5;
-          defaultVal = Value::B(false);
-            }
-          } catch (...) {
-            P = saveP;
-          }
-        }
-
-        paramTypes.push_back({paramType, defaultVal});
-
-        SkipWS(P);
-        if (Match(P,')')) break;
-        Expect(P,',');
-          }
-        }
+        if (i < toks.size() && toks[i].k == Tok::RParen) ++i;
 
         // Emit type usage warning if needed
         if (!hasExplicitTypes) {
-          std::cerr << "Warning: Function '" << fname << "' uses implicit types. "
+          std::cerr << "Warning: Function '" << fname.c_str() << "' uses implicit types. "
            << "Consider adding explicit type annotations for better safety and clarity.\n";
         }
 
-        SkipWS(P); Expect(P,'{');
+        if (i >= toks.size() || toks[i].k != Tok::LBrace) {
+          ERR(getCurrentLoc(), "Expected '{' after function declaration");
+          continue;
+        }
+        ++i; // consume '{'
 
         // Register function
-        FnInfo fni{fname, 0, params, isVoid, typed, rt};
+        CompilerFnInfo fni{fname, 0, params, isVoid, typed, rt};
         fni.isInline = isInline;
         fni.tail = tailCallOpt;
         fni.param_types = paramTypes;
@@ -302,187 +519,65 @@ struct Compiler {
         fnIndex[fname] = idx;
 
         // Function body parsing
-        emit_u64(JMP);
+        this->emit_u64(JMP);
         auto skipAt = tell();
-        emit_u64(0);
+        this->emit_u64(0);
 
         auto entry = tell();
         fns[idx].entry = entry;
 
         StmtSeqUntilBrace();
 
-        if (isVoid) emit_u64(RET_VOID);
-        else emit_u64(RET);
+        if (isVoid) this->emit_u64(RET_VOID);
+        else this->emit_u64(RET);
 
         auto after = tell();
         patchJump(skipAt, after);
         continue;
       }
 
-      // Conversions
-      else if(StartsWithKW(P, "conv")){
-        P.i+=4;
-        SkipWS(P);
-        auto name = ParseIdent(P);
-        SkipWS(P); Expect(P,':'); SkipWS(P);
-        DType newType = parseType();
-        Expect(P,';');
-
-        // redeclare the variable with new type
-        emit_u64(DECL);
-        emit_str(name);
-        emit_u64((uint64_t)newType);
-      }
-
-      else if(StartsWithKW(P,"yield")){
-        P.i+=5;SkipWS(P);Expect(P,';');SkipWS(P);
-        emit_u64(YIELD);
-        continue;
-      }
-
       // while (cond) { ... }
-      if (StartsWithKW(P,"while")) {
-        P.i += 5; SkipWS(P); Expect(P,'('); SkipWS(P);
-        auto condOff = tell();
-        Expr(); Expect(P,')');
-        emit_u64(JF); auto jfAt = tell(); emit_u64(0);
+      else if (toks[i].k == Tok::While) {
+        ++i;
+        if (i >= toks.size() || toks[i].k != Tok::LParen) {
+          ERR(getCurrentLoc(), "Expected '(' after 'while'");
+          continue;
+        }
+        ++i; // consume '('
 
-        SkipWS(P); Expect(P,'{');
+        auto condOff = tell();
+        Expr();
+
+        if (i >= toks.size() || toks[i].k != Tok::RParen) {
+          ERR(getCurrentLoc(), "Expected ')' after while condition");
+          continue;
+        }
+        ++i; // consume ')'
+
+        this->emit_u64(JF);
+        auto jfAt = tell();
+        this->emit_u64(0);
+
+        if (i >= toks.size() || toks[i].k != Tok::LBrace) {
+          ERR(getCurrentLoc(), "Expected '{' after while condition");
+          continue;
+        }
+        ++i; // consume '{'
 
         // Track loop labels for break/continue
-        LoopLbl L{}; L.condOff = condOff; L.contTarget = condOff;
-        loopStack.push_back(L);
+        LoopLbl L{};
+        L.condOff = condOff;
+        L.contTarget = condOff;
+        this->loopStack.push_back(L);
 
         // Enforce: at most one 'with' group inside this while
         bool thisWhileHasWith = false;
 
-        // Parse the loop body (balanced braces)
-        std::size_t depth = 1;
-        while (!AtEnd(P)) {
-          if ((*P.src)[P.i] == '{') { ++depth; ++P.i; continue; }
-          if ((*P.src)[P.i] == '}') { if (--depth == 0) { ++P.i; break; } ++P.i; continue; }
-
-          // See if next token is 'with'
-          Pos peek = P; SkipWS(peek);
-          if (StartsWithKW(peek, "with")) {
-            if (thisWhileHasWith) {
-              MINIS_ERR("{S01}", *src, P.i, "only one 'with' group allowed per 'while'");
-            }
-            thisWhileHasWith = true;
-
-            // consume 'with'
-            P = peek; P.i += 4; SkipWS(P);
-
-            const std::size_t MAX_THREADS = 10;
-            std::vector<std::string> bodies; bodies.reserve(4);
-
-            auto parse_one_block = [&](const char* ctx){
-              Expect(P, '{');
-              std::size_t bdepth = 1, start = P.i;
-              while (!AtEnd(P)) {
-                char c = (*P.src)[P.i++];
-                if (c == '{') { ++bdepth; continue; }
-                if (c == '}') {
-                  if (--bdepth == 0) {
-                    std::size_t end = P.i - 1;
-                    std::string body = P.src->substr(start, end - start);
-
-                    auto isId = [](char ch){ return std::isalnum((unsigned char)ch) || ch=='_'; };
-                    std::size_t pos = 0;
-                    while ((pos = body.find("while", pos)) != std::string::npos) {
-                      bool leftOk  = (pos==0) || !isId(body[pos-1]);
-                      bool rightOk = (pos+5>=body.size()) || !isId(body[pos+5]);
-                      if (leftOk && rightOk) {
-                        MINIS_ERR("{S01}", *src, P.i, "no 'while' allowed inside 'with'/'and' block");
-                      }
-                      ++pos;
-                    }
-
-                    bodies.push_back(std::move(body));
-                    return;
-                  }
-                }
-              }
-              MINIS_ERR("{S02}", *src, P.i, std::string("unterminated '{' in '") + ctx + "' block");
-            };
-
-            // First block after 'with'
-            parse_one_block("with");
-
-            // Zero or more:  and { ... }
-            while (true) {
-              Pos pk = P; SkipWS(pk);
-              if (!StartsWithKW(pk, "and")) break;
-              P = pk; P.i += 3; SkipWS(P);
-              parse_one_block("and");
-            }
-
-            if (bodies.empty()) {
-              MINIS_ERR("{S02}", *src, P.i, "'with' expects at least one block");
-            }
-            if (bodies.size() > MAX_THREADS) {
-              MINIS_ERR("{S01}", *src, P.i,
-                "too many 'and' blocks (max " + std::to_string(MAX_THREADS) + ")");
-            }
-
-            // For each body: register as function, compile body, then TAIL
-            std::vector<std::string> fnNames; fnNames.reserve(bodies.size());
-            for (std::size_t i = 0; i < bodies.size(); ++i) {
-              std::string fnName = "__with_fn_" + std::to_string(i);
-              fnNames.push_back(fnName);
-
-              // register
-              FnInfo fni{fnName, 0, /*params*/{}, /*isVoid*/true, /*typed*/false, DType::Null};
-              fni.tail = true;
-              std::size_t idx = fns.size();
-              fns.push_back(fni);
-              fnIndex[fnName] = idx;
-
-              // skip body from main
-              emit_u64(JMP); auto skipAt = tell(); emit_u64(0);
-
-              // entry
-              auto entry = tell();
-              fns[idx].entry = entry;
-
-              // compile body by swapping P.src/P.i temporarily
-              Pos saveP = P; const std::string* saveSrc = P.src;
-              P.src = &bodies[i];
-              P.i   = 0;
-              StmtSeq();           // reuse your existing statement sequencer
-              P.src = saveSrc; P = saveP;
-
-              // force a tail exit to itself (as per your design)
-              emit_u64(TAIL);
-              emit_str(fnName);
-              emit_u64(0);
-
-              // patch skip
-              auto afterFn = tell();
-              patchJump(skipAt, afterFn);
-            }
-
-            // Launch: tailcall each generated function (argc = 0)
-            for (auto& fn : fnNames) {
-              emit_u64(TAIL);
-              emit_str(fn);
-              emit_u64(0);
-            }
-
-            // cleanup
-            for (auto& s : bodies) { s.clear(); s.shrink_to_fit(); }
-            bodies.clear(); bodies.shrink_to_fit();
-            fnNames.clear(); fnNames.shrink_to_fit();
-
-            continue; // handled 'with' inside while-body
-          }
-
-          // Not a 'with' statement → regular statement in while-body
-          StmtSeqOne();
-        }
+        StmtSeqUntilBrace();
 
         // loop back to condition
-        emit_u64(JMP); emit_u64(condOff);
+        this->emit_u64(JMP);
+        this->emit_u64(condOff);
 
         // patch exits/breaks
         auto after = tell();
@@ -494,371 +589,257 @@ struct Compiler {
       }
 
       // if (...) { ... } elif (...) { ... } else { ... }
-      else if(StartsWithKW(P,"if")){
-        P.i+=2; SkipWS(P); Expect(P,'('); Expr(); Expect(P,')');
-        emit_u64(JF); auto jfAt = tell(); emit_u64(0);
-        SkipWS(P); Expect(P,'{'); StmtSeqUntilBrace();
-
-        emit_u64(JMP); auto jendAt=tell(); emit_u64(0);
-        auto afterThen = tell(); patchJump(jfAt, afterThen);
-
-        std::vector<uint64_t> ends; ends.push_back(jendAt);
-        while(true){
-          Pos peek=P; SkipWS(peek); if(!StartsWithKW(peek,"elif")) break;
-          P.i=peek.i+4; SkipWS(P); Expect(P,'('); Expr(); Expect(P,')');
-          emit_u64(JF); auto ejf=tell(); emit_u64(0);
-          SkipWS(P); Expect(P,'{'); StmtSeqUntilBrace();
-          emit_u64(JMP); auto ejend=tell(); emit_u64(0);
-          ends.push_back(ejend);
-          auto afterElif=tell(); patchJump(ejf, afterElif);
+      else if(toks[i].k == Tok::If){
+        ++i;
+        if (i >= toks.size() || toks[i].k != Tok::LParen) {
+          ERR(getCurrentLoc(), "Expected '(' after 'if'");
+          continue;
         }
-        Pos peek=P; SkipWS(peek);
-        if(StartsWithKW(peek,"else")){
-          P.i=peek.i+4; SkipWS(P); Expect(P,'{'); StmtSeqUntilBrace();
+        ++i; // consume '('
+
+        Expr();
+
+        if (i >= toks.size() || toks[i].k != Tok::RParen) {
+          ERR(getCurrentLoc(), "Expected ')' after if condition");
+          continue;
+        }
+        ++i; // consume ')'
+
+        this->emit_u64(JF);
+        auto jfAt = tell();
+        this->emit_u64(0);
+
+        if (i >= toks.size() || toks[i].k != Tok::LBrace) {
+          ERR(getCurrentLoc(), "Expected '{' after if condition");
+          continue;
+        }
+        ++i; // consume '{'
+
+        StmtSeqUntilBrace();
+
+        this->emit_u64(JMP);
+        auto jendAt = tell();
+        this->emit_u64(0);
+        auto afterThen = tell();
+        patchJump(jfAt, afterThen);
+
+        std::vector<uint64_t> ends;
+        ends.push_back(jendAt);
+
+        while(i < toks.size() && toks[i].k == Tok::Elif){
+          ++i; // consume 'elif'
+          if (i >= toks.size() || toks[i].k != Tok::LParen) {
+            ERR(getCurrentLoc(), "Expected '(' after 'elif'");
+            break;
+          }
+          ++i; // consume '('
+
+          Expr();
+
+          if (i >= toks.size() || toks[i].k != Tok::RParen) {
+            ERR(getCurrentLoc(), "Expected ')' after elif condition");
+            break;
+          }
+          ++i; // consume ')'
+
+          this->emit_u64(JF);
+          auto ejf = tell();
+          this->emit_u64(0);
+
+          if (i >= toks.size() || toks[i].k != Tok::LBrace) {
+            ERR(getCurrentLoc(), "Expected '{' after elif condition");
+            break;
+          }
+          ++i; // consume '{'
+
+          StmtSeqUntilBrace();
+          this->emit_u64(JMP);
+          auto ejend=tell();
+          this->emit_u64(0);
+          ends.push_back(ejend);
+          auto afterElif=tell();
+          patchJump(ejf, afterElif);
+        }
+
+        if(i < toks.size() && toks[i].k == Tok::Else){
+          ++i; // consume 'else'
+          if (i >= toks.size() || toks[i].k != Tok::LBrace) {
+            ERR(getCurrentLoc(), "Expected '{' after 'else'");
+          } else {
+            ++i; // consume '{'
+            StmtSeqUntilBrace();
+          }
         }
         auto afterAll=tell();
         for(auto at: ends) patchJump(at, afterAll);
         continue;
       }
 
-      // try { ... } except { ... } finally { ... }
-      else if(StartsWithKW(P,"try")){
-        P.i+=3;
-        SkipWS(P); Expect(P,'{');
-
-        // Store jump points for exception handling
-        emit_u64(JMP);
-        auto tryStart = tell();
-        emit_u64(0);
-
-        // Try block
-        StmtSeqUntilBrace();
-
-        emit_u64(JMP);
-        auto afterTry = tell();
-        emit_u64(0);
-
-        // Exception handler
-        auto exceptStart = tell();
-        patchJump(tryStart, exceptStart);
-
-        SkipWS(P);
-        if(!StartsWithKW(P,"except")) MINIS_ERR("{P2}", *src, p.i, "expected 'except' after try block");
-        P.i+=6;
-        SkipWS(P); Expect(P,'{');
-        StmtSeqUntilBrace();
-
-        auto afterExcept = tell();
-        patchJump(afterTry, afterExcept);
-
-        // Optional finally block
-        SkipWS(P);
-        if(StartsWithKW(P,"finally")){
-          P.i+=7;
-          SkipWS(P); Expect(P,'{');
-          StmtSeqUntilBrace();
-        }
-        continue;
-      }
-
-      // lambda
-      else if(StartsWithKW(P,"lambda")){
-        P.i+=6; SkipWS(P);
-
-        // Parse parameters
-        std::vector<std::string> params;
-        if(Match(P,'(')){
-          if(!Match(P,')')){
-            while(true){
-              params.push_back(ParseIdent(P));
-              SkipWS(P);
-              if(Match(P,')')) break;
-              Expect(P,',');
-            }
-          }
-        }
-
-        SkipWS(P); Expect(P,':');
-
-        // Generate unique lambda name
-        static int lambdaCount = 0;
-        std::string lambdaName = "__lambda_" + std::to_string(lambdaCount++);
-
-        // Register lambda as a function
-        FnInfo fni{lambdaName, 0, params, false, false, DType::Int};
-        size_t idx = fns.size();
-        fns.push_back(fni);
-        fnIndex[lambdaName] = idx;
-
-        // Skip lambda body in main code
-        emit_u64(JMP);
-        auto skipAt = tell();
-        emit_u64(0);
-
-        // Lambda function entry point
-        auto entry = tell();
-        fns[idx].entry = entry;
-
-        // Compile expression body
-        Expr();
-        emit_u64(RET);
-
-        auto after = tell();
-        patchJump(skipAt, after);
-
-        // Push lambda name as a value
-        emit_u64(PUSH_S);
-        emit_str(lambdaName);
-
-        Expect(P,';');
-        continue;
-      }
-
-      // error
-      else if(StartsWithKW(P, "throw")){
-        P.i+=5;SkipWS(P);
-        if (Match(P, '"') || Match(P, '\'')) {
-          std::string msg = ParseQuoted(P);
-          Expect(P, ';');
-          throw ScriptError(msg);
-        } else {
-          std::string errorType = ParseIdent(P);
-          if (errorType == "ValueError") {
-            std::string msg = "ValueError: Invalid value or type";
-            if (Match(P, '(')) {
-              msg = ParseQuoted(P);
-              Expect(P, ')');
-            }
-            Expect(P, ';');
-            throw ScriptError(msg);
-          } else if (errorType == "TypeError") {
-            std::string msg = "TypeError: Type mismatch";
-            if (Match(P, '(')) {
-              msg = ParseQuoted(P);
-              Expect(P, ')');
-            }
-            Expect(P, ';');
-            throw ScriptError(msg);
-          } else if (errorType == "IndexError") {
-            std::string msg = "IndexError: Index out of range";
-            if (Match(P, '(')) {
-              msg = ParseQuoted(P);
-              Expect(P, ')');
-            }
-            Expect(P, ';');
-            throw ScriptError(msg);
-          } else if (errorType == "NameError") {
-            std::string msg = "NameError: Name not found";
-            if (Match(P, '(')) {
-              msg = ParseQuoted(P);
-              Expect(P, ')');
-            }
-            Expect(P, ';');
-            throw ScriptError(msg);
-          } else {
-            MINIS_ERR("{P4}", *src, p.i, "error type unknown");
-          }
-        }
-      }
-
       // let [type|auto] name = expr ;
-      else if(StartsWithKW(P,"let")){
-        P.i+=3; SkipWS(P);
+      else if(toks[i].k == Tok::Let){
+        ++i; // consume 'let'
 
         // Parse modifiers
-        SkipWS(P);
-        bool isConst = StartsWithKW(P,"const") ? (P.i+=5, true) : false;
-        SkipWS(P);
+        bool isConst = false;
+        bool isStatic = false;
+        bool DList = false;
 
-        bool isStatic = StartsWithKW(P,"static") ? (P.i+=6, true) : false;
-        SkipWS(P);
+        if (i < toks.size() && toks[i].k == Tok::Const) {
+          isConst = true;
+          ++i;
+        }
+
+        if (i < toks.size() && toks[i].k == Tok::Static) {
+          isStatic = true;
+          ++i;
+        }
+
+        if (i < toks.size() && toks[i].k == Tok::Dead) {
+          DList = true;
+          ++i;
+        }
+
         // Parse type
-
         bool isAuto=false;
         bool isNull=false;
-        DType T=DType::Int;
+        Type T=Type::Int;
 
-        if(StartsWithKW(P,"auto")) {
+        if(i < toks.size() && toks[i].k == Tok::Auto) {
           isAuto=true;
-          P.i+=4;
+          ++i;
         }
-        else if(StartsWithKW(P,"null")) {
+        else if(i < toks.size() && toks[i].k == Tok::Null) {
           isNull=true;
-          P.i+=4;
+          ++i;
         }
-        else {
-          T=parseType();
-        }
-
-        SkipWS(P);
-
-        if(isOwned && isShared) {
-          MINIS_ERR("{S3}", *src, p.i, "variable cannot be both owned and shared");
+        else if (i < toks.size() && (toks[i].k == Tok::Int || toks[i].k == Tok::Float ||
+                 toks[i].k == Tok::Bool || toks[i].k == Tok::Str ||
+                 toks[i].k == Tok::List)) {
+          T = parseType();
+          ++i;
         }
 
-        SkipWS(P);
-        auto name = ParseIdent(P);
-        SkipWS(P);
+        if (i >= toks.size() || toks[i].k != Tok::Id) {
+          ERR(getCurrentLoc(), "Expected variable name");
+          continue;
+        }
+        CString name = toks[i].text;
+        ++i;
 
         // Handle initialization
-        if(!isNull) {
-          Expect(P,'=');
+        if(!isNull && !DList) {
+          if (i >= toks.size() || toks[i].k != Tok::Equal) {
+            ERR(getCurrentLoc(), "Expected '=' for variable initialization");
+            continue;
+          }
+          ++i; // consume '='
           Expr();
-          Expect(P,';');
-        } else {
-          Expect(P,';');
         }
+
+        // Expect semicolon
+        if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
 
         // Encode modifiers in high bits of type byte
         uint64_t type_byte = isAuto ? 0xEC : (uint8_t)T;
         if(isConst) type_byte |= 0x100;
         if(isStatic) type_byte |= 0x200;
 
-        emit_u64(DECL);
-        emit_str(name);
-        emit_u64(type_byte);
+        this->emit_u64(DECL);
+        this->emit_str(name);
+        this->emit_u64(type_byte);
         continue;
       }
 
       // assignment or call;
-      else if(!AtEnd(P)&&IsIdStart((*P.src)[P.i])){
-        size_t save=P.i; auto name=ParseIdent(P); SkipWS(P);
-        if(!AtEnd(P) && (*P.src)[P.i]=='='){
-          ++P.i; Expr(); Expect(P,';'); emit_u64(SET); emit_str(name); continue;
+      else if(i < toks.size() && toks[i].k == Tok::Id){
+        size_t save=i;
+        CString name = toks[i].text;
+        ++i;
+
+        if(i < toks.size() && toks[i].k == Tok::Equal){
+          ++i; // consume '='
+          Expr();
+          // Expect semicolon
+          if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+          this->emit_u64(SET);
+          this->emit_str(name);
+          continue;
         } else {
-          P.i=save; Expr(); Expect(P,';'); emit_u64(POP); continue;
+          i=save;
+          Expr();
+          // Expect semicolon
+          if (i < toks.size() && toks[i].k == Tok::Semicolon) ++i;
+          this->emit_u64(POP);
+          continue;
         }
       }
 
-      MINIS_ERR("{P1}", *src, P.i, "unexpected token");
-      SkipWS(P);
+      else {
+        ERR(getCurrentLoc(), "unexpected token");
+        ++i; // Skip problematic token
+      }
     }
   }
 
-  inline void StmtSeqOne(){ SkipWS(P); if(AtEnd(P)||(*P.src)[P.i]=='}') return; StmtSeq(); }
+  inline void StmtSeqOne(){
+    if(i >= toks.size() || toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) return; 
+    StmtSeq();
+  }
+
   inline void StmtSeqUntilBrace(){
     size_t depth=1;
-    while(!AtEnd(P)){
-      if((*P.src)[P.i]=='}'){ --depth; ++P.i; if(depth==0) break; continue; }
-      if((*P.src)[P.i]=='{'){ ++depth; ++P.i; continue; }
+    while(i < toks.size()){
+      if(toks[i].k == Tok::RBrace){
+        --depth;
+        ++i;
+        if(depth==0) break;
+        continue;
+      }
+      if(toks[i].k == Tok::LBrace){
+        ++depth;
+        ++i;
+        continue;
+      }
       StmtSeqOne();
     }
   }
 
   inline void writeHeaderPlaceholders(){
     fwrite("AVOCADO1",1,8,out);
-    /*write_str(out, "0");     // compiler version
-    write_str(out, "0");     // VM version*/
     table_offset_pos = (uint64_t)ftell(out); write_u64(out, 0); // table_offset
     fn_count_pos     = (uint64_t)ftell(out); write_u64(out, 0); // count
     entry_main_pos   = (uint64_t)ftell(out); write_u64(out, 0); // entry_main
   }
 
-  inline void compileToFile(const std::string& outPath) {
-    struct VarInfo {
-      bool isOwned = true;
-      bool isMutable = true;
-      bool isUsed = false;
-      bool isRef = false;
-      std::string owner;
-      size_t lastUsed = 0;
-      DType type;
-      Value initialValue;
-    };
-
-    struct Scope {
-      std::unordered_map<std::string, VarInfo> vars;
-      std::vector<std::string> deadVars;
-    };
-
-    std::vector<Scope> scopeStack;
-    std::unordered_map<std::string, std::string> varRenames;
-    std::vector<std::string> warnings;
-
-    auto generateName = [](size_t n) -> std::string {
-      std::string result;
-      while (n >= 26) {
-        result = (char)('a' + (n % 26)) + result;
-        n = n/26 - 1;
-      }
-      result = (char)('a' + n) + result;
-      return result;
-    };
-
-    auto trackVarUse = [&](const std::string& name, size_t pos) {
-      for (auto& scope : scopeStack) {
-        if (auto it = scope.vars.find(name); it != scope.vars.end()) {
-          it->second.isUsed = true;
-          it->second.lastUsed = pos;
-          if (it->second.isRef && !it->second.isMutable) {
-            warnings.push_back("Warning: Immutable reference '" + name + "' used");
-          }
-          break;
-        }
-      }
-    };
-
+  inline void compileToFile(const CString& outPath) {
     out = fopen(outPath.c_str(), "wb+");
     if (!out) throw std::runtime_error("cannot open bytecode file for write");
 
     writeHeaderPlaceholders();
 
-    // Initialize main scope
-    scopeStack.push_back(Scope{});
-
     // Top-level as __main__
-    FnInfo mainFn{"__main__", 0, {}, true, false, DType::Int};
+    CompilerFnInfo mainFn{cstr("__main__"), 0, {}, true, false, Type::Int};
     fns.push_back(mainFn);
-    fnIndex["__main__"] = 0;
+    fnIndex[cstr("__main__")] = 0;
     fns[0].entry = tell();
 
-    P.i = 0;
-    SkipWS(P);
-
-    // First pass: Collect variable usage info
-    auto startPos = P.i;
-
-    // Remove dead code and apply optimizations
-    for (const auto& scope : scopeStack) {
-      for (const auto& [name, info] : scope.vars) {
-        if (!info.isUsed) {
-          warnings.push_back("Warning: Unused variable '" + name + "'");
-          // Remove related instructions
-        }
-        if (info.isOwned && !info.owner.empty()) {
-          warnings.push_back("Warning: Variable '" + name + "' moved but never used after move");
-        }
-      }
-    }
-
-    // Generate minimal variable names
-    size_t nameCounter = 0;
-    for (const auto& scope : scopeStack) {
-      for (const auto& [name, info] : scope.vars) {
-        if (info.isUsed) {
-          varRenames[name] = generateName(nameCounter++);
-        }
-      }
-    }
-
-    // Second pass: Generate optimized bytecode
-    P.i = startPos;
+    i = 0;
     StmtSeq();
-    emit_u64(HALT);
+    this->emit_u64(HALT);
 
-    // Write function table with optimized names
+    // Write function table
     uint64_t tbl_off = tell();
     uint64_t count = (uint64_t)fns.size();
 
     for (auto& fn : fns) {
-      write_str(out, varRenames[fn.name]);
+      write_str(out, fn.name.c_str());
       write_u64(out, fn.entry);
       write_u8(out, fn.isVoid ? 1 : 0);
       write_u8(out, fn.typed ? 1 : 0);
       write_u8(out, (uint8_t)fn.ret);
       write_u64(out, (uint64_t)fn.params.size());
       for (const auto& s : fn.params) {
-        write_str(out, varRenames[s]);
+        write_str(out, s.c_str());
       }
     }
 
@@ -870,11 +851,6 @@ struct Compiler {
     write_u64(out, count);
     seek(entry_main_pos);
     write_u64(out, fns[0].entry);
-
-    // Print warnings
-    for (const auto& warning : warnings) {
-      std::cerr << warning << std::endl;
-    }
 
     fclose(out);
     out = nullptr;
