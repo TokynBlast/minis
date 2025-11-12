@@ -69,10 +69,10 @@ public:
         try {
           return std::stoll(s.c_str());
         } catch (...) {
-          // Build error message using ostringstream
           std::ostringstream msg;
           msg << "cannot convert string '" << s.c_str() << "' to int (must be a valid number)";
-          ERR(locate((size_t)loc), msg.str());
+          std::string msg_str = msg.str();
+          ERR(locate((size_t)loc), msg_str.c_str());
           return 0;
         }
       }
@@ -101,7 +101,8 @@ public:
         } catch (...) {
           std::ostringstream msg;
           msg << "cannot convert string '" << s.c_str() << "' to float";
-          ERR(locate((size_t)loc), msg.str());
+          std::string msg_str = msg.str();
+          ERR(locate((size_t)loc), msg_str.c_str());  // Fix: Use .c_str()
           return 0.0;
         }
       }
@@ -122,7 +123,8 @@ public:
         if (s == "false") return false;
         std::ostringstream msg;
         msg << "cannot convert string '" << s.c_str() << "' to bool";
-        ERR(locate((size_t)loc), msg.str());
+        std::string msg_str = msg.str();
+        ERR(locate((size_t)loc), msg_str.c_str());
         return false;
       }
       case Type::List:  return !std::get<std::vector<Value>>(v).empty();
