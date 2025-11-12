@@ -1,23 +1,22 @@
 #pragma once
-#include <string>
 
-namespace minis {
-  enum class DType : unsigned char {
+namespace lang {
+  enum class Type : unsigned char {
     Int=0, Float=1, Bool=2, Str=3, List=4, Null=5,
     ERR=250, UNKNOWN=251
   };
 
-  inline const char* TypeName(DType t){
+  inline const char* TypeName(Type t){
     switch(t){
-      case DType::Int: return "int";
-      case DType::Float: return "float";
-      case DType::Bool: return "bool";
-      case DType::Str: return "str";
-      case DType::List: return "list";
-      case DType::Null: return "null";
+      case Type::Int: return "int";
+      case Type::Float: return "float";
+      case Type::Bool: return "bool";
+      case Type::Str: return "str";
+      case Type::List: return "list";
+      case Type::Null: return "null";
 
-      case DType::ERR: return "<ERR>";
-      case DType::UNKNOWN: return "<UNKNOWN>";
+      case Type::ERR: return "<ERR>";
+      case Type::UNKNOWN: return "<UNKNOWN>";
     }
     return "?";
   }
