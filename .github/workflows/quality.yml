@@ -1,0 +1,158 @@
+name: Build and Test Compile
+
+on:
+  push:
+    branches: '**'
+  pull_request:
+    branches: '**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release, Debug]
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - os: windows-latest
+            cc: cl
+            cxx: cl
+          - os: macos-latest
+            cc: clang
+            cxx: clang++
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up build environment
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+
+    - name: Build project
+      run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+    - name: Verify binaries exist
+      shell: bash
+      run: |
+        echo "📦 Checking built binaries..."
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ls -la build/Release/ || ls -la build/Debug/ || ls -la build/
+        else
+          ls -la build/
+        fi
+        echo "✅ Build completed successfully"
+
+  build-variants:
+    name: Build variants
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        variant: [
+          { name: "compiler-only", flag: "-DCO=ON" },
+          { name: "runner-only", flag: "-DRO=ON" },
+          { name: "both", flag: "" }
+        ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up build environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+
+    - name: Build ${{ matrix.variant.name }}
+      run: |
+        echo "🔧 Building variant: ${{ matrix.variant.name }}"
+        cmake -B build-${{ matrix.variant.name }} \
+          -DCMAKE_BUILD_TYPE=Release \
+          ${{ matrix.variant.flag }}
+        cmake --build build-${{ matrix.variant.name }} --parallel
+
+    - name: Verify variant build
+      run: |
+        echo "✅ Variant ${{ matrix.variant.name }} compiled successfully"
+        ls -la build-${{ matrix.variant.name }}/
+
+  lint:
+    name: Code quality checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check code formatting
+      run: |
+        echo "🔍 Checking for common issues..."
+
+        # Check for trailing whitespace
+        if grep -r '[[:space:]]$' --include="*.cpp" --include="*.hpp" src/ include/ 2>/dev/null; then
+          echo "❌ Found trailing whitespace"
+          exit 1
+        else
+          echo "✅ No trailing whitespace"
+        fi
+
+        # Check for tabs (if you prefer spaces)
+        if grep -r $'\t' --include="*.cpp" --include="*.hpp" src/ include/ 2>/dev/null; then
+          echo "⚠️  Found tabs (consider using spaces)"
+        else
+          echo "✅ No tabs found"
+        fi
+
+        # Check for TODO/FIXME comments
+        TODO_COUNT=$(grep -r "TODO\|FIXME" --include="*.cpp" --include="*.hpp" src/ include/ 2>/dev/null | wc -l)
+        echo "📝 Found $TODO_COUNT TODO/FIXME comments"
+
+    - name: Check CMake syntax
+      run: |
+        sudo apt-get update && sudo apt-get install -y cmake
+        cmake -B build-lint -DCMAKE_BUILD_TYPE=Release
+        echo "✅ CMake configuration is valid"
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build, build-variants, lint]
+    if: always()
+
+    steps:
+    - name: Summary
+      run: |
+        echo "🎉 Build Summary:"
+        echo "✅ Multi-platform builds: ${{ needs.build.result }}"
+        echo "✅ Build variants: ${{ needs.build-variants.result }}"
+        echo "✅ Code quality: ${{ needs.lint.result }}"
+
+        if [ "${{ needs.build.result }}" = "success" ] && \
+           [ "${{ needs.build-variants.result }}" = "success" ] && \
+           [ "${{ needs.lint.result }}" = "success" ]; then
+          echo "🚀 All checks passed! Code is ready."
+        else
+          echo "❌ Some checks failed. Please review the logs."
+          exit 1
+        fi
