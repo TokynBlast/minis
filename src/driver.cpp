@@ -42,4 +42,32 @@ namespace lang {
     vm.load(bcPath);
     vm.run();
   }
+
+  CString ReadFile(const CString& path) {
+    std::ifstream file(path.c_str());
+    if (!file.is_open()) {
+      throw std::runtime_error("Could not open file: " + std::string(path.c_str()));
+    }
+
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return CString(buffer.str().c_str());
+  }
+
+  void CompileToFile(const CString& input_path, const CString& source, const CString& output_path) {
+    std::vector<Token> tokens = tokenize(source, input_path.c_str());
+
+    Compiler compiler(tokens);
+    compiler.compileToFile(output_path);
+  }
+
+  void run(const CString& bytecode_path) {
+    VM vm;
+    vm.load(bytecode_path);
+    vm.run();
+  }
+
+  std::vector<Token> tokenize(const CString& source, const char* filename) {
+    return tokenize(source.c_str(), source.size(), filename);
+  }
 }
