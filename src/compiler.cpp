@@ -9,6 +9,7 @@
 #include "../include/cursor.hpp"
 #include "../include/sso.hpp"
 #include "../include/compiler.hpp"
+#include "../include/lexer.hpp"
 
 using namespace lang;
 
@@ -850,3 +851,13 @@ struct Compiler {
     out = nullptr;
   }
 };
+
+namespace lang {
+  void CompileToFile(const CString& srcName, const CString& srcText, const CString& outPath) {
+    // Tokenize the source text
+    auto tokens = tokenize(srcText, srcName.c_str());
+
+    Compiler C(tokens);
+    C.compileToFile(outPath);
+  }
+}
