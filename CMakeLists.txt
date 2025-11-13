@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(minis LANGUAGES CXX)
 
 # --- compiler flags ---
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -30,21 +30,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # --- core sources shared by both ---
 set(MINIS_CORE_SOURCES
   src/context.cpp
-  src/diagnostics.cpp
-  src/types.cpp
-  src/value.cpp
-  src/env.cpp
-  src/io.cpp
-  src/token.cpp
   src/lexer.cpp
-  src/ast.cpp
-  src/parser.cpp
-  src/sema.cpp
-  src/fold.cpp
-  src/codegen.cpp
-  src/bytecode.cpp
-  src/builtins.cpp
   src/driver.cpp
+  src/compiler.cpp
+  src/process.cpp
+  src/ugly.cpp
+  src/config.cpp
 )
 
 # --- vm sources (runner) ---
@@ -62,19 +53,25 @@ target_compile_options(minis_vm PRIVATE -Wall -Wextra -Wno-unused-parameter)
 
 # --- executables ---
 if(BUILD_COMPILER)
-  add_executable(cmin src/main_compiler.cpp)
+  add_executable(cmin compileFront.cpp)
   target_link_libraries(cmin PRIVATE minis_core)
+  target_compile_options(cmin PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
 if(BUILD_RUNNER)
-  add_executable(mrun src/main_runner.cpp)
+  add_executable(mrun runFront.cpp)
   target_link_libraries(mrun PRIVATE minis_core minis_vm)
+  target_compile_options(mrun PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
-# --- install (optional) ---
-install(TARGETS cmin mrun
-  RUNTIME DESTINATION bin
-)
+# --- conditional install ---
+if(BUILD_COMPILER AND BUILD_RUNNER)
+  install(TARGETS cmin mrun RUNTIME DESTINATION bin)
+elseif(BUILD_COMPILER)
+  install(TARGETS cmin RUNTIME DESTINATION bin)
+elseif(BUILD_RUNNER)
+  install(TARGETS mrun RUNTIME DESTINATION bin)
+endif()
 
 message(STATUS "Build compiler: ${BUILD_COMPILER}")
 message(STATUS "Build runner  : ${BUILD_RUNNER}")
