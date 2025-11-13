@@ -163,8 +163,11 @@ namespace lang {
         ERR(L, "len requires exactly one argument");
       }
       const auto& arg = args[0];
-      if (arg.t == Type::List) return Value::I(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
-      else if (arg.t == Type::Str) return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
+      if (arg.t == Type::List) {
+        return Value::I(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
+      } else if (arg.t == Type::Str) {
+        return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
+      }
       Loc L = locate(p.i);
       ERR(L, "len requires a list or string");
       return Value::N();
@@ -270,7 +273,7 @@ namespace lang {
       Loc L = locate((size_t)loc);
       CString msg = CString("unknown variable '") + n.c_str() + "'";
       ERR(L, msg.c_str());
-      static Var dummy{Type::Null, Value::N()};
+      static const Var dummy{Type::Null, Value::N()};
       return dummy;
     }
 
@@ -383,6 +386,7 @@ namespace lang {
         CString msg = CString("stack operation failed: ") + e.what();
         ERR(L, msg.c_str());
       }
+      return Value::N();
     }
 
     inline void push(Value v) { stack.push_back(std::move(v)); }
