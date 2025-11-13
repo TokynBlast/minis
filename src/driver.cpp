@@ -42,7 +42,7 @@ namespace lang {
       Source S{srcName, srcText};
       ctx().src = &S;
 
-      auto tokens = tokenize(srcText.c_str(), srcName.c_str());
+      auto tokens = tokenize(srcText, srcName.c_str());
 
       Compiler C(tokens);
       C.compileToFile(out);
