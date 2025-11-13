@@ -1,9 +1,9 @@
 #pragma once
-#include "sso.hpp"
 #include <memory>
+#include "sso.hpp"
 
 namespace lang {
-  struct VMEngine; // Forward declaration
+  struct VMEngine;
 
   class VM {
   private:
@@ -13,15 +13,10 @@ namespace lang {
     VM();
     ~VM();
 
-    VM(const VM&) = delete;
-    VM& operator=(const VM&) = delete;
-
-    VM(VM&&) = default;
-    VM& operator=(VM&&) = default;
-
     void load(const CString& path);
     void run();
   };
+
 
   void run(const CString& path);
 }
