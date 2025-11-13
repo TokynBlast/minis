@@ -15,10 +15,11 @@
 namespace lang {
 
   bool IsIdStart(char c) {
-    return isalpha(static_cast<unsigned char>(c)) || c == '_';
+    return std::isalpha(static_cast<unsigned char>(c)) || c == '_';
   }
+
   bool IsIdCont(char c) {
-    return isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
   }
 
   static const std::unordered_map<CString, Tok> keywords = {
@@ -67,7 +68,9 @@ namespace lang {
     tok.set_pos_from_offsets(start_off, start_off, src);
   }
 
-  std::vector<Token> tokenize(const char* src, size_t src_len, const char* filename) {
+  std::vector<Token> tokenize(const CString& source, const char* filename) {
+    const char* src = source.c_str();
+    size_t src_len = source.size();
     std::vector<Token> out;
     out.reserve(src_len / 3 + 8);
     size_t i = 0;
@@ -83,7 +86,6 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + s, i - s));
         set_pos_from_offsets(out.back(), s, src);
         auto m = std::make_shared<Stmt>();
-        // Removed: m->s = i - s;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -96,7 +98,6 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
-        // Removed: m->s = i - start;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -114,7 +115,6 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
-        // Removed: m->s = i - start;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -157,7 +157,6 @@ namespace lang {
         set_pos_from_offsets(out.back(), start, src);
         if (k != Tok::Id) {
           auto m = std::make_shared<Stmt>();
-          // Removed: m->s = i - start;  // No longer needed
           out.back().attach_meta(m);
         }
         continue;
@@ -239,7 +238,6 @@ namespace lang {
           continue;
         }
       }
-      // Create single character string for known tokens
       char single_char_str[2] = {ch, '\0'};
       out.emplace_back(tk, CString(single_char_str));
       set_pos_from_offsets(out.back(), start, src);
@@ -250,25 +248,19 @@ namespace lang {
     return out;
   }
 
-  // Overload for const char* with filename
-  std::vector<Token> tokenize(const char* src, const char* filename) {
-    return tokenize(src, strlen(src), filename);
-  }
-
   // Lexer class implementation
-  lang::Lexer::Lexer(const CString& s) {
+  Lexer::Lexer(const CString& s) {
     src = &s;
     i = 0;
     n = s.size();
     out.clear();
   }
 
-  void lang::Lexer::run() {
-    out = tokenize(src->c_str(), src->size(), nullptr);
+  void Lexer::run() {
+    out = tokenize(*src, nullptr);
   }
 
-  Tok lang::Lexer::keyword(const CString& t) {
+  Tok Lexer::keyword(const CString& t) {
     return keywordTok(t);
   }
-
 }
