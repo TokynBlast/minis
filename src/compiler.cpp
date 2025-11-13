@@ -8,6 +8,7 @@
 #include "../include/bytecode.hpp"
 #include "../include/cursor.hpp"
 #include "../include/sso.hpp"
+#include "../include/compiler.hpp"
 
 using namespace lang;
 
