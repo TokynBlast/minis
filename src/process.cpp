@@ -94,7 +94,6 @@ static std::vector<Token> lex(const char* src, size_t src_len){
   return ts;
 }
 
-
 static lang::PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   auto toks = lex(raw, raw_len);
 
@@ -106,20 +105,14 @@ static lang::PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   CString minified(minified_result);
   std::free(minified_result);
 
-  // Create position mapping
   std::vector<size_t> posmap(minified.size(), 0);
-
   return { std::move(minified), std::move(posmap) };
 }
 
-static lang::PreprocResult uglify(const CString& raw) {
-  return uglify_tokens(raw.c_str(), raw.size());
-}
 
-// Public API
 namespace lang {
   CString process(const CString& source) {
-    lang::PreprocResult result = uglify(source);
+    lang::PreprocResult result = uglify_tokens(source.c_str(), source.size());
     return std::move(result.out);
   }
 }
