@@ -102,7 +102,7 @@ namespace lang {
   struct TokStream {
     const std::vector<Token>* t = nullptr;
     size_t i = 0;
-    const char* filename = nullptr; // Store filename for error reporting
+    const char* filename = nullptr; // Store actual filename
 
     explicit TokStream(const std::vector<Token>& v, const char* fname = nullptr)
       : t(&v), i(0), filename(fname) {}
@@ -125,7 +125,7 @@ namespace lang {
         loc.src = filename ? filename : "<unknown>"; // Use actual filename
         ERR(loc, msg);
       }
-      return (*t)[i++]; // advance even on error
+      return (*t)[i++];
     }
   };
 }
