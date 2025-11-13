@@ -6,6 +6,5 @@
 #include "value.hpp"
 
 namespace lang {
-  struct CompilerFnInfo;
   struct Compiler;
 }
