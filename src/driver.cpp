@@ -43,16 +43,19 @@ namespace lang {
     return result;
   }
 
-  void CompileToFile(const CString& srcName,
-                     const CString& srcText,
-                     const CString& out) {
+  void CompileToFile(const CString& srcName, const CString& srcText, const CString& out) {
+    try {
       Source S{srcName, srcText};
       ctx().src = &S;
 
-      auto tokens = tokenize(srcText, srcName.c_str());
+      lang::CompileToFile(srcName, srcText, out);
 
-      Compiler C(tokens);
-      C.compileToFile(out);
+      std::cout << "Compilation successful: " << out.c_str() << std::endl;
+
+    } catch (const std::runtime_error& e) {
+      std::cerr << "Compilation failed: " << e.what() << std::endl;
+      throw;
+    }
   }
 
   void run(const CString& bcPath){
