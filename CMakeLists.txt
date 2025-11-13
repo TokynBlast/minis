@@ -9,9 +9,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # --- user switches ---
-# Default: build BOTH compiler and runner
-option(RO "Runner Only" OFF)   # use: -DRO=ON
-option(CO "Compiler Only" OFF) # use: -DCO=ON
+option(RO "Runner Only" OFF)
+option(CO "Compiler Only" OFF)
 
 set(BUILD_COMPILER ON)
 set(BUILD_RUNNER   ON)
@@ -31,11 +30,16 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 set(MINIS_CORE_SOURCES
   src/context.cpp
   src/lexer.cpp
-  src/driver.cpp
   src/compiler.cpp
   src/process.cpp
   src/ugly.cpp
   src/config.cpp
+  src/err.cpp
+)
+
+# --- compiler-only sources ---
+set(MINIS_COMPILER_SOURCES
+  src/driver.cpp
 )
 
 # --- vm sources (runner) ---
@@ -47,14 +51,22 @@ set(MINIS_VM_SOURCES
 add_library(minis_core STATIC ${MINIS_CORE_SOURCES})
 target_compile_options(minis_core PRIVATE -Wall -Wextra -Wno-unused-parameter)
 
-add_library(minis_vm STATIC ${MINIS_VM_SOURCES})
-target_link_libraries(minis_vm PRIVATE minis_core)
-target_compile_options(minis_vm PRIVATE -Wall -Wextra -Wno-unused-parameter)
+if(BUILD_COMPILER)
+  add_library(minis_compiler STATIC ${MINIS_COMPILER_SOURCES})
+  target_link_libraries(minis_compiler PRIVATE minis_core)
+  target_compile_options(minis_compiler PRIVATE -Wall -Wextra -Wno-unused-parameter)
+endif()
+
+if(BUILD_RUNNER)
+  add_library(minis_vm STATIC ${MINIS_VM_SOURCES})
+  target_link_libraries(minis_vm PRIVATE minis_core)
+  target_compile_options(minis_vm PRIVATE -Wall -Wextra -Wno-unused-parameter)
+endif()
 
 # --- executables ---
 if(BUILD_COMPILER)
   add_executable(cmin compileFront.cpp)
-  target_link_libraries(cmin PRIVATE minis_core)
+  target_link_libraries(cmin PRIVATE minis_core minis_compiler)
   target_compile_options(cmin PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
