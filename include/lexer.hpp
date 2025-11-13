@@ -3,21 +3,19 @@
 #include "token.hpp"
 #include "sso.hpp"
 
-namespace lang{
-  struct Lexer{
+namespace lang {
+
+class Lexer {
+private:
     const CString* src = nullptr;
     size_t i = 0, n = 0;
     std::vector<Token> out;
+
+public:
     explicit Lexer(const CString& s);
     void run();
+    const std::vector<Token>& tokens() const { return out; }
     static Tok keyword(const CString& t);
-    private:
-      void ws();
-      void sym();
-      void num();
-      void str();
-      void id();
-  };
+};
 
-  std::vector<Token> tokenize(const CString& src, const char* filename = nullptr);
 }
