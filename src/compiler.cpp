@@ -782,7 +782,7 @@ struct Compiler {
   }
 
   inline void StmtSeqOne(){
-    if(i >= toks.size() || toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) return; 
+    if(i >= toks.size() || toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) return;
     StmtSeq();
   }
 

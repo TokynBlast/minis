@@ -83,7 +83,7 @@ static char* rebuild(const std::vector<Token>& ts, const MinifierPlan& plan) {
       case Tok::Sym:
         chunk = t.text.c_str();
         break;
-      default: 
+      default:
         break;
     }
 

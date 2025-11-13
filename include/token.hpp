@@ -105,7 +105,7 @@ namespace lang {
     size_t i = 0;
     const char* filename = nullptr; // Store filename for error reporting
 
-    explicit TokStream(const std::vector<Token>& v, const char* fname = nullptr) 
+    explicit TokStream(const std::vector<Token>& v, const char* fname = nullptr)
       : t(&v), i(0), filename(fname) {}
 
     const Token& peek(size_t k = 0) const {

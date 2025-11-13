@@ -20,7 +20,7 @@ namespace lang {
     std::ifstream in(path.c_str(), std::ios::binary);
     if(!in) throw std::invalid_argument(CString("cannot open ") + path);
 
-    std::string content((std::istreambuf_iterator<char>(in)), 
+    std::string content((std::istreambuf_iterator<char>(in)),
                         std::istreambuf_iterator<char>());
     return CString(content.c_str());
   }
