@@ -18,7 +18,7 @@
 #include "../include/sso.hpp"
 
 namespace lang {
-  inline CString ReadFile(const CString& path){
+  CString ReadFile(const CString& path) {
     FILE* f = fopen(path.c_str(), "rb");
     if (!f) {
       std::cerr << "Error: cannot open file " << path.c_str() << std::endl;
@@ -28,9 +28,16 @@ namespace lang {
     size_t sz = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);
     char* buf = (char*)malloc(sz + 1);
-    fread(buf, 1, sz, f);
-    buf[sz] = '\0';
+    if (buf) {
+      if (fread(buf, 1, sz, f) != sz) {
+        std::cerr << "Error reading file " << path.c_str() << std::endl;
+      }
+      buf[sz] = '\0';
+    }
     fclose(f);
+
+    if (!buf) return CString("");
+
     CString result(buf);
     free(buf);
     return result;
