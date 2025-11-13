@@ -95,14 +95,7 @@ static std::vector<Token> lex(const char* src, size_t src_len){
 }
 
 
-
-// Preprocessing and minification
-struct PreprocResult {
-  CString out;
-  std::vector<size_t> posmap;
-};
-
-static PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
+static lang::PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   auto toks = lex(raw, raw_len);
 
   char* minified_result = lang::Ugly(toks);
@@ -119,14 +112,14 @@ static PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   return { std::move(minified), std::move(posmap) };
 }
 
-static PreprocResult uglify(const CString& raw) {
+static lang::PreprocResult uglify(const CString& raw) {
   return uglify_tokens(raw.c_str(), raw.size());
 }
 
 // Public API
 namespace lang {
   CString process(const CString& source) {
-    PreprocResult result = uglify(source);
+    lang::PreprocResult result = uglify(source);
     return std::move(result.out);
   }
 }
