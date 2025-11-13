@@ -1,163 +1,82 @@
-Avocado IDE + Minis — Quick Guide (v2)
-
-This guide matches the current C++ Avocado shell and the Minis scripting engine.
+Minis — Quick Guide (v3)
 
 ==================================================
-1) What Avocado Is
+1) What Minis Is
 ==================================================
-Avocado is a tiny text-mode IDE that edits a file named `code` in memory and
-lets you run it using the built-in Minis language.
-
-- You edit by entering:  <line-number><space><text>
-  Example:  1 let str msg = "Hello, Avocado!";
-            2 print(msg);
-            3 print("\n");
-
-- Your current buffer is always mirrored to the file `code` on disk.
+Minis is a programming language with low-level and high-level programming in mind.
+You can do things in a low-level way, and in a high-level way!
 
 
 ==================================================
-2) Avocado Shell Commands
+1) Minis Language
 ==================================================
-Type these at the prompt (default is `> `):
-
-- show
-  Clear the screen and print your buffer with line numbers.
-
-- run
-  Execute the current `code` file with Minis. Any errors include a caret/line
-  diagnostic and a stack trace when available.
-
-- save <filename>
-  Save your current buffer to a new file.
-
-- load <filename>
-  Load a file into the editor buffer and into `code`.
-
-- replace OLD || NEW
-  Replace the first occurrence of OLD on each line with NEW in the buffer.
-  (Mind the exact delimiter: space, two pipes, space)
-
-- info
-  Print two stats: number of lines and file size in bytes for `code`.
-
-- clear mem [-y]
-  Wipe the editor buffer and truncate the `code` file. Use -y to skip prompt.
-
-- cls
-  Clear the terminal screen.
-
-- help
-  Prints the contents of `guide.txt` (this document, if you save it as such).
-
-- exit
-  Quit Avocado.
-
-
-==================================================
-3) Editing Basics
-==================================================
-- To create or change a line: <N> <text>
-    12 let int x = 42;
-  Lines are 1-based. Blank lines can be created implicitly when skipping numbers.
-
-- Your buffer is persisted to disk after every edit and after most commands.
-
-
-==================================================
-4) Preferences (file: pref)
-==================================================
-The `pref` file is plain text with two lines:
-  1) Prompt string (e.g., `> `)
-  2) First-run flag: True/False (controls the one-time “type 'help'” message)
-
-Example `pref`:
-> 
-True
-
-
-==================================================
-5) Minis Language (the part you write inside `code`)
-==================================================
-5.1) Statement endings
+1.1) Statement endings
 - End declarations, assignments, and function calls with a semicolon `;`.
   Examples:
     let int a = 1;
-    a = a + 1;
+    a++;
     print("hi\n");
 
-5.2) Types
-- int, float, bool, str, list
+1.2) Types
+- int, float, bool, str, list, null
 
-5.3) Variables
-- `let <type|auto> name = <expr>;`
+1.3) Variables
+- `let <type> name = <expr>;`
   Examples:
-    let int   n   = 5;
-    let float pi  = 3.14159;
-    let bool  ok  = true;
-    let str   who = "world";
-    let list  xs  = [1, 2, 3];
-    let auto  k   = 99;        // 'auto' takes the type of the expression
+    let int n = 5;
+    let float pi = 3.14159;
+    let bool ok = true;
+    let str who = "world";
+    let list xs = [1, 2, 3];
+    let auto k = 99;
 
 - Reassignment:
     n = n + 1;
 
-5.4) Expressions & Operators
-- Arithmetic: +, -, *, /   (numbers only; '+' also concatenates strings)
-- Equality:   ==, !=
+1.4) Heap & Stack Allocation
+- `let <type> name [<buffer size>] = <expr>;`
+  Examples:
+    let int n [1] = 5;
+    let float pi [8] = 3.14159;
+    let bool ok [1] = true;
+    let str who [5] = "world";
+    let list xs [3] = [1, 2, 3];
+    let auto k [2] = 99;
+
+1.5) Expressions & Operators
+- Arithmetic: +, -, *, /, **, //
+- Equality:   ==, !=, >=, <=, <, >
 - Grouping:   ( ... )
 
-5.5) Literals
+1.6) Literals
 - Numbers:    12, 3.5, -7
 - Strings:    "text", 'text' (supports \n, \t, \r, \", \', \\)
 - Booleans:   true, false
 - Lists:      [1, 2, "a", true]
 
-5.6) Control Flow
-- if (cond) { ... } [else { ... }]
+1.7) Control Flow
+- if (cond) { ... } [elif (cond) { ... }] [else { ... }]
 - while (cond) { ... }
 
-5.7) Built-in Functions (case-sensitive)
-- print(str)          : Print text (no automatic newline).
+1.8) Built-in Functions (case-sensitive)
+- print(str)          : Print text.
 - cls()               : Clear the screen.
 - color(code)         : Set ANSI color (e.g., 31=red, 32=green, 0=reset).
 - pos(x, y)           : Move cursor to column x, row y (1-based).
 - sleep(ms)           : Pause for milliseconds.
-- RandInt(lo, hi)     : Random int in [lo..hi].
+- RandInt(low, high)  : Random int in [low..high].
 - abs(n)              : Absolute value of integer n.
-- timeMs()            : Monotonic milliseconds since program start.
 - len(x)              : Length of a string or list.
-- Exit()              : Immediately stop the Minis program.
-
-Lists API:
-- ListGet(list, idx)  : Get element by index; returns 0 if out of range.
-- ListSet(list, idx, value)
-- ListPush(list, value)
-
-Terminal input & mouse (raw mode):
-- Input.Start() / Input.Stop()     : Enter/leave raw terminal mode.
-- Input.EnableMouse() / Input.DisableMouse()
-- Input.Key() -> str               : Returns a key or escape-sequence; "" if none.
-- Input.Mouse() -> [kind, btn, x, y]
-    kind is "down" | "up" | "drag"; btn is 1..3; x,y are 1-based.
-
-Window sizing:
-- Size(rows, cols)     : Attempt to set terminal size (best-effort).
-
-5.8) Notes
-- There is a parsing keyword `import "name";` that currently parses and discards.
-  It does not load files; use Avocado’s `load` command to open files into the
-  editor.
 
 
 ==================================================
-6) Examples
+2) Examples
 ==================================================
-6.1) Hello, World
+2.1) Hello, World
   1 let str who = "world";
   2 print("Hello, " + who + "!\n");
 
-6.2) Dice Roller
+2.2) Dice Roller
   1 let int rolls = 5;
   2 while (rolls > 0) {
   3   let int d = RandInt(1, 6);
@@ -165,13 +84,13 @@ Window sizing:
   5   rolls = rolls - 1;
   6 }
 
-6.3) Lists
+2.3) Lists
   1 let list xs = [1, 2, 3];
   2 ListPush(xs, 4);
   3 print("len=" + len(xs) + "\n");
   4 print("xs[0]=" + ListGet(xs, 0) + "\n");
 
-6.4) Keyboard Echo (ESC to quit)
+2.4) Keyboard Echo (ESC to quit)
   1 let bool running = true;
   2 Input.Start();
   3 print("Press keys (ESC to quit)\\n");
@@ -185,41 +104,9 @@ Window sizing:
  11 }
  12 Input.Stop();
 
-6.5) Cursor + Color
+2.5) Cursor + Color
   1 cls();
   2 color(32);           // green
   3 pos(10, 5);          // col 10, row 5
   4 print("Avocado!\n");
   5 color(0);            // reset
-
-
-==================================================
-7) Troubleshooting
-==================================================
-- “Unrecognized command.” (in Avocado shell)
-  You typed something the shell doesn’t know. Use shell commands from §2 or
-  line-numbered edits from §3.
-
-- Minis error with caret/line highlight
-  Fix the syntax at the exact location; the engine also shows a call stack
-  when available.
-
-- Nothing prints
-  Remember `print(...)` does not add a newline automatically. Use "\\n" where
-  needed.
-
-
-==================================================
-8) Old vs New Command Names (reference)
-==================================================
-Old guide name      ->  Current
--------------------------------------------
-export <file>       ->  save <file>
-quit                ->  exit
-clr scr             ->  cls
-stats               ->  info
-import <file>       ->  load <file>
-rep                 ->  replace OLD || NEW
-write               ->  (use Minis print("..."); inside code)
-graphics            ->  (no separate graphics mode in shell)
-clr mem             ->  clear mem  (same intent; supports -y)
