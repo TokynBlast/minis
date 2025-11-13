@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
 #include "../include/io.hpp"
@@ -24,7 +25,6 @@ namespace lang {
   struct Pos { size_t i = 0; const CString* src = nullptr; };
   inline const Source* src = nullptr;
 
-  // helper: build a Loc from the current global Source pointer and a raw index
   static inline Loc locate(size_t index) {
     if (src) return src->loc(index);
     Loc L; L.line = 1; L.col = 1; L.src = "";
@@ -129,6 +129,7 @@ namespace lang {
       }
       Loc L = locate(p.i);
       ERR(L, "reverse requires list or string argument");
+      return Value::N();
     }},
     {"sum", [](std::vector<Value>& args) {
       if (args.size() != 1 || args[0].t != Type::List) {
@@ -166,7 +167,70 @@ namespace lang {
       else if (arg.t == Type::Str) return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
       Loc L = locate(p.i);
       ERR(L, "len requires a list or string");
+      return Value::N();
     }},
+    // FIXME: For this to work, we need to allow for:
+    // let list x, y = split([1,2],",")
+    /*{"split", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 2 || args[0].t != Type::Str) {
+        Loc L = locate(p.i);
+        ERR(L, "split requires string or list and delimiter arguments");
+      }
+      const char* str = args[0].AsStr();
+      const char* delim = args[1].AsStr();
+
+      std::vector<Value> result;
+      std::string s(str);
+      std::string delimiter(delim);
+
+      size_t pos = 0;
+      while ((pos = s.find(delimiter)) != std::string::npos) {
+        result.push_back(Value::S(s.substr(0, pos).c_str()));
+        s.erase(0, pos + delimiter.length());
+      }
+      result.push_back(Value::S(s.c_str()));
+
+      return Value::L(result);
+    }},*/
+    {"upper", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1 || args[0].t != Type::Str) {
+        Loc L = locate(p.i);
+        ERR(L, "upper requires one string argument");
+      }
+      const char* str = args[0].AsStr();
+      std::string result(str);
+      std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+      return Value::S(result.c_str());
+    }},
+    {"lower", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1 || args[0].t != Type::Str) {
+        Loc L = locate(p.i);
+        ERR(L, "lower requires one string argument");
+      }
+      const char* str = args[0].AsStr();
+      std::string result(str);
+      std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+      return Value::S(result.c_str());
+    }},
+    {"round", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "round requires exactly one argument");
+      }
+      return Value::I((long long)std::round(args[0].AsFloat(p.i)));
+    }},
+    {"random", [](std::vector<Value>& args) -> Value {
+      if (args.size() > 1) {
+        Loc L = locate(p.i);
+        ERR(L, "random takes 0 or 1 arguments");
+      }
+      if (args.empty()) {
+        return Value::F((double)rand() / RAND_MAX);
+      } else {
+        long long max_val = args[0].AsInt(p.i);
+        return Value::I(rand() % max_val);
+      }
+    }}
   };
 
   void Coerce(Type t, Value& v) {
@@ -252,7 +316,6 @@ namespace lang {
     }
   };
 
-  // Forward declare the class to fix the incomplete type issue
   struct VMEngine {
     Env globals;
 
@@ -643,7 +706,6 @@ namespace lang {
     }
   };
 
-  // VM class implementation - now VMEngine is complete
   VM::VM() = default;
   VM::~VM() = default;
 
