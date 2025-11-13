@@ -67,7 +67,7 @@ namespace lang {
     tok.set_pos_from_offsets(start_off, start_off, src);
   }
 
-  std::vector<Token> tokenize(const char* src, size_t src_len, const char* /*filename*/) {
+  std::vector<Token> tokenize(const char* src, size_t src_len, const char* filename) {
     std::vector<Token> out;
     out.reserve(src_len / 3 + 8);
     size_t i = 0;
@@ -225,16 +225,14 @@ namespace lang {
         case '"': tk = Tok::DQuote; break;
         case '=': tk = Tok::Equal; break;
         default: {
-          // Create single character string using pointer + length constructor
           char single_char_str[2] = {ch, '\0'};
           out.emplace_back(Tok::WS, CString(single_char_str));
           set_pos_from_offsets(out.back(), start, src);
           Loc loc;
-          loc.src = "";
+          loc.src = filename ? filename : "<unknown>";
           loc.line = static_cast<int>(out.back().line);
           loc.col  = static_cast<int>(out.back().col);
 
-          // Create error message using string concatenation
           char char_str[2] = {ch, '\0'};
           CString msg = CString("unknown char '") + char_str + "'";
           WARN(loc, msg.c_str());
