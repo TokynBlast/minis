@@ -259,7 +259,7 @@ inline CString operator+(const char* left, const CString& right) {
   return CString(left) + right;
 }
 
-} // namespace lang
+}
 
 // Add hash specialization for std::unordered_map compatibility
 namespace std {
@@ -274,7 +274,7 @@ namespace std {
   template<>
   struct equal_to<lang::CString> {
     bool operator()(const lang::CString& lhs, const lang::CString& rhs) const {
-      return lhs == rhs;  // Uses your existing operator==
+      return lhs == rhs;
     }
   };
 }
