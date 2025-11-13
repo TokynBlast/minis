@@ -10,7 +10,7 @@
 #include "../include/ast.hpp"
 
 using namespace lang;
-
+/*
 static std::vector<Token> lex(const char* src, size_t src_len){
   std::vector<Token> ts;
   ts.reserve(src_len/3);
@@ -93,7 +93,7 @@ static std::vector<Token> lex(const char* src, size_t src_len){
   ts.back().set_pos_from_offsets(src_len, src_len, CString(src, src_len));
   return ts;
 }
-
+*/
 
 namespace lang {
   CString process(const CString& source) {
