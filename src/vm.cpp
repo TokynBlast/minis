@@ -267,11 +267,11 @@ namespace lang {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
       if (parent) return parent->Get(n, loc);
-      {
-        Loc L = locate((size_t)loc);
-        CString msg = CString("unknown variable '") + n.c_str() + "'";
-        ERR(L, msg.c_str());
-      }
+      Loc L = locate((size_t)loc);
+      CString msg = CString("unknown variable '") + n.c_str() + "'";
+      ERR(L, msg.c_str());
+      static Var dummy{Type::Null, Value::N()};
+      return dummy;
     }
 
     void Declare(const CString& n, Type t, Value v, auto loc) {
