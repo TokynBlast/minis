@@ -83,7 +83,7 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + s, i - s));
         set_pos_from_offsets(out.back(), s, src);
         auto m = std::make_shared<Stmt>();
-        m->s = i - s;
+        // Removed: m->s = i - s;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -96,7 +96,7 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
-        m->s = i - start;
+        // Removed: m->s = i - start;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -114,7 +114,7 @@ namespace lang {
         out.emplace_back(Tok::WS, CString(src + start, i - start));
         set_pos_from_offsets(out.back(), start, src);
         auto m = std::make_shared<Stmt>();
-        m->s = i - start;
+        // Removed: m->s = i - start;  // No longer needed
         out.back().attach_meta(m);
         continue;
       }
@@ -157,7 +157,7 @@ namespace lang {
         set_pos_from_offsets(out.back(), start, src);
         if (k != Tok::Id) {
           auto m = std::make_shared<Stmt>();
-          m->s = i - start;
+          // Removed: m->s = i - start;  // No longer needed
           out.back().attach_meta(m);
         }
         continue;
@@ -223,7 +223,7 @@ namespace lang {
         case '.': tk = Tok::Dot; break;
         case '\'': tk = Tok::SQuote; break;
         case '"': tk = Tok::DQuote; break;
-        case '=': tk = Tok::Equal; break;  // Added missing assign token
+        case '=': tk = Tok::Equal; break;
         default: {
           // Create single character string using pointer + length constructor
           char single_char_str[2] = {ch, '\0'};
