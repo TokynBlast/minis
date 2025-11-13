@@ -6,6 +6,7 @@
 #include "../include/context.hpp"
 #include "../include/ugly.hpp"
 #include "../include/sso.hpp"
+#include "../include/process.hpp"
 
 using namespace lang;
 
