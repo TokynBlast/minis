@@ -11,7 +11,6 @@
 
 namespace lang {
 
-  // Token kinds (keep as-is so callers can do t.k == Tok::LParen etc).
   enum class Tok {
     // Types
     Id, Num, Str, Int, Float, Bool, List, Null, Auto,
@@ -52,14 +51,13 @@ namespace lang {
   struct Token {
     Tok k;
     CString text;
-    std::uint32_t line = 1; // 1-based
-    std::uint32_t col  = 1; // 1-based
+    std::uint32_t line = 1;
+    std::uint32_t col  = 1;
     std::shared_ptr<Stmt> meta;
 
     Token(Tok kind, const char* txt = "")
       : k(kind), text(txt), line(1), col(1), meta(nullptr) {}
 
-    // Compute start line/col from raw byte offset start_off (do NOT store end).
     void set_pos_from_offsets(size_t start_off, size_t /*end_off*/, const CString& src) {
       std::uint32_t ln = 1, cl = 1;
       size_t n = std::min(start_off, src.size());
@@ -102,7 +100,7 @@ namespace lang {
   struct TokStream {
     const std::vector<Token>* t = nullptr;
     size_t i = 0;
-    const char* filename = nullptr; // Store actual filename
+    const char* filename = nullptr;
 
     explicit TokStream(const std::vector<Token>& v, const char* fname = nullptr)
       : t(&v), i(0), filename(fname) {}
@@ -122,10 +120,12 @@ namespace lang {
         Loc loc;
         loc.line = static_cast<int>(peek().line);
         loc.col  = static_cast<int>(peek().col);
-        loc.src = filename ? filename : "<unknown>"; // Use actual filename
+        loc.src = filename ? filename : "<unknown>";
         ERR(loc, msg);
       }
       return (*t)[i++];
     }
   };
+
+  std::vector<Token> tokenize(const CString& source, const char* filename = nullptr);
 }
