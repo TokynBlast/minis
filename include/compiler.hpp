@@ -8,4 +8,7 @@
 namespace lang {
   struct Compiler;
   void CompileToFile(const CString& srcName, const CString& srcText, const CString& outPath);
+  struct CompilerInterface {
+    static void compile(const std::vector<Token>& tokens, const CString& outPath);
+  };
 }
