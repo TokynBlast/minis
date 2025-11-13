@@ -112,7 +112,7 @@ namespace lang {
         [](const Value& a, const Value& b) { return a.AsFloat(0) < b.AsFloat(0); });
       return Value::L(list);
     }},
-    {"reverse", [](std::vector<Value>& args) {
+    {"reverse", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
         Loc L = locate(p.i);
         ERR(L, "reverse requires one argument");
@@ -127,10 +127,8 @@ namespace lang {
         std::reverse(reversed.begin(), reversed.end());
         return Value::S(CString(reversed.c_str()));
       }
-      {
-        Loc L = locate(p.i);
-        ERR(L, "reverse requires list or string argument");
-      }
+      Loc L = locate(p.i);
+      ERR(L, "reverse requires list or string argument");
     }},
     {"sum", [](std::vector<Value>& args) {
       if (args.size() != 1 || args[0].t != Type::List) {
@@ -158,7 +156,7 @@ namespace lang {
       }
       return Value::S("");
     }},
-    {"len", [](std::vector<Value>& args) {
+    {"len", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
         Loc L = locate(p.i);
         ERR(L, "len requires exactly one argument");
@@ -166,10 +164,8 @@ namespace lang {
       const auto& arg = args[0];
       if (arg.t == Type::List) return Value::I(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
       else if (arg.t == Type::Str) return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
-      {
-        Loc L = locate(p.i);
-        ERR(L, "len requires a list or string");
-      }
+      Loc L = locate(p.i);
+      ERR(L, "len requires a list or string");
     }},
   };
 
