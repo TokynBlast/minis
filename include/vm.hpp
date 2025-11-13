@@ -1,13 +1,19 @@
 #pragma once
+#include <memory>
 #include "sso.hpp"
 
 namespace lang {
+  struct VMEngine; // Forward declaration
+
   class VM {
+  private:
+    std::unique_ptr<VMEngine> engine;
   public:
     VM() = default;
-    // load bytecode file (path)
     void load(const CString& path);
-    // run the loaded bytecode
     void run();
   };
+
+  // Global function for easy usage
+  void run(const CString& path);
 }

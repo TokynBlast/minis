@@ -246,7 +246,7 @@ namespace lang {
 
   };
 
-  struct VM {
+  struct VMEngine {
     Env globals;
 
     FILE* f=nullptr; uint64_t ip=0, table_off=0, code_end=0;
@@ -268,7 +268,7 @@ namespace lang {
     struct FnMeta{ uint64_t entry; bool isVoid; bool typed; Type ret; std::vector<CString> params; };
     std::unordered_map<CString, FnMeta> fnEntry;
 
-    explicit VM() {}
+    explicit VMEngine() {}
 
       inline void jump(uint64_t target){ ip = target; fseek(f,(long)ip,SEEK_SET); }
       inline uint8_t  fetch8(){ uint8_t v; fread(&v,1,1,f); ++ip; return v; }
@@ -620,12 +620,20 @@ namespace lang {
   };
 
   void VM::load(const CString& path) {
-    // minimal: record path or load bytecode later
-    (void)path;
+    engine = std::make_unique<VMEngine>();
+    engine->load(path);
   }
 
   void VM::run() {
-    // minimal runner (replace with real VM work)
-    std::cout << "VM running (stub)\n";
+    if (engine) {
+      engine->run();
+    }
+  }
+
+  // Global run function
+  void run(const CString& path) {
+    VMEngine vm;
+    vm.load(path);
+    vm.run();
   }
 }
