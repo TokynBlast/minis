@@ -1,6 +1,6 @@
 #pragma once
-#include <memory>
 #include "sso.hpp"
+#include <memory>
 
 namespace lang {
   struct VMEngine; // Forward declaration
@@ -8,12 +8,20 @@ namespace lang {
   class VM {
   private:
     std::unique_ptr<VMEngine> engine;
+
   public:
-    VM() = default;
+    VM();
+    ~VM();
+
+    VM(const VM&) = delete;
+    VM& operator=(const VM&) = delete;
+
+    VM(VM&&) = default;
+    VM& operator=(VM&&) = default;
+
     void load(const CString& path);
     void run();
   };
 
-  // Global function for easy usage
   void run(const CString& path);
 }
