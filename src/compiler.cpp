@@ -12,48 +12,27 @@
 
 using namespace lang;
 
-struct CompilerFnInfo{
-  CString name;
-  uint64_t entry=0;
-  std::vector<CString> params;
-  bool isVoid=false;
-  bool typed=false;
-  Type ret=Type::Int;
-  bool isInline=false;
-  bool tail=false;
-  std::vector<std::pair<Type, std::optional<Value>>> param_types;
-};
+Compiler::Compiler(const std::vector<Token>& tokens): toks(tokens) {}
 
-struct Compiler {
-  FILE* out=nullptr;
-  std::vector<CompilerFnInfo> fns;
-  std::unordered_map<CString,size_t> fnIndex;
-  bool inWith;
+const Token& Compiler::t() const { return toks[i]; }
 
-  std::vector<Token> toks;
-  size_t i = 0; // Current token index (replacing Pos)
-
-  Compiler(const std::vector<Token>& tokens): toks(tokens) {}
-
-  const Token& t() const { return toks[i]; } // Helper to get current token
-
-  inline Loc getCurrentLoc() const {
-    if (i >= toks.size()) {
-      // End of file case - use last token or default
-      if (toks.empty()) {
-        return Loc{1, 1, "SRCNAME"}; // line, col, filename
-      }
-      const auto& lastTok = toks.back();
-      return Loc{static_cast<int>(lastTok.line), static_cast<int>(lastTok.col), "SRCNAME"};
+inline Loc Compiler::getCurrentLoc() const {
+  if (i >= toks.size()) {
+    // End of file case - use last token or default
+    if (toks.empty()) {
+      return Loc{1, 1, "SRCNAME"}; // line, col, filename
     }
-
-    const auto& tok = toks[i];
-    return Loc{static_cast<int>(tok.line), static_cast<int>(tok.col), "SRCNAME"};
+    const auto& lastTok = toks.back();
+    return Loc{static_cast<int>(lastTok.line), static_cast<int>(lastTok.col), "SRCNAME"};
   }
+
+  const auto& tok = toks[i];
+  return Loc{static_cast<int>(tok.line), static_cast<int>(tok.col), "SRCNAME"};
+}
 
   uint64_t table_offset_pos=0, fn_count_pos=0, entry_main_pos=0;
 
-  inline Type parseType(){
+  inline Type Compiler::parseType(){
     if(t().k==Tok::Int) return Type::Int;
     if(t().k==Tok::Float) return Type::Float;
     if(t().k==Tok::Bool) return Type::Bool;
@@ -64,19 +43,19 @@ struct Compiler {
     return Type::Int;
   }
 
-  inline void emit_u8 (uint8_t v){ write_u8(out,v); }
-  inline void emit_u64(uint64_t v){ write_u64(out,v); }
-  inline void emit_s64(int64_t v){ write_s64(out,v); }
-  inline void emit_f64(double v){ write_f64(out,v); }
-  inline void emit_str(const CString& s){ write_str(out, s.c_str()); }
-  inline uint64_t tell() const { return (uint64_t)ftell(out); }
-  inline void seek(uint64_t pos){ fseek(out,(long)pos,SEEK_SET); }
+inline void Compiler::emit_u8 (uint8_t v){ write_u8(out,v); }
+inline void Compiler::emit_u64(uint64_t v){ write_u64(out,v); }
+inline void Compiler::emit_s64(int64_t v){ write_s64(out,v); }
+inline void Compiler::emit_f64(double v){ write_f64(out,v); }
+inline void Compiler::emit_str(const CString& s){ write_str(out, s.c_str()); }
+inline uint64_t Compiler::tell() const { return (uint64_t)ftell(out); }
+inline void Compiler::seek(uint64_t pos){ fseek(out,(long)pos,SEEK_SET); }
 
-  // --- Expressions -> bytecode ---
-  inline void Expr(){ LogicOr(); }
-  inline void LogicOr(){ LogicAnd(); while(t().k ==Tok::OR){ ++i; LogicAnd(); this->emit_u64(OR); } }
-  inline void LogicAnd(){ Equality(); while(t().k==Tok::AND){ ++i; Equality(); this->emit_u64(AND); } }
-  inline void Equality(){
+// --- Expressions -> bytecode ---
+inline void Compiler::Expr(){ LogicOr(); }
+inline void Compiler::LogicOr(){ LogicAnd(); while(t().k ==Tok::OR){ ++i; LogicAnd(); this->emit_u64(OR); } }
+inline void Compiler::LogicAnd(){ Equality(); while(t().k==Tok::AND){ ++i; Equality(); this->emit_u64(AND); } }
+inline void Compiler::Equality(){
     AddSub();
     while(true){
       if(t().k==Tok::EQ){ ++i; AddSub(); this->emit_u64(EQ); }
@@ -89,7 +68,7 @@ struct Compiler {
     }
   }
 
-  inline void AddSub(){
+  inline void Compiler::AddSub(){
     MulDiv();
     while(true){
       if(t().k==Tok::Plus){ ++i; MulDiv(); this->emit_u64(ADD); } // +
@@ -98,7 +77,7 @@ struct Compiler {
     }
   }
 
-  inline void MulDiv(){
+  inline void Compiler::MulDiv(){
     Factor();
     while(true){
       if(t().k==Tok::Star){ ++i; Factor(); this->emit_u64(MUL); } // *
@@ -107,7 +86,7 @@ struct Compiler {
     }
   }
 
-  inline void ListLit() {
+  inline void Compiler::ListLit() {
     size_t count = 0;
 
     if (t().k == Tok::RBracket) {
@@ -163,7 +142,7 @@ struct Compiler {
     this->emit_u64(count);
   }
 
-  inline void Factor() {
+  inline void Compiler::Factor() {
     if (i >= toks.size()) return;
 
     switch (t().k) {
@@ -273,9 +252,9 @@ struct Compiler {
   };
   std::vector<LoopLbl> loopStack;
 
-  inline void patchJump(uint64_t at, uint64_t target){ auto cur=tell(); seek(at); write_u64(out,target); seek(cur); }
+  inline void Compiler::patchJump(uint64_t at, uint64_t target){ auto cur=tell(); seek(at); write_u64(out,target); seek(cur); }
 
-  inline void StmtSeq(){
+  inline void Compiler::StmtSeq(){
     while(i < toks.size()){
       if (toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) break;
 
@@ -776,12 +755,12 @@ struct Compiler {
     }
   }
 
-  inline void StmtSeqOne(){
+  inline void Compiler::StmtSeqOne(){
     if(i >= toks.size() || toks[i].k == Tok::RBrace || toks[i].k == Tok::Eof) return;
     StmtSeq();
   }
 
-  inline void StmtSeqUntilBrace(){
+  inline void Compiler::StmtSeqUntilBrace(){
     size_t depth=1;
     while(i < toks.size()){
       if(toks[i].k == Tok::RBrace){
@@ -799,14 +778,14 @@ struct Compiler {
     }
   }
 
-  inline void writeHeaderPlaceholders(){
+  inline void Compiler::writeHeaderPlaceholders(){
     fwrite("AVOCADO1",1,8,out);
     table_offset_pos = (uint64_t)ftell(out); write_u64(out, 0); // table_offset
     fn_count_pos     = (uint64_t)ftell(out); write_u64(out, 0); // count
     entry_main_pos   = (uint64_t)ftell(out); write_u64(out, 0); // entry_main
   }
 
-  inline void compileToFile(const CString& outPath) {
+  inline void Compiler::compileToFile(const CString& outPath) {
     out = fopen(outPath.c_str(), "wb+");
     if (!out) throw std::runtime_error("cannot open bytecode file for write");
 
@@ -847,7 +826,6 @@ struct Compiler {
     seek(entry_main_pos);
     write_u64(out, fns[0].entry);
 
-    fclose(out);
-    out = nullptr;
-  }
-};
+  fclose(out);
+  out = nullptr;
+}
