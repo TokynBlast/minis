@@ -42,8 +42,10 @@ inline Loc BuildLocEnd(const Token& t, const Stmt* meta, const char* filename) {
     }
   }
 
-  std::size_t extent = meta->s;
-  if (extent == 0) return loc;
+  std::size_t extent = 0;
+  if (const WS* ws = dynamic_cast<const WS*>(meta)) {
+    extent = ws->s;
+  }
   loc.col = static_cast<uint32_t>(t.col + (extent > 0 ? extent - 1 : 0));
   return loc;
 }
