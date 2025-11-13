@@ -7,6 +7,7 @@
 #include "../include/ugly.hpp"
 #include "../include/sso.hpp"
 #include "../include/process.hpp"
+#include "../include/ast.hpp"
 
 using namespace lang;
 
@@ -93,9 +94,7 @@ static std::vector<Token> lex(const char* src, size_t src_len){
   return ts;
 }
 
-static std::vector<Token> lex(const CString& src){
-  return lex(src.c_str(), src.size());
-}
+
 
 // Preprocessing and minification
 struct PreprocResult {
@@ -118,78 +117,6 @@ static PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
   std::vector<size_t> posmap(minified.size(), 0);
 
   return { std::move(minified), std::move(posmap) };
-}
-
-static PreprocResult uglify_fallback(const char* raw, size_t raw_len) {
-  auto toks = lex(raw, raw_len);
-
-  // Fallback empty mapping
-  std::unordered_map<CString, CString> id2mini;
-
-  // Rebuild with spacing logic
-  auto need_space = [](const Token& a, const Token& b)->bool{
-    auto idlike = [](Tok k){ return k==Tok::Id || k==Tok::Num; };
-    return idlike(a.k) && idlike(b.k);
-  };
-
-  std::vector<char> buffer;
-  buffer.reserve(raw_len/2);
-  std::vector<size_t> posmap;
-  posmap.reserve(raw_len/2);
-
-  Token prev{Tok::Sym,""};
-  for (const Token& t : toks) {
-    if (t.k == Tok::Eof) break;
-    if (t.k == Tok::WS) continue;
-
-    const char* chunk_data;
-    size_t chunk_len;
-    CString mapped_id;
-
-    switch (t.k) {
-      case Tok::Id: {
-        auto it = id2mini.find(t.text);
-        if (it != id2mini.end()) {
-          mapped_id = it->second;
-          chunk_data = mapped_id.c_str();
-          chunk_len = mapped_id.size();
-        } else {
-          chunk_data = t.text.c_str();
-          chunk_len = t.text.size();
-        }
-      } break;
-      case Tok::Str:
-      case Tok::Num:
-      case Tok::Sym:
-        chunk_data = t.text.c_str();
-        chunk_len = t.text.size();
-        break;
-      default:
-        chunk_data = "";
-        chunk_len = 0;
-        break;
-    }
-
-    // Add space if needed
-    if (!buffer.empty() && need_space(prev, t)) {
-      buffer.push_back(' ');
-      posmap.push_back(posmap.empty() ? 0 : posmap.back());
-    }
-
-    // Copy chunk
-    for (size_t k = 0; k < chunk_len; ++k) {
-      buffer.push_back(chunk_data[k]);
-      posmap.push_back(posmap.empty() ? k : posmap.back() + (k == 0 ? 1 : 0));
-    }
-
-    prev = t;
-  }
-
-  // Convert buffer to CString
-  buffer.push_back('\0');
-  CString out(buffer.data());
-
-  return { std::move(out), std::move(posmap) };
 }
 
 static PreprocResult uglify(const CString& raw) {
