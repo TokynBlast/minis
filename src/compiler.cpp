@@ -31,15 +31,14 @@ struct Compiler {
   bool inWith;
 
   std::vector<Token> toks;
-  size_t i = 0; // Current token index (replacing Pos)
+  size_t i = 0;
 
   Compiler(const std::vector<Token>& tokens): toks(tokens) {}
 
-  const Token& t() const { return toks[i]; } // Helper to get current token
+  const Token& t() const { return toks[i]; }
 
   inline Loc getCurrentLoc() const {
     if (i >= toks.size()) {
-      // End of file case - use last token or default
       if (toks.empty()) {
         return Loc{1, 1, "SRCNAME"}; // line, col, filename
       }
