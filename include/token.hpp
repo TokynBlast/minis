@@ -80,7 +80,7 @@ namespace lang {
     static const std::unordered_map<const char*, size_t> ks = {
       {"if", 2}, {"elif", 4}, {"else", 4}, {"while", 5},
       {"func", 4}, {"let", 3}, {"return", 6}, {"break", 5},
-      {"cont", 8}, {"yield", 5}, {"conv", 4}, {"with", 4},
+      {"cont", 8}, {"yield", 5}, {"conv", 4}, {"with", 4}, {"and", 3},
       {"import", 6}, {"try", 3}, {"except", 6}, {"finally", 7},
       {"lambda", 6}, {"inline", 6}, {"tail", 4}, {"void", 4},
       {"const", 5}, {"static", 6}, {"exit", 4}, {"del", 3},
@@ -95,7 +95,6 @@ namespace lang {
     size_t ks = KWSize(t.text.c_str());
     if (ks == 0) return;
     auto m = std::make_shared<Stmt>();
-    m->s = ks;
     t.attach_meta(m);
   }
 
