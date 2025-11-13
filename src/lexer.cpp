@@ -14,10 +14,10 @@
 
 namespace lang {
 
-  static bool IsIdStart(char c) {
+  bool IsIdStart(char c) {
     return isalpha(static_cast<unsigned char>(c)) || c == '_';
   }
-  static bool IsIdCont(char c) {
+  bool IsIdCont(char c) {
     return isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.';
   }
 
