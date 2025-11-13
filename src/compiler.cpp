@@ -508,7 +508,7 @@ struct Compiler {
         ++i; // consume '{'
 
         // Register function
-        CompilerFnInfo fni{fname, 0, params, isVoid, typed, rt};
+        CompilerFnInfo fni{fname, 0, params, isVoid, typed, rt, false, false, {}};
         fni.isInline = isInline;
         fni.tail = tailCallOpt;
         fni.param_types = paramTypes;
@@ -813,7 +813,7 @@ struct Compiler {
     writeHeaderPlaceholders();
 
     // Top-level as __main__
-    CompilerFnInfo mainFn{cstr("__main__"), 0, {}, true, false, Type::Int};
+    CompilerFnInfo mainFn{cstr("__main__"), 0, {}, true, false, Type::Int, false, false, {}};
     fns.push_back(mainFn);
     fnIndex[cstr("__main__")] = 0;
     fns[0].entry = tell();
