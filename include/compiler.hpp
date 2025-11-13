@@ -7,4 +7,5 @@
 
 namespace lang {
   struct Compiler;
+  void CompileToFile(const CString& srcName, const CString& srcText, const CString& outPath);
 }
