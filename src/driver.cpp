@@ -1,4 +1,6 @@
+#include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <stdexcept>
 #include <vector>
@@ -17,12 +19,21 @@
 
 namespace lang {
   inline CString ReadFile(const CString& path){
-    std::ifstream in(path.c_str(), std::ios::binary);
-    if(!in) throw std::invalid_argument(CString("cannot open ") + path);
-
-    std::string content((std::istreambuf_iterator<char>(in)),
-                        std::istreambuf_iterator<char>());
-    return CString(content.c_str());
+    FILE* f = fopen(path.c_str(), "rb");
+    if (!f) {
+      std::cerr << "Error: cannot open file " << path.c_str() << std::endl;
+      return CString("");
+    }
+    fseek(f, 0, SEEK_END);
+    size_t sz = (size_t)ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char* buf = (char*)malloc(sz + 1);
+    fread(buf, 1, sz, f);
+    buf[sz] = '\0';
+    fclose(f);
+    CString result(buf);
+    free(buf);
+    return result;
   }
 
   void CompileToFile(const CString& srcName,
@@ -41,33 +52,5 @@ namespace lang {
     VM vm;
     vm.load(bcPath);
     vm.run();
-  }
-
-  CString ReadFile(const CString& path) {
-    std::ifstream file(path.c_str());
-    if (!file.is_open()) {
-      throw std::runtime_error("Could not open file: " + std::string(path.c_str()));
-    }
-
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    return CString(buffer.str().c_str());
-  }
-
-  void CompileToFile(const CString& input_path, const CString& source, const CString& output_path) {
-    std::vector<Token> tokens = tokenize(source, input_path.c_str());
-
-    Compiler compiler(tokens);
-    compiler.compileToFile(output_path);
-  }
-
-  void run(const CString& bytecode_path) {
-    VM vm;
-    vm.load(bytecode_path);
-    vm.run();
-  }
-
-  std::vector<Token> tokenize(const CString& source, const char* filename) {
-    return tokenize(source.c_str(), filename);
   }
 }
