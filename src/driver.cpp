@@ -68,6 +68,6 @@ namespace lang {
   }
 
   std::vector<Token> tokenize(const CString& source, const char* filename) {
-    return tokenize(source.c_str(), source.size(), filename);
+    return tokenize(source.c_str(), filename);
   }
 }
