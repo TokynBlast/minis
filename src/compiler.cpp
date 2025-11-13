@@ -36,9 +36,6 @@ struct Compiler {
 
   const Token& t() const { return toks[i]; } // Helper to get current token
 
-  // Helper to get current location from token
-  // Token contains: line, col from AST
-  // AST will have WS nodes with space count for accurate positioning
   inline Loc getCurrentLoc() const {
     if (i >= toks.size()) {
       // End of file case - use last token or default
@@ -569,9 +566,6 @@ struct Compiler {
         L.condOff = condOff;
         L.contTarget = condOff;
         this->loopStack.push_back(L);
-
-        // Enforce: at most one 'with' group inside this while
-        bool thisWhileHasWith = false;
 
         StmtSeqUntilBrace();
 
