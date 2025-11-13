@@ -7,7 +7,7 @@
 
 namespace lang{
   struct Param { CString name; Type type = Type::Int; };
-  struct Expr { virtual ~Expr() = default; Type type=Type::UNKNOWN; };
+  struct Expr { virtual ~Expr() = default; Type type=Type::Int; };
   struct Stmt { virtual ~Stmt() = default; size_t s = 0; }; // size :)
   struct ident   : Expr { CString name; };
   struct Call    : Expr { CString fn; std::vector<std::unique_ptr<Expr>> args; };
