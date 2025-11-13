@@ -94,25 +94,18 @@ static std::vector<Token> lex(const char* src, size_t src_len){
   return ts;
 }
 
-static lang::PreprocResult uglify_tokens(const char* raw, size_t raw_len) {
-  auto toks = lex(raw, raw_len);
-
-  char* minified_result = lang::Ugly(toks);
-  if (!minified_result) {
-    return { CString(raw, raw_len), std::vector<size_t>() };
-  }
-
-  CString minified(minified_result);
-  std::free(minified_result);
-
-  std::vector<size_t> posmap(minified.size(), 0);
-  return { std::move(minified), std::move(posmap) };
-}
-
 
 namespace lang {
   CString process(const CString& source) {
-    lang::PreprocResult result = uglify_tokens(source.c_str(), source.size());
-    return std::move(result.out);
+    auto toks = lex(source);
+
+    char* minified_result = lang::Ugly(toks);
+    if (!minified_result) {
+      return source;
+    }
+
+    CString result(minified_result);
+    std::free(minified_result);
+    return result;
   }
 }
