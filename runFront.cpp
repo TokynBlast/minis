@@ -7,13 +7,13 @@
 int main(int argc, char** argv){
   try{
     if(argc<2){
-      std::print("Usage: mrun <program.mi>\n");
+      std::cout << "Usage: mrun <program.mi>\n";
       return 2;
     }
     lang::run(lang::CString(argv[1]));
     return 0;
   }catch(const std::exception& e){
-    std::print("{}\n", e.what());
+    std::cout << e.what() << "\n";
     return 1;
   }
 }
