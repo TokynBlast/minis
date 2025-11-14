@@ -1,37 +1,42 @@
 TODO:
-Add compiler grouping
-Add personal scopes
-     (organizing for compiler & developer)
+
+Garunteed:
 Change ++int to int++
 Add file opening
      + read/write/binary flags
+inline functions
+Make a dev file for making Mini libraries
+  Provide low-level functions such as:
+    The ability to emit bytecode directly
+    Low level keywords
+      Is this even possible?
 
-IDEAS FOR COMPILER:
-var never used; no declare
-var declared -> instantly delted; no declare
-var never changes; pass to where used
-math operation, known variables; do math
-function never used; no include
 
+
+
+Maybe:
+Add compiler grouping
+Add personal scopes
+Folding
+  var never used; no declare
+  var declared -> instantly delted; no declare
+  var never changes; pass to where used
+  math operation, known variables; do math
+  function never used; no include
+
+AOT pre-linking for imports (cache held in ~/.minis/cache/)
+64KB sized packets for custom TCP (delete after use)
+
+More keywords
 for
 class
 as
 in
-from
-repeat
-match
 case
 struct
 enum
 async
 
-AOT pre-linking for imports (cache held in ~/.minis/cache/)
-64KB sized packets for custom TCP (delete after use)
-
 type long long (Instead of int, same purpose as C++)
-
-add inline on functions
-
-Strongly typed; explicit preffered; explicit optional
 
 let file = open("test.txt") ? throw NameError("File missing!") : print(file);

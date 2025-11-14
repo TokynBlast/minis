@@ -172,9 +172,7 @@ namespace lang {
       ERR(L, "len requires a list or string");
       return Value::N();
     }},
-    // FIXME: For this to work, we need to allow for:
-    // let list x, y = split([1,2],",")
-    /*{"split", [](std::vector<Value>& args) -> Value {
+    {"split", [](std::vector<Value>& args) -> Value {
       if (args.size() != 2 || args[0].t != Type::Str) {
         Loc L = locate(p.i);
         ERR(L, "split requires string or list and delimiter arguments");
@@ -194,7 +192,7 @@ namespace lang {
       result.push_back(Value::S(s.c_str()));
 
       return Value::L(result);
-    }},*/
+    }},
     {"upper", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1 || args[0].t != Type::Str) {
         Loc L = locate(p.i);
@@ -394,7 +392,7 @@ namespace lang {
     inline void discard() {
       if (stack.empty()) {
         Loc L = locate((size_t)ip);
-        ERR(L, "stack underflow");
+        ERR(L, "stack underflow; tried to empty an already empty stack");
       }
       stack.pop_back();
     }
@@ -441,7 +439,8 @@ namespace lang {
           case HALT: return;
           case NOP:  break;
 
-          case PUSH_I: { push(Value::I(fetchs64())); } break;
+          // TODO: Make the op codes more human readable
+          case PUSH_I:
           case PUSH_F: { push(Value::F(fetchf64())); } break;
           case PUSH_B: { push(Value::B(fetch8() != 0)); } break;
           case PUSH_S: { auto s = fetchStr(); push(Value::S(std::move(s))); } break;
@@ -616,7 +615,7 @@ namespace lang {
           case OR:  { auto b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) || b.AsBool(p.i))); } break;
 
           case JMP: { auto tgt = fetch64(); jump(tgt); } break;
-          case JF:  { auto tgt = fetch64(); auto v = pop(); if (!v.AsBool(p.i)) jump(tgt); } break;
+          case JF:  { auto tgt = fetch64(); auto v = pop(); if (!v.AsBool(p.i)) jump(tgt); } break; // Jump if false
 
           case YIELD: {
             #ifdef _WIN32
