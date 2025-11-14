@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+#include <print>
 
 #include "../include/driver.hpp"
 #include "../include/context.hpp"
@@ -21,7 +22,7 @@ namespace lang {
   CString ReadFile(const CString& path) {
     FILE* f = fopen(path.c_str(), "rb");
     if (!f) {
-      std::cerr << "Error: cannot open file " << path.c_str() << std::endl;
+      std::print(stderr, "Error: cannot open file {}\n", path.c_str());
       return CString("");
     }
     fseek(f, 0, SEEK_END);
@@ -30,7 +31,7 @@ namespace lang {
     char* buf = (char*)malloc(sz + 1);
     if (buf) {
       if (fread(buf, 1, sz, f) != sz) {
-        std::cerr << "Error reading file " << path.c_str() << std::endl;
+        std::print(stderr, "Error reading file {}\n", path.c_str());
       }
       buf[sz] = '\0';
     }
@@ -48,12 +49,14 @@ namespace lang {
       Source S{srcName, srcText};
       ctx().src = &S;
 
-      lang::CompileToFile(srcName, srcText, out);
+      auto tokens = tokenize(srcText.c_str(), srcText.size());
 
-      std::cout << "Compilation successful: " << out.c_str() << std::endl;
+      CompileToFileImpl(tokens, out);
+
+      std::print("Compilation successful: {}\n", out.c_str());
 
     } catch (const std::runtime_error& e) {
-      std::cerr << "Compilation failed: " << e.what() << std::endl;
+      std::print(stderr, "Compilation failed: {}\n", e.what());
       throw;
     }
   }
