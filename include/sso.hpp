@@ -255,8 +255,8 @@ inline CString cstr(const char* s) {
 }
 
 // Global operators for const char* + CString
-inline CString operator+(const char* left, const CString& right) {
-  return CString(left) + right;
+inline CString operator+(auto left, auto right) {
+  return CString(left) + CString(right);
 }
 
 }
