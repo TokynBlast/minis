@@ -2,9 +2,7 @@
 #include <vector>
 #include "sso.hpp"
 #include "token.hpp"
-#include "types.hpp"
-#include "value.hpp"
 
 namespace lang {
-  void CompileToFile(const CString& srcName, const CString& srcText, const CString& outPath);
+  void CompileToFileImpl(const std::vector<Token>& tokens, const CString& outPath);
 }
