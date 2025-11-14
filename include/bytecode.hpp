@@ -1,6 +1,6 @@
 #pragma once
+#include <cstdint>
 enum Op : std::uint16_t {
-  //CHANGEME: Change IMPORTED_ to IMP_
   IMPORTED_FUNC  = 0x01,
   IMPORTED_LOAD,
   IMPORTED_STORE,
