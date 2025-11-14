@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <iostream>
 
 #include "../include/io.hpp"
 #include "../include/token.hpp"
@@ -857,6 +858,11 @@ namespace lang {
     // Tokenize the source text
     auto tokens = tokenize(srcText, srcName.c_str());
 
+    Compiler C(tokens);
+    C.compileToFile(outPath);
+  }
+
+  void CompileToFileImpl(const std::vector<Token>& tokens, const CString& outPath) {
     Compiler C(tokens);
     C.compileToFile(outPath);
   }
