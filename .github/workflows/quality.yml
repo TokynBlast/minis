@@ -1,3 +1,5 @@
+# This is for making the compiler in C++, it's now in Minis
+"""
 name: Build and Test Compile
 
 on:
@@ -156,3 +158,4 @@ jobs:
           echo "❌ Some checks failed. Please review the logs."
           exit 1
         fi
+"""
