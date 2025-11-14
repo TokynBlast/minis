@@ -231,6 +231,85 @@ namespace lang {
         long long max_val = args[0].AsInt(p.i);
         return Value::I(rand() % max_val);
       }
+    }},
+    
+    // File operations for dev library
+    {"open", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 2) {
+        Loc L = locate(p.i);
+        ERR(L, "open requires filename and mode arguments");
+      }
+      const char* filename = args[0].AsStr();
+      const char* mode = args[1].AsStr();
+      
+      FILE* file = fopen(filename, mode);
+      if (!file) {
+        return Value::I(-1); // Error code
+      }
+      
+      // Store file pointer as integer (simple approach)
+      return Value::I((long long)(uintptr_t)file);
+    }},
+    
+    {"close", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "close requires file handle argument");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      if (file && file != stdin && file != stdout && file != stderr) {
+        fclose(file);
+      }
+      return Value::I(0);
+    }},
+    
+    {"write", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 2) {
+        Loc L = locate(p.i);
+        ERR(L, "write requires file handle and data arguments");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      const char* data = args[1].AsStr();
+      
+      if (!file) return Value::I(-1);
+      
+      size_t written = fwrite(data, 1, strlen(data), file);
+      return Value::I((long long)written);
+    }},
+    
+    {"read", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 2) {
+        Loc L = locate(p.i);
+        ERR(L, "read requires file handle and size arguments");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      long long size = args[1].AsInt(p.i);
+      
+      if (!file || size <= 0) return Value::S("");
+      
+      char* buffer = (char*)malloc(size + 1);
+      size_t bytes_read = fread(buffer, 1, size, file);
+      buffer[bytes_read] = '\0';
+      
+      Value result = Value::S(buffer);
+      free(buffer);
+      return result;
+    }},
+    
+    {"flush", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "flush requires file handle argument");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      if (file) {
+        fflush(file);
+      }
+      return Value::I(0);
     }}
   };
 
@@ -370,7 +449,7 @@ namespace lang {
       try {
         if (stack.empty()) {
           Loc L = locate(p.i);
-          ERR(L, "stack underflow");
+          ERR(L, "stack underflow; tried to pop an empty stack");
         }
         if (stack.back().t == Type::Null) {
           Loc L = locate(p.i);
