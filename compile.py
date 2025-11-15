@@ -140,8 +140,8 @@ class MinisCompiler:
         return name in self.builtins
     
     def load_plugin_manifest(self, module_name):
-        """Load plugin manifest file (.miplugin) for a module"""
-        manifest_file = f"{module_name}.miplugin"
+        """Load plugin manifest file (.plug) for a module"""
+        manifest_file = f"{module_name}.plug"
         if not os.path.exists(manifest_file):
             return False  # Not a plugin, might be regular .mic module
         
