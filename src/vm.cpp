@@ -327,41 +327,6 @@ namespace lang {
       return Value::I(0);
     }},
     
-    {"moveto", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 2 && args.size() != 3) {
-        Loc L = locate(p.i);
-        ERR(L, "moveto requires file handle and offset arguments (optional: whence)");
-      }
-      
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
-      long long offset = args[1].AsInt(p.i);
-      int whence = SEEK_SET; // default: absolute position
-      
-      if (args.size() == 3) {
-        long long w = args[2].AsInt(p.i);
-        if (w == 0) whence = SEEK_SET;      // absolute
-        else if (w == 1) whence = SEEK_CUR; // relative to current
-        else if (w == 2) whence = SEEK_END; // relative to end
-      }
-      
-      if (!file) return Value::I(-1);
-      
-      int result = fseek(file, (long)offset, whence);
-      return Value::I(result);
-    }},
-    
-    {"pos", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "pos requires file handle argument");
-      }
-      
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
-      if (!file) return Value::I(-1);
-      
-      long position = ftell(file);
-      return Value::I((long long)position);
-    }},
     
     {"size", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
@@ -398,22 +363,6 @@ namespace lang {
       }
     }},
     
-    {"typename", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "typename requires exactly one argument");
-      }
-      
-      switch (args[0].t) {
-        case Type::Int:   return Value::S("int");
-        case Type::Float: return Value::S("float");
-        case Type::Str:   return Value::S("string");
-        case Type::Bool:  return Value::S("bool");
-        case Type::List:  return Value::S("list");
-        case Type::Null:  return Value::S("null");
-        default:          return Value::S("unknown");
-      }
-    }},
     
     {"isInt", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
