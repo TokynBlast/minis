@@ -1,0 +1,189 @@
+// Math Library - Advanced mathematical functions
+
+// TODO: Determine if it's better to include any of these in the plugin of dev rather than a minis library
+
+// Constants
+fn pi() {
+    return 3.141592653589793
+}
+
+fn e() {
+    return 2.718281828459045
+}
+
+// Basic operations
+fn sqrt(x) {
+    // Newton's method for square root
+    if x < 0 {
+        return nan()
+    }
+    if x == 0 {
+        return 0
+    }
+    
+    let guess = x / 2
+    let iterations = 0
+    
+    while iterations < 50 {
+        let newGuess = (guess + x / guess) / 2
+        
+        // Check convergence
+        let diff = newGuess - guess
+        if diff < 0 {
+            diff = neg(diff)
+        }
+        if diff < 0.000001 {
+            return newGuess
+        }
+        
+        guess = newGuess
+        iterations = iterations + 1
+    }
+    
+    return guess
+}
+
+fn pow(base, exp) {
+    // Power function (integer exponents only for now)
+    if exp == 0 {
+        return 1
+    }
+    
+    let isNegExp = false
+    let absExp = exp
+    if exp < 0 {
+        isNegExp = true
+        absExp = neg(exp)
+    }
+    
+    let result = 1
+    let i = 0
+    while i < absExp {
+        result = result * base
+        i = i + 1
+    }
+    
+    if isNegExp {
+        return 1 / result
+    }
+    return result
+}
+
+fn factorial(n) {
+    // Factorial function
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+// Trigonometric functions (basic approximations)
+fn sin(x) {
+    // Taylor series approximation for sine
+    // sin(x) = x - x^3/3! + x^5/5! - x^7/7! + ...
+    let term = x
+    let sum = x
+    let i = 1
+    
+    while i < 10 {
+        term = neg(term * x * x / ((2 * i) * (2 * i + 1)))
+        sum = sum + term
+        i = i + 1
+    }
+    return sum
+}
+
+fn cos(x) {
+    // Taylor series approximation for cosine
+    // cos(x) = 1 - x^2/2! + x^4/4! - x^6/6! + ...
+    let term = 1
+    let sum = 1
+    let i = 1
+    
+    while i < 10 {
+        term = neg(term * x * x / ((2 * i - 1) * (2 * i)))
+        sum = sum + term
+        i = i + 1
+    }
+    return sum
+}
+
+fn tan(x) {
+    // tan(x) = sin(x) / cos(x)
+    let s = sin(x)
+    let c = cos(x)
+    return s / c
+}
+
+// Rounding and comparison
+fn floor(x) {
+    // Floor function - round down to nearest integer
+    // For now, just truncate
+    return x
+}
+
+fn ceil(x) {
+    // Ceiling function - round up to nearest integer
+    return x + 1
+}
+
+fn abs(x) {
+    // Absolute value
+    if x < 0 {
+        return neg(x)
+    }
+    return x
+}
+
+// Statistical functions
+fn mean(list) {
+    // Calculate average of a list
+    let total = sum(list)
+    let count = len(list)
+    return total / count
+}
+
+fn median(list) {
+    // Find median of a list
+    let sorted = sort(list)
+    let n = len(sorted)
+    let mid = n / 2
+    return sorted[mid]
+}
+
+fn gcd(a, b) {
+    // Greatest common divisor using Euclidean algorithm
+    while b != 0 {
+        let temp = b
+        b = a % b
+        a = temp
+    }
+    return a
+}
+
+fn lcm(a, b) {
+    // Least common multiple
+    return (a * b) / gcd(a, b)
+}
+
+fn clamp(value, min_val, max_val) {
+    // Clamp value between min and max
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+fn lerp(a, b, t) {
+    // Linear interpolation between a and b
+    // t should be between 0 and 1
+    return a + (b - a) * t
+}
+
+fn mod(a, b) {
+    // Modulo operation
+    return a % b
+}
