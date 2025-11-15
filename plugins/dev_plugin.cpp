@@ -94,12 +94,55 @@ static Value dev_emit_str(const std::vector<Value>& args) {
     return Value::L(std::move(bytes));
 }
 
+    // moveto(file_handle, offset, whence=0)
+    static Value dev_moveto(const std::vector<Value>& args) {
+        if (args.size() != 2 && args.size() != 3) return Value::I(-1);
+        FILE* file = (FILE*)(uintptr_t)args[0].AsInt(0);
+        long long offset = args[1].AsInt(0);
+        int whence = SEEK_SET;
+        if (args.size() == 3) {
+            long long w = args[2].AsInt(0);
+            if (w == 0) whence = SEEK_SET;
+            else if (w == 1) whence = SEEK_CUR;
+            else if (w == 2) whence = SEEK_END;
+        }
+        if (!file) return Value::I(-1);
+        int result = fseek(file, (long)offset, whence);
+        return Value::I(result);
+    }
+
+    // pos(file_handle)
+    static Value dev_pos(const std::vector<Value>& args) {
+        if (args.size() != 1) return Value::I(-1);
+        FILE* file = (FILE*)(uintptr_t)args[0].AsInt(0);
+        if (!file) return Value::I(-1);
+        long position = ftell(file);
+        return Value::I((long long)position);
+    }
+
+    // typename(value)
+    static Value dev_typename(const std::vector<Value>& args) {
+        if (args.size() != 1) return Value::S("unknown");
+        switch (args[0].t) {
+            case Type::Int:   return Value::S("int");
+            case Type::Float: return Value::S("float");
+            case Type::Str:   return Value::S("string");
+            case Type::Bool:  return Value::S("bool");
+            case Type::List:  return Value::S("list");
+            case Type::Null:  return Value::S("null");
+            default:          return Value::S("unknown");
+        }
+    }
+
 // Plugin function table
 static const PluginFunctionEntry plugin_functions[] = {
     {"write_bytes", dev_write_bytes},
     {"read_bytes", dev_read_bytes},
     {"emit_u64", dev_emit_u64},
     {"emit_str", dev_emit_str},
+    {"moveto", dev_moveto},
+    {"pos", dev_pos},
+    {"typename", dev_typename},
     {nullptr, nullptr} // Sentinel
 };
 
