@@ -1,0 +1,250 @@
+// Dev Library - Compiler development utilities
+// Core functions needed for self-hosting compiler development
+
+// TODO: Determine if it's better to include any of these in the plugin of dev rather than a minis library
+
+// String Utilities
+fn isAlpha(c) {
+    // Check if character is alphabetic
+    let u = upper(c)
+    let parts = split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "")
+    let i = 1
+    let n = len(parts)
+    while i <= n {
+        if u == parts[i] {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+fn isDigit(c) {
+    // Check if string contains only digits
+    let parts = split("0123456789", "")
+    let i = 1
+    let n = len(parts)
+    while i <= n {
+        if c == parts[i] {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+fn isSpace(c) {
+    if c == " " {
+        return true
+    }
+    if c == "\t" {
+        return true
+    }
+    if c == "\n" {
+        return true
+    }
+    if c == "\r" {
+        return true
+    }
+    return false
+}
+
+fn stringContains(str, sub) {
+    // Check if str contains substring sub
+    let parts = split(str, sub)
+    return len(parts) > 1
+}
+
+// Error Handling (functional)
+fn error(message) {
+    print("Error:")
+    print(message)
+    return false
+}
+
+fn panic(message) {
+    print("PANIC:")
+    print(message)
+    return false
+}
+
+// Bytecode Emission Functions (using file I/O)
+// Global file handle for output
+let outputFile = -1
+
+fn setFile(path) {
+    // Open file for writing bytecode
+    outputFile = open(path, "wb")
+    if outputFile == -1 {
+        print("Failed to open file for writing")
+        return false
+    }
+    return true
+}
+
+fn closeFile() {
+    // Close output file
+    if outputFile != -1 {
+        close(outputFile)
+        outputFile = -1
+    }
+    return true
+}
+
+fn emitByte(b) {
+    // Emit single byte to output file
+    if outputFile == -1 {
+        print("No output file open")
+        return false
+    }
+    // Convert number to single character string
+    write(outputFile, " ")
+    return true
+}
+
+fn emitU64(n) {
+    // Emit unsigned 64-bit integer (8 bytes, little-endian)
+    if outputFile == -1 {
+        return false
+    }
+    // In real implementation, would write 8 bytes
+    // For now, placeholder
+    return n
+}
+
+fn emitS64(n) {
+    // Emit signed 64-bit integer
+    return emitU64(n)
+}
+
+fn emitF64(n) {
+    // Emit 64-bit float
+    return emitU64(n)
+}
+
+fn emitStr(string) {
+    // Emit string with length prefix
+    if outputFile == -1 {
+        return false
+    }
+    let length = len(string)
+    emitU64(length)
+    write(outputFile, string)
+    return true
+}
+
+fn emitOp(op) {
+    // Emit single opcode byte
+    return emitByte(op)
+}
+
+fn emitId(name) {
+    // Emit identifier string
+    return emitStr(name)
+}
+
+fn flushOutput() {
+    // Flush output buffer
+    if outputFile != -1 {
+        flush(outputFile)
+        return true
+    }
+    return false
+}
+
+// Enhanced File Operations
+fn openFile(path, mode) {
+    // Open file with mode: r, rb, rs, w, wb, ws, wt
+    return open(path, mode)
+}
+
+fn seekFile(handle, offset, whence) {
+    // Move to position in file
+    // whence: 0=SEEK_SET (absolute), 1=SEEK_CUR (relative), 2=SEEK_END (from end)
+    return moveto(handle, offset, whence)
+}
+
+fn tellFile(handle) {
+    // Get current position in file
+    return pos(handle)
+}
+
+fn readAt(handle, offset, amount) {
+    // Read from specific position (rs mode helper)
+    moveto(handle, offset, 0)
+    return read(handle, amount)
+}
+
+fn writeAt(handle, offset, data) {
+    // Write at specific position (ws mode helper)
+    moveto(handle, offset, 0)
+    return write(handle, data)
+}
+
+// Tokenization (using string operations)
+fn tokenize(source) {
+    // Simple tokenization by splitting on spaces
+    return split(source, " ")
+}
+
+fn isIdent(token) {
+    // Check if first character is alphabetic
+    if len(token) == 0 {
+        return false
+    }
+    // Would need substring operation
+    return isAlpha(token)
+}
+
+fn isNumber(token) {
+    // Check if token is numeric
+    if len(token) == 0 {
+        return false
+    }
+    // Simple check - would need better parsing
+    return isDigit(token)
+}
+
+// List/Collection Operations
+fn listAppend(list, value) {
+    // Would need list modification support
+    // For now, return original list
+    return list
+}
+
+fn listLength(list) {
+    return len(list)
+}
+
+fn listGet(list, index) {
+    // 1-based indexing
+    return list[index]
+}
+
+// Opcode Constants (matching compile.py)
+fn OP_HALT() { return 0 }
+fn OP_PUSH_I() { return 1 }
+fn OP_PUSH_S() { return 2 }
+fn OP_PUSH_B() { return 3 }
+fn OP_ADD() { return 4 }
+fn OP_SUB() { return 5 }
+fn OP_MUL() { return 6 }
+fn OP_DIV() { return 7 }
+fn OP_MOD() { return 8 }
+fn OP_NEG() { return 9 }
+fn OP_EQ() { return 10 }
+fn OP_NE() { return 11 }
+fn OP_GET() { return 12 }
+fn OP_SET() { return 13 }
+fn OP_DECL() { return 14 }
+fn OP_POP() { return 15 }
+fn OP_CALL() { return 16 }
+fn OP_RET() { return 17 }
+fn OP_JMP() { return 18 }
+fn OP_JF() { return 19 }
+fn OP_LT() { return 26 }
+fn OP_LE() { return 27 }
+fn OP_GT() { return 28 }
+fn OP_GE() { return 29 }
+fn OP_INDEX() { return 28 }
+fn OP_MAKE_LIST() { return 30 }
