@@ -16,6 +16,7 @@
 #include "../include/vm.hpp"
 #include "../include/ast.hpp"
 #include "../include/sso.hpp"
+#include "../include/plugin.hpp"
 
 namespace lang {
   /*=============================
@@ -232,17 +233,31 @@ namespace lang {
         return Value::I(rand() % max_val);
       }
     }},
-    
-    // File operations for dev library
+
     {"open", [](std::vector<Value>& args) -> Value {
       if (args.size() != 2) {
         Loc L = locate(p.i);
         ERR(L, "open requires filename and mode arguments");
       }
       const char* filename = args[0].AsStr();
-      const char* mode = args[1].AsStr();
+      const char* mode_str = args[1].AsStr();
       
-      FILE* file = fopen(filename, mode);
+      // Translate Minis modes to C modes
+      const char* c_mode = "r";
+      if (strcmp(mode_str, "r") == 0) c_mode = "r";
+      else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
+      else if (strcmp(mode_str, "rs") == 0) c_mode = "r";  // read specific = read
+      else if (strcmp(mode_str, "w") == 0) c_mode = "w";
+      else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
+      else if (strcmp(mode_str, "ws") == 0) c_mode = "w";  // write specific = write
+      else if (strcmp(mode_str, "wt") == 0) c_mode = "a";  // write targeted = append
+      else if (strcmp(mode_str, "a") == 0) c_mode = "a";   // also support append directly
+      else {
+        Loc L = locate(p.i);
+        ERR(L, "invalid file mode (use r, rb, rs, w, wb, ws, wt, or a)");
+      }
+      
+      FILE* file = fopen(filename, c_mode);
       if (!file) {
         return Value::I(-1); // Error code
       }
@@ -310,6 +325,142 @@ namespace lang {
         fflush(file);
       }
       return Value::I(0);
+    }},
+    
+    {"moveto", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 2 && args.size() != 3) {
+        Loc L = locate(p.i);
+        ERR(L, "moveto requires file handle and offset arguments (optional: whence)");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      long long offset = args[1].AsInt(p.i);
+      int whence = SEEK_SET; // default: absolute position
+      
+      if (args.size() == 3) {
+        long long w = args[2].AsInt(p.i);
+        if (w == 0) whence = SEEK_SET;      // absolute
+        else if (w == 1) whence = SEEK_CUR; // relative to current
+        else if (w == 2) whence = SEEK_END; // relative to end
+      }
+      
+      if (!file) return Value::I(-1);
+      
+      int result = fseek(file, (long)offset, whence);
+      return Value::I(result);
+    }},
+    
+    {"pos", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "pos requires file handle argument");
+      }
+      
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      if (!file) return Value::I(-1);
+      
+      long position = ftell(file);
+      return Value::I((long long)position);
+    }},
+    
+    {"size", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "size requires one argument (string or list)");
+      }
+      
+      const auto& arg = args[0];
+      if (arg.t == Type::Str) {
+        return Value::I(static_cast<long long>(strlen(arg.AsStr())));
+      } else if (arg.t == Type::List) {
+        return Value::I(static_cast<long long>(arg.AsList().size()));
+      }
+      
+      Loc L = locate(p.i);
+      ERR(L, "size requires a string or list argument");
+      return Value::I(0);
+    }},
+    
+    {"typeof", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "typeof requires exactly one argument");
+      }
+      
+      switch (args[0].t) {
+        case Type::Int:   return Value::I(0);
+        case Type::Float: return Value::I(1);
+        case Type::Str:   return Value::I(2);
+        case Type::Bool:  return Value::I(3);
+        case Type::List:  return Value::I(4);
+        case Type::Null:  return Value::I(5);
+        default:          return Value::I(-1);
+      }
+    }},
+    
+    {"typename", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "typename requires exactly one argument");
+      }
+      
+      switch (args[0].t) {
+        case Type::Int:   return Value::S("int");
+        case Type::Float: return Value::S("float");
+        case Type::Str:   return Value::S("string");
+        case Type::Bool:  return Value::S("bool");
+        case Type::List:  return Value::S("list");
+        case Type::Null:  return Value::S("null");
+        default:          return Value::S("unknown");
+      }
+    }},
+    
+    {"isInt", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isInt requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::Int);
+    }},
+    
+    {"isFloat", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isFloat requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::Float);
+    }},
+    
+    {"isString", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isString requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::Str);
+    }},
+    
+    {"isList", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isList requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::List);
+    }},
+    
+    {"isBool", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isBool requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::Bool);
+    }},
+    
+    {"isNull", [](std::vector<Value>& args) -> Value {
+      if (args.size() != 1) {
+        Loc L = locate(p.i);
+        ERR(L, "isNull requires exactly one argument");
+      }
+      return Value::B(args[0].t == Type::Null);
     }}
   };
 
@@ -488,6 +639,9 @@ namespace lang {
       table_off = read_u64(f);
       uint64_t fnCount = read_u64(f);
       uint64_t entry_main = read_u64(f);
+      uint64_t line_map_off = read_u64(f); // Skip line map offset (not used)
+      
+      // Header is now exactly 40 bytes (8 magic + 32 data), no padding
       ip = entry_main;
       code_end = table_off;
 
@@ -504,6 +658,31 @@ namespace lang {
         for (uint64_t j = 0; j < pcnt; ++j) params.push_back(read_str(f));
         fnEntry[name] = FnMeta{ entry, isVoid, typed, ret, params };
       }
+      
+      // Read and load plugins if line_map_off points to plugin table
+      // For now, seek to line_map_off and check if there's a plugin table after
+      if (line_map_off > 0) {
+        fseek(f, (long)line_map_off, SEEK_SET);
+        // Skip line map
+        uint64_t line_map_count = read_u64(f);
+        for (uint64_t i = 0; i < line_map_count; ++i) {
+          read_u64(f); // offset
+          read_u32(f); // line
+        }
+        
+        // Now read plugin table
+        uint64_t plugin_count = read_u64(f);
+        for (uint64_t i = 0; i < plugin_count; ++i) {
+          CString module_name = read_str(f);
+          CString library_path = read_str(f);
+          
+          // Load plugin
+          if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
+            std::cerr << "Warning: Failed to load plugin " << module_name.c_str() << std::endl;
+          }
+        }
+      }
+      
       jump(entry_main);
       frames.push_back(Frame{ (uint64_t)-1, nullptr, true, false, Type::Int });
       frames.back().env = std::make_unique<Env>(&globals);
@@ -714,6 +893,13 @@ namespace lang {
             if (it == fnEntry.end()) {
               auto bit = builtins.find(name);
               if (bit == builtins.end()) {
+                // Check plugin functions
+                auto pfn = PluginManager::get_function(name.c_str());
+                if (pfn) {
+                  auto rv = pfn(args);
+                  push(std::move(rv));
+                  break;
+                }
                 Loc L = locate(p.i);
                 ERR(L, "unknown function");
               }
