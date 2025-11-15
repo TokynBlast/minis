@@ -18,6 +18,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
 }
 
 inline static uint8_t  read_u8 (FILE*f){ uint8_t v;  fread(&v,1,1,f); return v; }
+inline static uint32_t read_u32(FILE*f){ uint32_t v; fread(&v,4,1,f); return v; }
 inline static uint64_t read_u64(FILE*f){ uint64_t v; fread(&v,8,1,f); return v; }
 inline static int64_t  read_s64(FILE*f){ int64_t v;  fread(&v,8,1,f); return v; }
 inline static double   read_f64(FILE*f){ double v;   fread(&v,8,1,f); return v; }
