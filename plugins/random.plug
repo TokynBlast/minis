@@ -1,0 +1,4 @@
+# Manifest for random plugin
+name = "random"
+version = "1.0.0"
+lib = "random_plugin.so"
