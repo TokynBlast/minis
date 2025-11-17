@@ -1,0 +1,61 @@
+import dev
+
+fn expect(pos, filePos, fileContent) {
+  let int x = 0
+  while x <= len(pos){
+    x = x + 1
+    if pos[x] != fileContent[filePos] {
+        return false
+    }
+  }
+  return true
+}
+
+fn check(looking, filePos, fileContent) {
+    let x = 0
+    while x <= len(looking) {
+        x = x+1
+        filePos = filePos + 1
+        if looking[x] != fileContent[filePos] {
+            return false
+        }
+    }
+    return true
+}
+
+fn skipWS(filePos, fileContent){
+  let x = 0
+  while fileContent[filePos] == " " || "\t" || "\n" {
+    x = x+1
+    filePos = filePos+1
+  }
+  if fileContent[filePos] == "/" && fileContent[filePos] == "/" {
+    while fileContent[filePos] != "\n"{
+      x = x+1
+      filePos = filePos + 1
+    }
+  }
+  if fileContent[filePos] == "/" && fileContent[filePos+1] == "*" {
+    while fileContent[filePos] != "*" && while fileContent[filePos+1] != "/" {
+      x = x+1
+      filePos = filePos + 1
+    }
+  }
+  return x
+}
+
+let code = read(open("mini.mi", "r"))
+let POS = skipWS(POS, code)
+
+fn compile(){
+  while POS <= len(code) {
+    // FIXME: We need to mark this as entry
+    if check("fn ") {
+      skipWS(POS, code)
+      compile()
+    }
+    elif check("yield", POS, fileContent) {
+      dev.emitU32(0x26)
+    }
+  }
+}
