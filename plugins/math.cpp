@@ -4,31 +4,63 @@
 
 using namespace lang;
 
-static Value math_sin(const std::vector<Value>& args) {
+static Value mathSin(const std::vector<Value>& args) {
     if (args.size() == 1 && args[0].t == Type::Float) {
         return Value::F(std::sin(std::get<double>(args[0].v)));
     }
     return Value::N();
 }
 
-static Value math_cos(const std::vector<Value>& args) {
+static Value mathCos(const std::vector<Value>& args) {
     if (args.size() == 1 && args[0].t == Type::Float) {
         return Value::F(std::cos(std::get<double>(args[0].v)));
     }
     return Value::N();
 }
 
-static Value math_pow(const std::vector<Value>& args) {
+static Value mathPow(const std::vector<Value>& args) {
     if (args.size() == 2 && args[0].t == Type::Float && args[1].t == Type::Float) {
         return Value::F(std::pow(std::get<double>(args[0].v), std::get<double>(args[1].v)));
     }
     return Value::N();
 }
 
+static Value mathTan(const std::vector<Value>& args) {
+    if (args.size() == 1 && args[0].t == Type::Float) {
+        return Value::F(std::tan(std::get<double>(args[0].v)));
+    }
+    return Value::N();
+}
+
+static Value mathSqrt(const std::vector<Value>& args) {
+    if (args.size() == 1 && args[0].t == Type::Float) {
+        return Value::F(std::sqrt(std::get<double>(args[0].v)));
+    }
+    return Value::N();
+}
+
+static Value mathLog(const std::vector<Value>& args) {
+    if (args.size() == 1 && args[0].t == Type::Float) {
+        return Value::F(std::log(std::get<double>(args[0].v)));
+    }
+    return Value::N();
+}
+
+static Value mathExp(const std::vector<Value>& args) {
+    if (args.size() == 1 && args[0].t == Type::Float) {
+        return Value::F(std::exp(std::get<double>(args[0].v)));
+    }
+    return Value::N();
+}
+
 static const PluginFunctionEntry plugin_functions[] = {
-    {"sin", math_sin},
-    {"cos", math_cos},
-    {"pow", math_pow},
+    {"sin", mathSin},
+    {"cos", mathCos},
+    {"pow", mathPow},
+    {"tan", mathTan},
+    {"sqrt", mathSqrt},
+    {"log", mathLog},
+    {"exp", mathExp},
     {nullptr, nullptr}
 };
 
