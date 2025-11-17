@@ -6,6 +6,7 @@
 extern bool error;
 
 inline static void write_u8 (FILE*f, uint8_t  v){ if(!error) fwrite(&v,1,1,f); }
+inline static void write_u32(FILE*f, uint32_t v){ if(!error) fwrite(&v,4,1,f); }
 inline static void write_u64(FILE*f, uint64_t v){ if(!error) fwrite(&v,8,1,f); }
 inline static void write_s64(FILE*f, int64_t  v){ if(!error) fwrite(&v,8,1,f); }
 inline static void write_f64(FILE*f, double   v){ if(!error) fwrite(&v,8,1,f); }
