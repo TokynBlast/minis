@@ -1,7 +1,7 @@
 import dev
 
 fn expect(pos, filePos, fileContent) {
-  let int x = 0
+  let x = 0
   while x <= len(pos){
     x = x + 1
     if pos[x] != fileContent[filePos] {
@@ -44,18 +44,53 @@ fn skipWS(filePos, fileContent){
   return x
 }
 
+# Open input file (read as string)
 let code = read(open("mini.mi", "r"))
+let out = dev.openFile("testing.mbc")
 let POS = skipWS(POS, code)
 
-fn compile(){
-  while POS <= len(code) {
-    // FIXME: We need to mark this as entry
-    if check("fn ") {
-      skipWS(POS, code)
-      compile()
-    }
-    elif check("yield", POS, fileContent) {
-      dev.emitU32(0x26)
-    }
+fn compile(POS, code, fileContent){
+  skipsWS
+  // FIXME: We need to mark this as entry
+  if check("fn ") {
+    POS = POS + 3
+    skipWS(POS, code)
+    compile()
   }
+
+    elif check("yield", POS, fileContent) {
+        POS = POS + 5
+        dev.emitU16(out, 0x26)
+        if expect(";", POS, fileContent) != true {
+          // FIXME: Make it emit an actual error
+          error("Expected ';'")
+        } else {
+          POS = POS + 1
+        }
+    }
+
+    elif check("let ", POS, fileContent) {
+        POS = POS + 4
+        if check("int ", POS, fileContent) {
+          dev.emitU16(out, 0x05)
+          dev.
+        } elif check("str ", POS, fileContent) {
+          // dev.emitU16(out, PUSH_S) or dev.emitStr(out, ...)
+        } elif check("bool ", POS, fileContent) {
+          // dev.emitU8(out, PUSH_B) or similar
+        } elif check("null ", POS, fileContent) {
+          // dev.emitU8(out, PUSH_N)
+        } elif check("list ", POS, fileContent) {
+          // dev.emitU8(out, PUSH_LIST) and items
+        } elif check("float ", POS, fileContent) {
+          // dev.emitU8(out, PUSH_F) and value
+        } elif check("auto ", POS, fileContent) {
+          // handle auto
+        } else {
+          // handle error
+        }
+    }
+}
+while POS <= len(code) {
+  compile(POS, code, fileContent)
 }
