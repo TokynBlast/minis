@@ -34,7 +34,6 @@ static FILE* getFileHandle(const Value& v) {
     return it->second;
 }
 
-// writeBytes(file_handle, byte_list)
 static Value devWriteBytes(const std::vector<Value>& args) {
     if (args.size() < 2) return Value::N();
     FILE* file = getFileHandle(args[0]);
@@ -71,6 +70,15 @@ static Value devReadBytes(const std::vector<Value>& args) {
     }
 
     return Value::L(std::move(bytes));
+}
+
+static Value devEmitU16(const std::vector<Value>& args) {
+    if (args.size() != 2) return Value::B(false);
+    FILE* file = getFileHandle(args[0]);
+    uint16_t v = (uint16_t)args[1].AsInt(0);
+    if (!file) return Value::B(false);
+    write_u16(file, v);
+    return Value::B(!error);
 }
 
 // emitU8(file_handle, value)
@@ -216,6 +224,7 @@ static const PluginFunctionEntry pluginFunctions[] = {
     {"close", devClose},
     {"writeBytes", devWriteBytes},
     {"readBytes", devReadBytes},
+    {"emitU16", devEmitU16},
     {"emitU8", devEmitU8},
     {"emitU32", devEmitU32},
     {"emitU64", devEmitU64},
