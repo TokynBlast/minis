@@ -1,20 +1,19 @@
-include "../include/plugin.hpp"
+#include "../include/plugin.hpp"
 #include "../include/value.hpp"
-#include <random>
-#include <chrono>
+#include <vector>
 
 using namespace lang;
 
-static Value os(const std::vector<Value>$ args) {
-  if (args != 0) {
+static Value os(const std::vector<Value>& args) {
+  if (args.size() != 0) {
     // FIXME: This should give an actual error and stop the program
     return Value::S("error");
   }
-  #if defined(_WIN32)
+  #if defined(_WIN32) || defined(_WIN64)
     return Value::S("win");
   #elif defined(__linux__) || defined(__unix__)
     return Value::S("linux");
-  #elif def(__freeBSD__)
+  #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
     return Value::S("freebsd");
   #elif defined(__APPLE__) || defined(__MACH__)
     return Value::S("apple");
@@ -30,7 +29,7 @@ static Value os(const std::vector<Value>$ args) {
 }
 
 static Value cpu(const std::vector<Value>& args) {
-  if (args != 0) {
+  if (args.size() != 0) {
     // FIXME: Make it give an error
     return Value::N();
   }
@@ -62,7 +61,7 @@ static void computer_cleanup() {}
 
 static PluginInterface random_interface = {
     "computer",
-    "0.0.1",
+    "0.0.2",
     computer_init,
     []() -> const PluginFunctionEntry* { return plugin_functions; },
     computer_cleanup
