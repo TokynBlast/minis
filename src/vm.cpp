@@ -327,25 +327,6 @@ namespace lang {
       return Value::I(0);
     }},
     
-    
-    {"size", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "size requires one argument (string or list)");
-      }
-      
-      const auto& arg = args[0];
-      if (arg.t == Type::Str) {
-        return Value::I(static_cast<long long>(strlen(arg.AsStr())));
-      } else if (arg.t == Type::List) {
-        return Value::I(static_cast<long long>(arg.AsList().size()));
-      }
-      
-      Loc L = locate(p.i);
-      ERR(L, "size requires a string or list argument");
-      return Value::I(0);
-    }},
-    
     {"typeof", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
         Loc L = locate(p.i);
