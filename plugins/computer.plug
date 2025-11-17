@@ -1,0 +1,3 @@
+name = "computer"
+version = "0.0.2"
+lib = "computer.so"
