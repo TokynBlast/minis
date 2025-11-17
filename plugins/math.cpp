@@ -37,7 +37,7 @@ static void math_cleanup() {}
 
 static PluginInterface math_interface = {
     "math",
-    "1.0.0",
+    "0.0.1",
     math_init,
     []() -> const PluginFunctionEntry* { return plugin_functions; },
     math_cleanup
