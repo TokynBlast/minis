@@ -53,46 +53,46 @@ class MinisCompiler:
             'sum', 'input', 'len', 'split', 'upper', 'lower', 'round', 'random',
             'open', 'close', 'write', 'read', 'flush'
         }
-        
+
     def write_u8(self, value):
         """Write unsigned 8-bit integer"""
         self.bytecode.append(value & 0xFF)
         self.position += 1
-        
+
     def write_u64(self, value):
         """Write unsigned 64-bit integer"""
         self.bytecode.extend(struct.pack('<Q', value))
         self.position += 8
-        
+
     def write_s64(self, value):
         """Write signed 64-bit integer"""
         self.bytecode.extend(struct.pack('<q', value))
         self.position += 8
-        
+
     def write_f64(self, value):
         """Write 64-bit float"""
         self.bytecode.extend(struct.pack('<d', value))
         self.position += 8
-        
+
     def write_str(self, text):
         """Write string with length prefix - VM expects 64-bit length!"""
         encoded = text.encode('utf-8')
         self.write_u64(len(encoded))  # Use 64-bit length
         self.bytecode.extend(encoded)
         self.position += len(encoded)
-        
+
     def write_u32(self, value):
         """Write unsigned 32-bit integer"""
         self.bytecode.extend(struct.pack('<I', value))
         self.position += 4
-    
+
     def emit_op(self, opcode):
         """Emit a bytecode operation - VM expects 64-bit opcodes!"""
         # Record line number mapping
         if self.current_line_number > 0:
             self.line_map.append((self.position, self.current_line_number))
         self.write_u64(opcode)
-    
+
     # Opcode constants (from bytecode.hpp - CORRECT enumeration order!)
     # Starting from 0x01:
     IMPORTED_FUNC = 0x01
@@ -390,7 +390,7 @@ class MinisCompiler:
         line = line.strip()
         
         # Skip empty lines and comments
-        if not line or line.startswith('#') or line.startswith('//'):
+        if not line or line.startswith('//'):
             return
         
         # Import statements: import dev
