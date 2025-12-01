@@ -162,9 +162,9 @@ static Value devReadStr(const std::vector<Value>& args) {
 
     uint64_t len;
     read_u64(file);
-    CString str;
-    str.resize(len);
-    if (fread(&str[0], 1, len, file) != len) return Value::N();
+    std::string temp(len, '\0');
+    if (fread(&temp[0], 1, len, file) != len) return Value::N();
+    CString str(temp.c_str());
     return Value::S(str);
 }
 
