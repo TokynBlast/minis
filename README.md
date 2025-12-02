@@ -147,7 +147,6 @@ This compiler is a **proof-of-concept bootstrap**. It works for basic cases but 
 ### Known Limitations
 
 - No arithmetic expressions beyond simple comparisons
-- No function parameters (all functions are 0-arity)
 - No return value handling in variable assignments from module functions
 - Very basic expression parsing
 - No type checking
