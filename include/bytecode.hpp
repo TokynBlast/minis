@@ -50,10 +50,11 @@ enum Op : std::uint16_t {
     RETURN = 0x031,
     RETURN_VOID = 0x032,
 
-  HALT = 0x033,
-  SLICE = 0x034,
-  SET_INDEX = 0x035,
-  NO_OP = 0x036,
-  POP = 0x037,
-  INDEX = 0x038,
+  GENERAL_REGISTER = 0x01A
+    HALT = 0x033,
+    SLICE = 0x034,
+    SET_INDEX = 0x035,
+    NO_OP = 0x036,
+    POP = 0x037,
+    INDEX = 0x038,
 };
