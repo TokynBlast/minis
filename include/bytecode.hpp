@@ -53,8 +53,7 @@ enum Op : std::uint16_t {
   HALT = 0x033,
   SLICE = 0x034,
   SET_INDEX = 0x035,
-  YIELD = 0x037,
-  NO_OP = 0x038,
-  POP = 0x039,
-  INDEX = 0x040,
+  NO_OP = 0x036,
+  POP = 0x037,
+  INDEX = 0x038,
 };
