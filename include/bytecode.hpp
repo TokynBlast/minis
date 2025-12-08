@@ -1,30 +1,41 @@
 #pragma once
 #include <cstdint>
 enum Op : std::uint16_t {
-  IMPORTED_FUNC  = 0x01,
-  IMPORTED_LOAD,  // 02
-  IMPORTED_STORE, // 03
-  NOP,            // 04
-  PUSH_I,         // 05
-  PUSH_F,         // 06
-  PUSH_B,         // 07
-  PUSH_S,         // 08
-  PUSH_C,         // 09
-  PUSH_N,         // 0A
-  MAKE_LIST,      // 0B
-  GET,            // 0C
-  SET,            // 0D
-  DECL,           // 0E
+  // importing
+  IMPORT_REGISTER = 0x0A,
+  IMPORT_FUNC  = 0x01,
+  IMPORT_LOAD = 0x02,
+  IMPORT_STORE = 0x03,
+
+  // making variables
+  PUSH_REGISTER = 0x0B,
+  PUSH_INT = 0x04,
+  PUSH_FLOAT = 0x05,
+  PUSH_BOOL = 0x06,
+  PUSH_STRING = 0x07,
+  PUSH_C = 0x08,
+  PUSH_NULL = 0x09,
+  MAKE_LIST = 0x010,
+
+  // work with variables :3
+  VARIABLE = 0x0C,
+  GET = 0x,
+  SET = 0x4D,
+  DECL = ,
   POP,            // 0F
+
+  // math opertions
   ADD,            // 10
   SUB,            // 11
   MUL,            // 12
   DIV,            // 13
   NEG,            // 14
+
   EQ,             // 15
   NE,             // 16
   LT,             // 17
   LE,             // 18
+
   AND,            // 19
   OR,             // 1A
   JMP,            // 1B
@@ -40,4 +51,5 @@ enum Op : std::uint16_t {
   TAIL,           // 25
   YIELD,          // 26
   NOT             // 27
+  NO_OP = 0x3C,
 };
