@@ -628,10 +628,19 @@ namespace lang {
           case NOP:  break;
 
           // TODO: Make the op codes more human readable
-          case PUSH_I:
-          case PUSH_F: { push(Value::F(fetchf64())); } break;
-          case PUSH_B: { push(Value::B(fetch8() != 0)); } break;
-          case PUSH_S: { auto s = fetchStr(); push(Value::S(std::move(s))); } break;
+          case PUSH: {
+            uint8_t tag = fetch8();
+            switch (tag) {
+              // FIXME: No null or list
+              case 0: push(Value::I(fetchs64())); break;
+              case 1: push(Value::F(fetchf64())); break;
+              case 2: push(Value::B(fetch8() != 0)); break;
+              case 3: push(Value::S(fetchStr())); break;
+              default:
+                ERR(locate(ip), "unknown literal type tag");
+            }
+          } break;
+
 
           case MAKE_LIST: {
             uint64_t n = fetch64();
