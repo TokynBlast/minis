@@ -43,15 +43,14 @@ enum class Logic : std::uint8_t
 }
 
 enum class Func : std::uint8_t
-  FUNCTION_REGISTER = 0x01,
-    CALL,
-    TAIL,
-    RETURN,
-    RETURN_VOID,
+  CALL = 0x01,
+  TAIL,
+  RETURN,
+  RETURN_VOID,
 }
 
 enum class General : std::uint8_t
-  HALT = 0x01
+  HALT = 0x01,
   SLICE,
   SET_INDEX,
   NO_OP,
