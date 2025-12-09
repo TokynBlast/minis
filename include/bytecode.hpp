@@ -39,8 +39,7 @@ enum class Logic : std::uint8_t
   AND,
   OR,
   JUMP,
-  JUMP_IF,
-  NOT_EQUAL
+  JUMP_IF
 }
 
 enum class Func : std::uint8_t
