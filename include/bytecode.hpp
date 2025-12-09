@@ -7,7 +7,7 @@ enum class Register : std::uint8_t {
   LOGIC = 0x0C,
   FUNCTION = 0x0D,
   GENERAL = 0x0E,
-} 
+}
 
 enum class Import : std::uint8_t {
   FUNC  = 0x01,
