@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-enum register : std::uint8_t {
+enum class Register : std::uint8_t {
   IMPORT = 0x0A,
   VARIABLE = 0x0B,
   LOGIC = 0x0C,
@@ -9,13 +9,13 @@ enum register : std::uint8_t {
   GENERAL = 0x0E,
 } 
 
-enum import : std::uint8_t {
+enum class Import : std::uint8_t {
   FUNC  = 0x01,
   LOAD,
   STORE
 }
 
-enum variable : std::uint8_t {
+enum class Variable : std::uint8_t {
   GET = 0x01,
   SET,
   DECLARE,
@@ -23,7 +23,7 @@ enum variable : std::uint8_t {
   PUSH
 }
 
-enum math : std::uint8_t {
+enum class Math : std::uint8_t {
   ADD = 0x01,
   SUBTRACT,
   MULTIPLY,
@@ -31,7 +31,7 @@ enum math : std::uint8_t {
   NEGATE
 }
 
-enum logic : std::uint8_t
+enum class Logic : std::uint8_t
   EQUAL = 0x01,
   NOT_EQUAL,
   LESS_THAN_OR_EQUAL,
@@ -43,7 +43,7 @@ enum logic : std::uint8_t
   NOT_EQUAL
 }
 
-enum func : std::uint8_t
+enum class Func : std::uint8_t
   FUNCTION_REGISTER = 0x01,
     CALL,
     TAIL,
@@ -51,7 +51,7 @@ enum func : std::uint8_t
     RETURN_VOID,
 }
 
-enum general : std::uint8_t
+enum class General : std::uint8_t
   HALT = 0x01
   SLICE,
   SET_INDEX,
