@@ -44,6 +44,7 @@ struct Value {
   static Value B(bool b) { return Value(Type::Bool, b); }
   static Value L(const std::vector<Value>& l) { return Value(Type::List, l); }
   static Value I(long long i) { return Value(Type::Int, i); }
+  // FIXME: String should not copy
   static Value S(const char* s) { return Value(Type::Str, s); }
   static Value S(CString&& s) { return Value(Type::Str, std::move(s)); }
   static Value F(double f) { return Value(Type::Float, f); }
