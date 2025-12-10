@@ -18,11 +18,15 @@
 #include "../include/sso.hpp"
 #include "../include/plugin.hpp"
 
+            //0.0.1 
+#define version 001
+
 namespace lang {
   /*=============================
   =          Values/Env         =
   =============================*/
 
+  // FIXME: Errors shouldn't be baked in unless debug code was added. The source shouldn't be assumed to exist.
   struct Pos { size_t i = 0; const CString* src = nullptr; };
   inline const Source* src = nullptr;
 
@@ -61,6 +65,24 @@ namespace lang {
       if (val.t == Type::Float) return Value::F(-val.AsFloat(p.i));
       return Value::I(-val.AsInt(p.i));
     }},
+
+    // FIXME: [comment expansion]
+    /* Range Becoming A Type
+    *
+    * Rather than range be a function, we can bake it into the opcodes and make it a type
+    * This gives us greater control
+    * We can store just the two values.
+    * For something like:
+    * int x = 34;
+    * if (x in range(1,50)) {
+    *   print("It's in!! :D");
+    * }
+    * It would come out like this:
+    * int x is 34
+    * if x is between one (1) and 50, print "It's in!! :D"
+    * This would give us greater control, as our current version is held as a function baked into the VM.
+    * This is also a HUGE load off of RAM, since we not store two integers, rather than every number, one (1) through 50.
+    */
     {"range", [](std::vector<Value>& args) {
       if (args.empty() || args.size() > 2) {
         Loc L = locate(p.i);
@@ -244,18 +266,27 @@ namespace lang {
       
       // Translate Minis modes to C modes
       const char* c_mode = "r";
+      // FIXME: [Comment expanded]
+      // Possibly delegate to our VM instead of host?
       if (strcmp(mode_str, "r") == 0) c_mode = "r";
       else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
-      else if (strcmp(mode_str, "rs") == 0) c_mode = "r";  // read specific = read
+      else if (strcmp(mode_str, "rs") == 0) c_mode = "r";  // read specific = read but read only a section, rather than put the whole file into mem
       else if (strcmp(mode_str, "w") == 0) c_mode = "w";
       else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
-      else if (strcmp(mode_str, "ws") == 0) c_mode = "w";  // write specific = write
-      else if (strcmp(mode_str, "wt") == 0) c_mode = "a";  // write targeted = append
+      else if (strcmp(mode_str, "ws") == 0) c_mode = "w";  // write specific = write but write to a specific area rather than rewrite the whole thing
+      /*write targeted = append but write anywhere, not just the end, shifting alldata after up
+      * For example:
+      * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
+      */
+      else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
       else if (strcmp(mode_str, "a") == 0) c_mode = "a";   // also support append directly
+      // FIXME: Errors shouldn't be handled by MVME
+      /*
       else {
         Loc L = locate(p.i);
         ERR(L, "invalid file mode (use r, rb, rs, w, wb, ws, wt, or a)");
       }
+      */
       
       FILE* file = fopen(filename, c_mode);
       if (!file) {
@@ -326,7 +357,7 @@ namespace lang {
       }
       return Value::I(0);
     }},
-    
+    // FIXME: We need better type checking
     {"typeof", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
         Loc L = locate(p.i);
@@ -344,7 +375,7 @@ namespace lang {
       }
     }},
     
-    
+    // FIXME: type checks should join into one
     {"isInt", [](std::vector<Value>& args) -> Value {
       if (args.size() != 1) {
         Loc L = locate(p.i);
@@ -422,12 +453,15 @@ namespace lang {
 
     bool ExistsLocal(const CString& n) const { return m.find(n) != m.end(); }
 
+    // FIXME: This should be recursive, not limitied to two parent scopes
     bool Exists(const CString& n) const { return ExistsLocal(n) || (parent && parent->Exists(n)); }
 
+    // FIXME: should not return dummy, we assume it will exist. Compiler handles those errors.
     const Var& Get(const CString& n, auto loc) const {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
       if (parent) return parent->Get(n, loc);
+      // FIXME: errors should be handled by compiler
       Loc L = locate((size_t)loc);
       CString msg = CString("unknown variable '") + n.c_str() + "'";
       ERR(L, msg.c_str());
@@ -484,6 +518,7 @@ namespace lang {
     uint64_t ip = 0, table_off = 0, code_end = 0;
     std::vector<Value> stack;
 
+    // FIXME: Strip data MVME doesn't need
     struct Frame {
       uint64_t ret_ip;
       std::unique_ptr<Env> env;   // heap-allocated, stable address
@@ -540,6 +575,7 @@ namespace lang {
         stack.pop_back();
         return v;
       } catch (const std::exception& e) {
+        // FIXME: Errors are handled by compiler, not MVME. This should simply stop the program, not try to use ERR.
         Loc L = locate(p.i);
         CString msg = CString("stack operation failed: ") + e.what();
         ERR(L, msg.c_str());
@@ -588,7 +624,7 @@ namespace lang {
         for (uint64_t j = 0; j < pcnt; ++j) params.push_back(read_str(f));
         fnEntry[name] = FnMeta{ entry, isVoid, typed, ret, params };
       }
-      
+
       // Read and load plugins if line_map_off points to plugin table
       // For now, seek to line_map_off and check if there's a plugin table after
       if (line_map_off > 0) {
@@ -621,32 +657,31 @@ namespace lang {
     inline void run() {
       for (;;) {
         if (ip >= code_end) return;
-        uint64_t op = fetch64();
+        uint8_t op = fetch8();
 
         switch (op) {
           case HALT: return;
           case NOP:  break;
-
-          // TODO: Make the op codes more human readable
           case PUSH: {
             uint8_t tag = fetch8();
             switch (tag) {
-              // FIXME: No null or list
+              // FIXME: No null, list, or other int size types
               case 0: push(Value::I(fetchs64())); break;
               case 1: push(Value::F(fetchf64())); break;
               case 2: push(Value::B(fetch8() != 0)); break;
               case 3: push(Value::S(fetchStr())); break;
+              case 4: {
+                uint64_t n = fetch64();
+                std::vector<Value> xs; xs.resize(n);
+                for (uint64_t i = 0; i < n; ++i) xs[n-1-i] = pop();
+                push(Value::L(std::move(xs)));
+              } break;
+              case 5: {
+                push(Value::
+              }
               default:
                 ERR(locate(ip), "unknown literal type tag");
             }
-          } break;
-
-
-          case MAKE_LIST: {
-            uint64_t n = fetch64();
-            std::vector<Value> xs; xs.resize(n);
-            for (uint64_t i = 0; i < n; ++i) xs[n-1-i] = pop();
-            push(Value::L(std::move(xs)));
           } break;
 
           case GET: {
