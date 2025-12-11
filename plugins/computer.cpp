@@ -28,11 +28,11 @@ static Value os(const std::vector<Value>& args) {
   #endif
 }
 
-static Value cpu(const std::vector<Value>& args) {
-  if (args.size() != 0) {
-    // FIXME: Make it give an error
-    return Value::N();
-  }
+static Value int_size() {
+  return Value::I(sizeof(int));
+}
+
+static Value cpu() {
   #if defined(__i386__) || defined(i386)
     return Value::S("x86");
   #elif defined(__x86_64__) || defined(M_X64)
@@ -53,6 +53,7 @@ static Value cpu(const std::vector<Value>& args) {
 static const PluginFunctionEntry plugin_functions[] = {
   {"os", os},
   {"cpu", cpu},
+  {"sint", int_size},
   {nullptr, nullptr}
 };
 
