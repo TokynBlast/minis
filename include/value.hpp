@@ -30,12 +30,6 @@ struct Value {
     int16_t,             // 16-bit int
     int32_t,             // 32-bit int
     int64_t,             // 64-bit int
-    __int128,            // GNU 128-bit int
-    uint8_t,             // unsigned 8-bit int
-    uint16_t,            // unsigned 16-bit int
-    uint32_t,            // unsigned 32-bit int
-    uint64_t,            // unsigned　64-bit int
-    unsigned __int128    // GNU unsigned 128-bit int
   > v;
 
   Value(Type type) : t(type) {}
@@ -49,12 +43,6 @@ struct Value {
   Value(Type type, const int16_t i) : t(type), v(i) {}
   Value(Type type, const int32_t i) : t(type), v(i) {}
   Value(Type type, const int64_t i) : t(type), v(i) {}
-  Value(Type type, const __int128 i) : t(type), v(i) {}
-  Value(Type type, const uint8_t ui) : t(type), v(ui) {}
-  Value(Type type, const uint16_t ui) : t(type), v(ui) {}
-  Value(Type type, const uint32_t ui) : t(type), v(ui) {}
-  Value(Type type, const uint64_t ui) : t(type), v(ui) {}
-  Value(Type type, const unsigned __int128 ui) : t(type), v(ui) {}
 
   static Value N() { return Value(Type::Null); }
   static Value B(bool b) { return Value(Type::Bool, b); }
@@ -68,12 +56,6 @@ struct Value {
   static Value I16(int16_t i) {return Value(Type::i16, i); }
   static Value I32(int32_t i) {return Value(Type::i32, i); }
   static Value I64(int64_t i) {return Value(Type::i64, i); }
-  static Value I128(__int128 i) {return Value(Type::i128, i); }
-  static Value UI8(uint8_t ui) {return Value(Type::ui8, ui); }
-  static Value UI16(uint16_t ui) {return Value(Type::ui16, ui); }
-  static Value UI32(uint32_t ui) {return Value(Type::ui32, ui); }
-  static Value UI64(uint64_t ui) {return Value(Type::ui64, ui); }
-  static Value UI128(unsigned __int128 i) {return Value(Type::ui128, ui); }
 
 public:
   long long AsInt(auto loc) const {
