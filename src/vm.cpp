@@ -11,10 +11,8 @@
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
 #include "../include/io.hpp"
-#include "../include/err.hpp"
 #include "../include/value.hpp"
 #include "../include/vm.hpp"
-#include "../include/ast.hpp"
 #include "../include/sso.hpp"
 #include "../include/plugin.hpp"
 
@@ -27,40 +25,32 @@ namespace lang {
   =============================*/
 
   // FIXME: Errors shouldn't be baked in unless debug code was added. The source shouldn't be assumed to exist.
-  struct Pos { size_t i = 0; const CString* src = nullptr; };
   inline const Source* src = nullptr;
-
-  static inline Loc locate(size_t index) {
-    if (src) return src->loc(index);
-    Loc L; L.line = 1; L.col = 1; L.src = "";
-    return L;
-  }
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
 
   // Registry of built-in functions
-  inline static Pos p;
+  // FIXME: Instead of storing every function as a string, we should store it some other way, like an enum or computed goto, to improve speed.
   inline static std::unordered_map<CString, BuiltinFn> builtins = {
+    // FIXME: We need to add the ability to add the end line manually.
+    // Args can be Value or 
     {"print", [](std::vector<Value>& args) {
-      for (const auto& arg : args) std::cout << arg.AsStr() << " ";
-      std::cout << std::endl;
+      size_t arg_amnt = args.sizeof();
+      for (size_t i = 0; i < arg_amnt; i++) {
+        fputs(args[i].AsStr(), stdout);
+        if (i < arg_amnt) {
+          fputs(" ", stdout);
+        }
+      }
       return Value::N();
     }},
     {"abs", [](std::vector<Value>& args) {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "abs requires exactly one argument");
-      }
       auto val = args[0];
       if (val.t == Type::Float) return Value::F(std::abs(val.AsFloat(p.i)));
       return Value::I(std::abs(val.AsInt(p.i)));
     }},
     {"neg", [](std::vector<Value>& args) {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "neg requires exactly one argument");
-      }
       auto val = args[0];
       if (val.t == Type::Float) return Value::F(-val.AsFloat(p.i));
       return Value::I(-val.AsInt(p.i));
@@ -84,11 +74,6 @@ namespace lang {
     * This is also a HUGE load off of RAM, since we not store two integers, rather than every number, one (1) through 50.
     */
     {"range", [](std::vector<Value>& args) {
-      if (args.empty() || args.size() > 2) {
-        Loc L = locate(p.i);
-        ERR(L, "range expects 1-2 arguments");
-      }
-
       long long start = 0, end;
       if (args.size() == 1) {
         end = args[0].AsInt(p.i);
@@ -104,10 +89,6 @@ namespace lang {
       return Value::L(result);
     }},
     {"max", [](std::vector<Value>& args) {
-      if (args.empty()) {
-        Loc L = locate(p.i);
-        ERR(L, "max requires at least one argument");
-      }
       Value max = args[0];
       for (size_t i = 1; i < args.size(); i++) {
         if (args[i].AsFloat(p.i) > max.AsFloat(p.i)) max = args[i];
@@ -115,10 +96,6 @@ namespace lang {
       return max;
     }},
     {"min", [](std::vector<Value>& args) {
-      if (args.empty()) {
-        Loc L = locate(p.i);
-        ERR(L, "min requires at least one argument");
-      }
       Value min = args[0];
       for (size_t i = 1; i < args.size(); i++) {
         if (args[i].AsFloat(p.i) < min.AsFloat(p.i)) min = args[i];
@@ -126,20 +103,12 @@ namespace lang {
       return min;
     }},
     {"sort", [](std::vector<Value>& args) {
-      if (args.size() != 1 || args[0].t != Type::List) {
-        Loc L = locate(p.i);
-        ERR(L, "sort requires one list argument");
-      }
       std::vector<Value> list = args[0].AsList();
       std::sort(list.begin(), list.end(),
         [](const Value& a, const Value& b) { return a.AsFloat(0) < b.AsFloat(0); });
       return Value::L(list);
     }},
     {"reverse", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "reverse requires one argument");
-      }
       if (args[0].t == Type::List) {
         std::vector<Value> list = args[0].AsList();
         std::reverse(list.begin(), list.end());
@@ -150,15 +119,8 @@ namespace lang {
         std::reverse(reversed.begin(), reversed.end());
         return Value::S(CString(reversed.c_str()));
       }
-      Loc L = locate(p.i);
-      ERR(L, "reverse requires list or string argument");
-      return Value::N();
     }},
     {"sum", [](std::vector<Value>& args) {
-      if (args.size() != 1 || args[0].t != Type::List) {
-        Loc L = locate(p.i);
-        ERR(L, "sum requires one list argument");
-      }
       const auto& list = args[0].AsList();
       Value sum = Value::I(0);
       for (const auto& v : list) {
@@ -217,20 +179,12 @@ namespace lang {
       return Value::L(result);
     }},
     {"upper", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1 || args[0].t != Type::Str) {
-        Loc L = locate(p.i);
-        ERR(L, "upper requires one string argument");
-      }
       const char* str = args[0].AsStr();
       std::string result(str);
       std::transform(result.begin(), result.end(), result.begin(), ::toupper);
       return Value::S(result.c_str());
     }},
     {"lower", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1 || args[0].t != Type::Str) {
-        Loc L = locate(p.i);
-        ERR(L, "lower requires one string argument");
-      }
       const char* str = args[0].AsStr();
       std::string result(str);
       std::transform(result.begin(), result.end(), result.begin(), ::tolower);
@@ -244,10 +198,6 @@ namespace lang {
       return Value::I((long long)std::round(args[0].AsFloat(p.i)));
     }},
     {"random", [](std::vector<Value>& args) -> Value {
-      if (args.size() > 1) {
-        Loc L = locate(p.i);
-        ERR(L, "random takes 0 or 1 arguments");
-      }
       if (args.empty()) {
         return Value::F((double)rand() / RAND_MAX);
       } else {
@@ -257,13 +207,9 @@ namespace lang {
     }},
 
     {"open", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 2) {
-        Loc L = locate(p.i);
-        ERR(L, "open requires filename and mode arguments");
-      }
       const char* filename = args[0].AsStr();
       const char* mode_str = args[1].AsStr();
-      
+      // FIXME: This should be a switch instead
       // Translate Minis modes to C modes
       const char* c_mode = "r";
       // FIXME: [Comment expanded]
@@ -280,13 +226,6 @@ namespace lang {
       */
       else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
       else if (strcmp(mode_str, "a") == 0) c_mode = "a";   // also support append directly
-      // FIXME: Errors shouldn't be handled by MVME
-      /*
-      else {
-        Loc L = locate(p.i);
-        ERR(L, "invalid file mode (use r, rb, rs, w, wb, ws, wt, or a)");
-      }
-      */
       
       FILE* file = fopen(filename, c_mode);
       if (!file) {
@@ -298,11 +237,6 @@ namespace lang {
     }},
     
     {"close", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "close requires file handle argument");
-      }
-      
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       if (file && file != stdin && file != stdout && file != stderr) {
         fclose(file);
@@ -311,31 +245,22 @@ namespace lang {
     }},
     
     {"write", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 2) {
-        Loc L = locate(p.i);
-        ERR(L, "write requires file handle and data arguments");
-      }
-      
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       const char* data = args[1].AsStr();
-      
-      if (!file) return Value::I(-1);
-      
+
+      if (!file) return std::abort();
+
       size_t written = fwrite(data, 1, strlen(data), file);
       return Value::I((long long)written);
     }},
-    
+
     {"read", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 2) {
-        Loc L = locate(p.i);
-        ERR(L, "read requires file handle and size arguments");
-      }
-      
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       long long size = args[1].AsInt(p.i);
-      
-      if (!file || size <= 0) return Value::S("");
-      
+
+      if (!file) std::abort();
+      if (size <= 0) return Value::S("");
+
       char* buffer = (char*)malloc(size + 1);
       size_t bytes_read = fread(buffer, 1, size, file);
       buffer[bytes_read] = '\0';
@@ -346,11 +271,6 @@ namespace lang {
     }},
     
     {"flush", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "flush requires file handle argument");
-      }
-      
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       if (file) {
         fflush(file);
@@ -359,11 +279,6 @@ namespace lang {
     }},
     // FIXME: We need better type checking
     {"typeof", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "typeof requires exactly one argument");
-      }
-      
       switch (args[0].t) {
         case Type::Int:   return Value::I(0);
         case Type::Float: return Value::I(1);
@@ -371,56 +286,32 @@ namespace lang {
         case Type::Bool:  return Value::I(3);
         case Type::List:  return Value::I(4);
         case Type::Null:  return Value::I(5);
-        default:          return Value::I(-1);
+        default: std::abort()
       }
     }},
     
     // FIXME: type checks should join into one
     {"isInt", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isInt requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::Int);
     }},
     
     {"isFloat", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isFloat requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::Float);
     }},
     
     {"isString", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isString requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::Str);
     }},
     
     {"isList", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isList requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::List);
     }},
     
     {"isBool", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isBool requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::Bool);
     }},
     
     {"isNull", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "isNull requires exactly one argument");
-      }
       return Value::B(args[0].t == Type::Null);
     }}
   };
@@ -457,27 +348,18 @@ namespace lang {
     bool Exists(const CString& n) const { return ExistsLocal(n) || (parent && parent->Exists(n)); }
 
     // FIXME: should not return dummy, we assume it will exist. Compiler handles those errors.
-    const Var& Get(const CString& n, auto loc) const {
+    const Var& Get(const CString& n) const {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
       if (parent) return parent->Get(n, loc);
-      // FIXME: errors should be handled by compiler
-      Loc L = locate((size_t)loc);
-      CString msg = CString("unknown variable '") + n.c_str() + "'";
-      ERR(L, msg.c_str());
-      static const Var dummy{Type::Null, Value::N()};
-      return dummy;
+      std::abort();
     }
 
-    void Declare(const CString& n, Type t, Value v, auto loc) {
-      if (m.count(n)) {
-        Loc L = locate((size_t)loc);
-        ERR(L, "variable already declared");
-      }
+    void Declare(const CString& n, Type t, Value v) {
       Coerce(t, v); m.emplace(n, Var{t, v});
     }
 
-    void Set(const CString& n, Value v, auto loc) {
+    void Set(const CString& n, Value v) {
       auto it = m.find(n);
       if (it != m.end()) {
         Coerce(it->second.declared, v);
@@ -485,22 +367,19 @@ namespace lang {
         return;
       }
       if (parent) {
-        parent->Set(n, v, loc);
+        parent->Set(n, v);
         return;
       }
-      {
-        Loc L = locate((size_t)loc);
-        ERR(L, "unknown variable");
-      }
+      std::abort();
     }
 
-    void SetOrDeclare(const CString& n, Value v, auto loc) {
+    void SetOrDeclare(const CString& n, Value v) {
       if (ExistsLocal(n))
-        Set(n, v, loc);
+        Set(n, v);
       else if (parent && parent->Exists(n))
-        parent->Set(n, v, loc);
+        parent->Set(n, v);
       else
-        Declare(n, v.t, v, loc);
+        Declare(n, v.t, v);
     }
 
     bool Erase(const CString& n) { return m.erase(n) != 0; }
@@ -544,14 +423,43 @@ namespace lang {
     explicit VMEngine() {}
     ~VMEngine() { if (f) fclose(f); }
 
-    inline void jump(uint64_t target) { ip = target; fseek(f, (long)ip, SEEK_SET); }
-    inline uint8_t  fetch8() { uint8_t v; fread(&v, 1, 1, f); ++ip; return v; }
-    inline uint64_t fetch64() { uint64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline int64_t  fetchs64() { int64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline double   fetchf64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
 
+
+
+
+inline static void sendu16(FILE*f, uint16_t v){ fwrite(&v,2,1,f); }
+inline static void sendu8 (FILE*f, uint8_t  v){ fwrite(&v,1,1,f); }
+inline static void sendu32(FILE*f, uint32_t v){ fwrite(&v,4,1,f); }
+inline static void write_u64(FILE*f, uint64_t v){ fwrite(&v,8,1,f); }
+inline static void write_s64(FILE*f, int64_t  v){ fwrite(&v,8,1,f); }
+inline static void write_f64(FILE*f, double   v){ fwrite(&v,8,1,f); }
+inline static void write_str(FILE*f, const lang::CString& s){
+  uint64_t n=s.size();
+  write_u64(f,n); if(n)
+  fwrite(s.c_str(),1,n,f);
+}
+
+    inline void jump(uint64_t target) { ip = target; fseek(f, (long)ip, SEEK_SET); }
+
+    // unsigned ints
+    inline uint8_t fetchu8() { uint8_t v; fread(&v, 1, 1, f); ++ip; return v; }
+    inline uint8_t fetchu16() { uint16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
+    inline uint8_t fetchu32() { uint32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
+    inline uint64_t fetchu64() { uint64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
+
+    // signed ints
+    inline int8_t fetch8() { int8_t v; fread(&v, 1, 1, f); ++ip; return v; }
+    inline int8_t fetch16() { int16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
+    inline int8_t fetch32() { int32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
+    inline int64_t fetch64() { int64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
+    inline int8_t fetchu8() { uint8_t v; fread(&v, 1, 1, f); ++ip; return v; }
+    inline int8_t fetchu16() { uint16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
+    inline int8_t fetchu32() { uint32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
+    inline int64_t fetchu64() { uint64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
+
+    inline double fetchd64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
     inline CString fetchStr() {
-      uint64_t n = fetch64();
+      uint64_t n = fetchu64();
       char* buffer = static_cast<char*>(malloc(n + 1));
       if (n) fread(buffer, 1, n, f);
       buffer[n] = '\0';
@@ -564,21 +472,21 @@ namespace lang {
     inline Value pop() {
       try {
         if (stack.empty()) {
-          Loc L = locate(p.i);
-          ERR(L, "stack underflow; tried to pop an empty stack");
+          fprintf(stderr, "FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
+          std::abort();
         }
+        // FIXME: This shouldn't be possible with a good compiler.
+        //        It shouldn't be something we have to expect.
         if (stack.back().t == Type::Null) {
-          Loc L = locate(p.i);
-          ERR(L, "attempt to use null value");
+          fprintf(stderr, 'FATAL ERROR: Stack had null top value.');
+          std::exit(1);
         }
         Value v = std::move(stack.back());
         stack.pop_back();
         return v;
       } catch (const std::exception& e) {
-        // FIXME: Errors are handled by compiler, not MVME. This should simply stop the program, not try to use ERR.
-        Loc L = locate(p.i);
-        CString msg = CString("stack operation failed: ") + e.what();
-        ERR(L, msg.c_str());
+        fprintf(stderr, 'FATAL ERROR: Stack operation failed:', e.what());
+        std::exit(1);
       }
       return Value::N();
     }
@@ -587,8 +495,8 @@ namespace lang {
 
     inline void discard() {
       if (stack.empty()) {
-        Loc L = locate((size_t)ip);
-        ERR(L, "stack underflow; tried to empty an already empty stack");
+        fprintf(stderr, 'stack underflow; tried to empty an already empty stack');
+        std::exit(1);
       }
       stack.pop_back();
     }
@@ -657,65 +565,100 @@ namespace lang {
     inline void run() {
       for (;;) {
         if (ip >= code_end) return;
-        uint8_t op = fetch8();
+        unisgned char op = fetch8();
+        switch (op >> 4) {
+          case Register::LOGIC: {
+            
+          } break;
+          case Register::VARIABLE: {
+            case Variable::PUSH: {
+              switch (op & 0xF0) {
+                case 0:{
+                  unsigned char meta = fetch8();
+                  uint8_t type = meta >> 4;
+                  // uint8_t signedness = meta & 0b11110111; // Not currently implemented; Commented to reduce unused variable warning
+                  // NOTE: In this implementation, 0 is false, 1 is true
+                  switch(type) {
+                    case 0x00: push(Value::I8(fetch8())); break;
+                    case 0x01: push(Value::I16(fetch16()); break;
+                    case 0x02: push(Value::I32(fetch32()); break;
+                    case 0x03: push(Value::I64(fetch64())); break;
+                    case 0x04: push(Value::UI8(fetchU8())); break;
+                    case 0x05: push(Value::UI16(fetchU16()); break;
+                    case 0x06: push(Value::UI32(fetchU32()); break;
+                    case 0x07: push(Value::UI64(fetchU64())); break;
+                    case 0x08: push(Value::F(fetchd64()); break;
+                    case 0x09: {
+                      bool_val = meta;
+                      bool_val & 0b00000100;
+                      if !(meta && 0b00000000) {
+                        push(Value::B(false));
+                      } else {
+                        push(Value::B(true));
+                      }
+                    } break;
+                    default: {
+                      fprintf(stderr, "FATAL ERROR: Unknown meta tag");
+                      std::abort();
+                    }
+                  }
+                  /*type = meta;
+                  type |= 0b00001000;
+                  switch(type) {
+                    case 0x00: // Signed
+                    case 0x01: // Unsigned
+                  }*/
+                } break;
 
-        switch (op) {
+                case 3: push(Value::S(fetchStr())); break;
+                case 4: {
+                  uint64_t n = fetch64();
+                  std::vector<Value> xs; xs.resize(n);
+                  for (uint64_t i = 0; i < n; ++i) xs[n-1-i] = pop();
+                  push(Value::L(std::move(xs)));
+                } break;
+                default: {
+                  fprintf(stderr, "unknown literal type tag");
+                  std::abort();
+                }
+              }
+            } break;
+            case SET: frames.back().env->SetOrDeclare(fetchStr(), pop()); break;
+            case DECLARE: {
+              CString id = fetchStr();
+              // FIXME: 
+              uint64_t tt = fetch64();
+              Value v  = pop();
+              if (tt == 0xECull) frames.back().env->Declare(id, v.t, v, 0);
+              else               frames.back().env->Declare(id, (Type)tt, v, 0);
+            } break;
+          } break;
+          case Register::GENERAL: {
+            
+          } break;
+          case Register::FUNCTION: {
+            
+          } break;
+          case Register::IMPORT: {
+            
+          } break;
           case HALT: return;
           case NOP:  break;
-          case PUSH: {
-            uint8_t tag = fetch8();
-            switch (tag) {
-              // FIXME: No null, list, or other int size types
-              case 0: push(Value::I(fetchs64())); break;
-              case 1: push(Value::F(fetchf64())); break;
-              case 2: push(Value::B(fetch8() != 0)); break;
-              case 3: push(Value::S(fetchStr())); break;
-              case 4: {
-                uint64_t n = fetch64();
-                std::vector<Value> xs; xs.resize(n);
-                for (uint64_t i = 0; i < n; ++i) xs[n-1-i] = pop();
-                push(Value::L(std::move(xs)));
-              } break;
-              case 5: {
-                push(Value::
-              }
-              default:
-                ERR(locate(ip), "unknown literal type tag");
-            }
-          } break;
 
           case GET: {
-            auto id = fetchStr();
+            CString id = fetchStr();
             push(frames.back().env->Get(id, ip).val);
-          } break;
-
-          case SET: {
-            auto id = fetchStr();
-            auto v  = pop();
-            frames.back().env->SetOrDeclare(id, v, 0);
-          } break;
-
-          case DECL: {
-            auto id = fetchStr();
-            uint64_t tt = fetch64();
-            auto v  = pop();
-            if (tt == 0xECull) frames.back().env->Declare(id, v.t, v, 0);
-            else            frames.back().env->Declare(id, (Type)tt, v, 0);
           } break;
 
           case POP: { discard(); } break;
 
           case ADD: {
-            auto b = pop();
-            auto a = pop();
-
-            if (a.t == Type::Null || b.t == Type::Null) {
-              Loc L = locate(p.i);
-              ERR(L, "Cannot perform addition with null values");
-            }
+            Value b = pop();
+            Value a = pop();
             else if (a.t == Type::List) {
               if (b.t == Type::List) {
                 std::vector<Value> result;
+                // FIXME: Prefer specific type over auto
                 const auto& L = std::get<std::vector<Value>>(a.v);
                 const auto& R = std::get<std::vector<Value>>(b.v);
                 result.reserve(L.size() + R.size());
@@ -734,23 +677,16 @@ namespace lang {
               push(Value::F(a.AsFloat(p.i) + b.AsFloat(p.i)));
             } else if (a.t == Type::Int || b.t == Type::Int) {
               push(Value::I(a.AsInt(p.i) + b.AsInt(p.i)));
-            } else {
-              Loc L = locate(p.i);
-              CString msg = CString("Cannot add values of type ") + TypeName(a.t) + " and " + TypeName(b.t);
-              ERR(L, msg.c_str());
-            }
           } break;
 
+          // FIXME: This is incomplete?
           case UNSET: {
-            auto id = fetchStr();
-            if (!frames.back().env->Unset(id)) {
-              Loc L = locate(p.i);
-              ERR(L, "unknown variable");
-            }
+            CString id = fetchStr();
+            if (!frames.back().env->Unset(id)) {}
           } break;
 
           case TAIL: {
-            auto name = fetchStr();
+            CString name = fetchStr();
             uint64_t argc = fetch64();
             std::vector<Value> args(argc);
             for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
@@ -777,14 +713,14 @@ namespace lang {
             currentFrame.env = std::make_unique<Env>(callerEnv);
 
             for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-              currentFrame.env->Declare(meta.params[i], args[i].t, args[i], 0);
+              currentFrame.env->Declare(meta.params[i], args[i].t, args[i]);
             }
 
             jump(meta.entry);
           } break;
 
           case SUB: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
               if (a.t == Type::Float || b.t == Type::Float) {
                 push(Value::F(a.AsFloat(p.i) - b.AsFloat(p.i)));
@@ -799,7 +735,7 @@ namespace lang {
           } break;
 
           case MUL: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             if (a.t == Type::Float || b.t == Type::Float)
               push(Value::F(a.AsFloat(p.i) * b.AsFloat(p.i)));
             else
@@ -807,12 +743,12 @@ namespace lang {
           } break;
 
           case DIV: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             push(Value::F(a.AsFloat(p.i) / b.AsFloat(p.i)));
           } break;
 
           case EQ: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             bool eq = (a.t == b.t) ? (a == b)
                       : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                           ? (a.AsFloat(p.i) == b.AsFloat(p.i)) : false);
@@ -820,7 +756,7 @@ namespace lang {
           } break;
 
           case NE: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             bool ne = (a.t == b.t) ? !(a == b)
                       : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                           ? (a.AsFloat(p.i) != b.AsFloat(p.i)) : true);
@@ -828,7 +764,7 @@ namespace lang {
           } break;
 
           case LT: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             if (a.t == Type::Str && b.t == Type::Str)
               push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) < 0));
             else
@@ -836,18 +772,18 @@ namespace lang {
           } break;
 
           case LE: {
-            auto b = pop(), a = pop();
+            Value b = pop(), a = pop();
             if (a.t == Type::Str && b.t == Type::Str)
               push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) <= 0));
             else
               push(Value::B(a.AsFloat(p.i) <= b.AsFloat(p.i)));
           } break;
 
-          case AND: { auto b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) && b.AsBool(p.i))); } break;
-          case OR:  { auto b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) || b.AsBool(p.i))); } break;
+          case AND: { Value b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) && b.AsBool(p.i))); } break;
+          case OR:  { Value b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) || b.AsBool(p.i))); } break;
 
-          case JMP: { auto tgt = fetch64(); jump(tgt); } break;
-          case JF:  { auto tgt = fetch64(); auto v = pop(); if (!v.AsBool(p.i)) jump(tgt); } break; // Jump if false
+          case JMP: { uint64_t tgt = fetchU64(); jump(tgt); } break;
+          case JF:  { uin64_t tgt = fetchU64(); Value v = pop(); if (!v.AsBool(p.i)) jump(tgt); } break; // Jump if false
 
           case YIELD: {
             #ifdef _WIN32
@@ -858,8 +794,8 @@ namespace lang {
           } break;
 
           case CALL: {
-            auto name = fetchStr();
-            uint64_t argc = fetch64();
+            CString name = fetchStr();
+            uint64_t argc = fetchU64();
             std::vector<Value> args(argc);
             for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
 
@@ -888,7 +824,7 @@ namespace lang {
             frames.back().env = std::make_unique<Env>(callerEnv);
 
             for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-              frames.back().env->Declare(meta.params[i], args[i].t, args[i], 0);
+              frames.back().env->Declare(meta.params[i], args[i].t, args[i]);
             }
 
             jump(meta.entry);
@@ -905,10 +841,11 @@ namespace lang {
           } break;
 
           case INDEX: {
-            auto idxV = pop();
-            auto base = pop();
+            Value idxV = pop();
+            Value base = pop();
             long long i = idxV.AsInt(p.i);
             if (base.t == Type::List) {
+              // FIXME: Prefer explicit over auto
               auto& xs = std::get<std::vector<Value>>(base.v);
               if (i < 0 || (size_t)i >= xs.size()) {
                 Loc L = locate(p.i);
@@ -924,11 +861,6 @@ namespace lang {
               }
               char single[2] = {s[i], '\0'};
               push(Value::S(single));
-            } else {
-              Loc L = locate(p.i);
-              CString msg = CString("expected list/string, got ") + TypeName(base.t);
-              ERR(L, msg.c_str());
-            }
           } break;
 
           case RET_VOID: {
@@ -940,8 +872,7 @@ namespace lang {
           } break;
 
           default: {
-            Loc L = locate(p.i);
-            ERR(L, "bad opcode");
+            std::cerr<< "FATAL ERROR: Bad or unknown opcode.";
           }
         }
       }
