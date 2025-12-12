@@ -16,9 +16,6 @@
 #include "../include/sso.hpp"
 #include "../include/plugin.hpp"
 
-            //0.0.1 
-#define version 001
-
 namespace lang {
   /*=============================
   =          Values/Env         =
