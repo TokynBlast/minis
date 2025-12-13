@@ -469,19 +469,19 @@ inline static void write_str(FILE*f, const lang::CString& s){
       try {
         if (stack.empty()) {
           fprintf(stderr, "FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
-          std::abort();
+          std::exit(1);
         }
         // FIXME: This shouldn't be possible with a good compiler.
         //        It shouldn't be something we have to expect.
         if (stack.back().t == Type::Null) {
-          fprintf(stderr, 'FATAL ERROR: Stack had null top value.');
+          fprintf(stderr, "FATAL ERROR: Stack had null top value.");
           std::exit(1);
         }
         Value v = std::move(stack.back());
         stack.pop_back();
         return v;
       } catch (const std::exception& e) {
-        fprintf(stderr, 'FATAL ERROR: Stack operation failed:', e.what());
+        fprintf(stderr, "FATAL ERROR: Stack operation failed:", e.what());
         std::exit(1);
       }
       return Value::N();
@@ -491,7 +491,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
 
     inline void discard() {
       if (stack.empty()) {
-        fprintf(stderr, 'stack underflow; tried to empty an already empty stack');
+        fprintf(stderr, "stack underflow; tried to empty an already empty stack");
         std::exit(1);
       }
       stack.pop_back();
