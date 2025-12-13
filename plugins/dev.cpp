@@ -265,7 +265,7 @@ static void devCleanup() {
 
 static PluginInterface devInterface = {
     "dev",
-    "0.0.3",
+    "0.0.4",
     devInit,
     []() -> const PluginFunctionEntry* { return pluginFunctions; },
     devCleanup
