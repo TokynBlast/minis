@@ -1,8 +1,8 @@
 #pragma once
 
-namespace lang {
+namespace minis {
   enum class Type : unsigned char {
-    Int=0, Float, Bool, Str, List, Dict, i8, i16, i32, i63, Null
+    Int=0, Float, Bool, Str, List, Dict, i8, i16, i32, i64, Null, Range
   };
 
   inline const char* TypeName(Type t){
@@ -18,6 +18,7 @@ namespace lang {
       case Type::i32: return "i32"; // 32-bit
       case Type::i64: return "i64"; // 64-bit
       case Type::Null: return "null";
+      case Type::Range: return "range";
     }
     return "?";
   }
