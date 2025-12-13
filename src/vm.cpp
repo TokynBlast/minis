@@ -471,8 +471,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
           fprintf(stderr, "FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
           std::exit(1);
         }
-        // FIXME: This shouldn't be possible with a good compiler.
-        //        It shouldn't be something we have to expect.
+        // NOTE: This is kept around, only because the compiler sometimes makes mistakes
         if (stack.back().t == Type::Null) {
           fprintf(stderr, "FATAL ERROR: Stack had null top value.");
           std::exit(1);
