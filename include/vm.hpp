@@ -1,8 +1,10 @@
 #pragma once
 #include <memory>
+#include <cstdio>
+#include <cstdint>
 #include "sso.hpp"
 
-namespace lang {
+namespace minis {
   struct VMEngine;
 
   class VM {
