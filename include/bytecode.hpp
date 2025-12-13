@@ -2,11 +2,11 @@
 #include <cstdint>
 
 enum class Register : std::uint8_t {
-  IMPORT = 0x0A,
-  VARIABLE = 0x0B,
-  LOGIC = 0x0C,
-  FUNCTION = 0x0D,
-  GENERAL = 0x0E,
+  IMPORT = 0x01,
+  VARIABLE,
+  LOGIC,
+  FUNCTION,
+  GENERAL,
 }
 
 enum class Import : std::uint8_t {
