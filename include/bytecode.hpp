@@ -2,7 +2,7 @@
 #include <cstdint>
 
 enum class Register : std::uint8_t {
-  IMPORT = 0x01,
+  IMPORT = 1,
   VARIABLE,
   LOGIC,
   FUNCTION,
@@ -10,13 +10,13 @@ enum class Register : std::uint8_t {
 }
 
 enum class Import : std::uint8_t {
-  FUNC  = 0x01,
+  FUNC  = 1,
   LOAD,
   STORE
 }
 
 enum class Variable : std::uint8_t {
-  GET = 0x01,
+  GET = 1,
   SET,
   DECLARE,
   UNSET,
@@ -24,7 +24,7 @@ enum class Variable : std::uint8_t {
 }
 
 enum class Math : std::uint8_t {
-  ADD = 0x01,
+  ADD = 1,
   SUBTRACT,
   MULTIPLY,
   DIVIDE,
@@ -32,7 +32,7 @@ enum class Math : std::uint8_t {
 }
 
 enum class Logic : std::uint8_t
-  EQUAL = 0x01,
+  EQUAL = 1,
   NOT_EQUAL,
   LESS_THAN_OR_EQUAL,
   LESS_THAN,
@@ -43,13 +43,13 @@ enum class Logic : std::uint8_t
 }
 
 enum class Func : std::uint8_t
-  CALL = 0x01,
+  CALL = 1,
   TAIL,
   RETURN,
   RETURN_VOID,
 }
 enum class General : std::uint8_t
-  HALT = 0x01,
+  HALT = 1,
   SLICE,
   SET_INDEX,
   NO_OP,
