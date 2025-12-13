@@ -10,7 +10,6 @@
 #include <cmath>
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
-#include "../include/io.hpp"
 #include "../include/value.hpp"
 #include "../include/vm.hpp"
 #include "../include/sso.hpp"
@@ -498,6 +497,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
       stack.pop_back();
     }
 
+    // FIXME: This uses old patterns, such as io.hpp, we should instead use fetch functions instead
     inline void load(const CString& path) {
       f = fopen(path.c_str(), "rb");
       if (!f) throw std::runtime_error("cannot open bytecode");
