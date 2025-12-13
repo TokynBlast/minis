@@ -5,7 +5,7 @@
 #include <utility>
 #include <cstdint>
 
-namespace lang {
+namespace minis {
   class CString {
     static constexpr std::size_t SMALL_SIZE = 15;
 
@@ -36,7 +36,7 @@ namespace lang {
           cur = &((*cur)->reg_next);
         }
       }
-  
+
     static char* alloc_len(std::size_t n) noexcept {
       char* p = static_cast<char*>(std::malloc(n + 1));
       if (p) p[n] = '\0';
@@ -50,7 +50,7 @@ namespace lang {
         is_small = true;
         register_self();
       }
-  
+
       CString(const char* s) noexcept {
         if (!s) s = "";
         len = std::strlen(s);
@@ -69,7 +69,7 @@ namespace lang {
         }
         register_self();
       }
-  
+
       CString(const char* s, std::size_t length) noexcept {
         if (!s) { s = ""; length = 0; }
         len = length;
@@ -90,7 +90,7 @@ namespace lang {
         }
         register_self();
       }
-  
+
       CString(const CString& other) noexcept {
         len = other.len;
         is_small = (len <= SMALL_SIZE);
@@ -108,7 +108,7 @@ namespace lang {
         }
         register_self();
       }
-  
+
       CString(CString&& other) noexcept {
         len = other.len;
         is_small = other.is_small;
@@ -123,7 +123,7 @@ namespace lang {
         }
         register_self();
       }
-  
+
       CString& operator=(const CString& other) noexcept {
         if (this == &other) return *this;
         if (!is_small && storage.large) {
@@ -145,7 +145,7 @@ namespace lang {
         }
         return *this;
       }
-  
+
       CString& operator=(CString&& other) noexcept {
         if (this == &other) return *this;
         if (!is_small && storage.large) {
@@ -166,9 +166,16 @@ namespace lang {
         return *this;
       }
 
-      // Empty deconstructor on purpose
-      ~CString() noexcept {}
-  
+      ~CString() noexcept
+      {
+        if (!is_small && storage.large)
+        {
+          std::free(storage.large);
+          storage.large = nullptr;
+        }
+        unregister_self();
+      }
+
       void destroy() noexcept {
         if (!is_small && storage.large) {
           std::free(storage.large);
@@ -179,17 +186,17 @@ namespace lang {
         storage.small[0] = '\0';
         unregister_self();
       }
-  
+
       const char* c_str() const noexcept { return is_small ? storage.small : storage.large; }
       char* data() noexcept { return is_small ? storage.small : storage.large; }
       std::size_t size() const noexcept { return len; }
       bool empty() const noexcept { return len == 0; }
       bool using_heap() const noexcept { return !is_small && storage.large; }
-  
+
       char operator[](std::size_t idx) const noexcept {
         return (idx < len) ? (is_small ? storage.small[idx] : storage.large[idx]) : '\0';
       }
-  
+
       void assign(const char* s) noexcept {
         if (!s) s = "";
         std::size_t new_len = std::strlen(s);
@@ -218,9 +225,9 @@ namespace lang {
         }
         len = new_len;
       }
-  
+
       void assign(const CString& other) noexcept { assign(other.c_str()); }
-  
+
       void append(const char* s) noexcept {
         if (!s) return;
         std::size_t add = std::strlen(s);
@@ -244,12 +251,12 @@ namespace lang {
         is_small = false;
         len = new_len;
       }
-  
+
       void append(const CString& other) noexcept { append(other.c_str()); }
-  
+
       CString& operator+=(const CString& other) noexcept { append(other); return *this; }
       CString& operator+=(const char* s) noexcept { append(s); return *this; }
-  
+
       friend CString operator+(const CString& a, const CString& b) noexcept {
         CString out;
         std::size_t total = a.len + b.len;
@@ -274,14 +281,14 @@ namespace lang {
         out.register_self();
         return out;
       }
-  
+
       friend CString operator+(const CString& a, const char* b) noexcept {
         CString tmp(b);
         CString out = a + tmp;
         tmp.destroy();
         return out;
       }
-  
+
       bool operator==(const CString& other) const noexcept {
         if (len != other.len) return false;
         return std::memcmp(c_str(), other.c_str(), len) == 0;
@@ -290,7 +297,7 @@ namespace lang {
         if (!s) return len == 0;
         return std::strcmp(c_str(), s) == 0;
       }
-  
+
       static void free_all() noexcept {
         while (registry_head) {
           CString* cur = registry_head;
@@ -301,8 +308,8 @@ namespace lang {
 }
 
 namespace std {
-  template<> struct hash<lang::CString> {
-    std::size_t operator()(const lang::CString& s) const noexcept {
+  template<> struct hash<minis::CString> {
+    std::size_t operator()(const minis::CString& s) const noexcept {
       const char* data = s.c_str();
       std::size_t h = 14695981039346656037ULL;
       for (std::size_t i = 0, n = s.size(); i < n; ++i) {
@@ -313,8 +320,8 @@ namespace std {
     }
   };
 
-  template<> struct equal_to<lang::CString> {
-    bool operator()(const lang::CString& a, const lang::CString& b) const noexcept {
+  template<> struct equal_to<minis::CString> {
+    bool operator()(const minis::CString& a, const minis::CString& b) const noexcept {
       return a == b;
     }
   };
