@@ -2,13 +2,9 @@
 #include "../include/value.hpp"
 #include <vector>
 
-using namespace lang;
+using namespace minis;
 
 static Value os(const std::vector<Value>& args) {
-  if (args.size() != 0) {
-    // FIXME: This should give an actual error and stop the program
-    return Value::S("error");
-  }
   #if defined(_WIN32) || defined(_WIN64)
     return Value::S("win");
   #elif defined(__linux__) || defined(__unix__)
