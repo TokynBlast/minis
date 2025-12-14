@@ -6,11 +6,11 @@ enum class Register : std::uint8_t {
   VARIABLE,
   LOGIC,
   FUNCTION,
-  GENERAL,
-}
+  GENERAL
+};
 
 enum class Import : std::uint8_t {
-  FUNC  = 1,
+  FUNC = 1,
   LOAD,
   STORE
 }
@@ -31,7 +31,7 @@ enum class Math : std::uint8_t {
   NEGATE
 }
 
-enum class Logic : std::uint8_t
+enum class Logic : std::uint8_t {
   EQUAL = 1,
   NOT_EQUAL,
   LESS_THAN_OR_EQUAL,
@@ -40,15 +40,16 @@ enum class Logic : std::uint8_t
   OR,
   JUMP,
   JUMP_IF
-}
+};
 
-enum class Func : std::uint8_t
+enum class Func : std::uint8_t {
   CALL = 1,
   TAIL,
   RETURN,
-  RETURN_VOID,
-}
-enum class General : std::uint8_t
+  RETURN_VOID
+};
+
+enum class General : std::uint8_t {
   HALT = 1,
   SLICE,
   SET_INDEX,
