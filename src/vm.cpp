@@ -139,25 +139,15 @@ namespace lang {
       return Value::S("");
     }},
     {"len", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "len requires exactly one argument");
-      }
       const auto& arg = args[0];
       if (arg.t == Type::List) {
         return Value::I(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
       } else if (arg.t == Type::Str) {
         return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
       }
-      Loc L = locate(p.i);
-      ERR(L, "len requires a list or string");
       return Value::N();
     }},
     {"split", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 2 || args[0].t != Type::Str) {
-        Loc L = locate(p.i);
-        ERR(L, "split requires string or list and delimiter arguments");
-      }
       const char* str = args[0].AsStr();
       const char* delim = args[1].AsStr();
 
@@ -187,10 +177,6 @@ namespace lang {
       return Value::S(result.c_str());
     }},
     {"round", [](std::vector<Value>& args) -> Value {
-      if (args.size() != 1) {
-        Loc L = locate(p.i);
-        ERR(L, "round requires exactly one argument");
-      }
       return Value::I((long long)std::round(args[0].AsFloat(p.i)));
     }},
     {"random", [](std::vector<Value>& args) -> Value {
@@ -691,8 +677,9 @@ inline static void write_str(FILE*f, const lang::CString& s){
             if (it == fnEntry.end()) {
               auto bit = builtins.find(name);
               if (bit == builtins.end()) {
-                Loc L = locate(p.i);
-                ERR(L, "unknown function");
+                // FIXME: Should have an error message
+                // FIXMENOTE: We can remove this, if it's completely preventable by the compiler :)
+                std::exit(1);
               }
               auto rv = bit->second(args);
               push(std::move(rv));
@@ -723,11 +710,6 @@ inline static void write_str(FILE*f, const lang::CString& s){
               } else {
                 push(Value::I(a.AsInt(p.i) - b.AsInt(p.i)));
               }
-            } else {
-              Loc L = locate(p.i);
-              CString msg = CString("Cannot subtract values of type ") + TypeName(a.t) + " and " + TypeName(b.t);
-              ERR(L, msg.c_str());
-            }
           } break;
 
           case MUL: {
@@ -806,8 +788,6 @@ inline static void write_str(FILE*f, const lang::CString& s){
                   push(std::move(rv));
                   break;
                 }
-                Loc L = locate(p.i);
-                ERR(L, "unknown function");
               }
               auto rv = bit->second(args);
               push(std::move(rv));
@@ -843,18 +823,16 @@ inline static void write_str(FILE*f, const lang::CString& s){
             if (base.t == Type::List) {
               // FIXME: Prefer explicit over auto
               auto& xs = std::get<std::vector<Value>>(base.v);
-              if (i < 0 || (size_t)i >= xs.size()) {
-                Loc L = locate(p.i);
-                ERR(L, "index out of bounds");
-              }
               push(xs[(size_t)i]);
             } else if (base.t == Type::Str) {
               const char* s = base.AsStr();
-              size_t len = std::strlen(s);
+              // FIXME: This error is hard to prevent with just the compiler
+              //        The error could go over expected amount, during run...
+              /*size_t len = std::strlen(s);
               if (i < 0 || (size_t)i >= len) {
                 Loc L = locate(p.i);
                 ERR(L, "index out of bounds");
-              }
+              }*/
               char single[2] = {s[i], '\0'};
               push(Value::S(single));
           } break;
