@@ -1,4 +1,5 @@
 #pragma once
+#include "macros.hpp"
 #include <variant>
 #include <vector>
 #include <map>
@@ -20,13 +21,17 @@ struct Value
       bool,                   // Bool
       std::vector<Value>,     // List
       std::map<Value, Value>, // dictionary
-      std::map<int, int>,     // range (uncommented)
-      double,                 // Float
-      std::monostate,         // Null
-      uint8_t,                // 8-bit int
-      uint16_t,               // 16-bit int
-      uint32_t,               // 32-bit int
-      uint64_t                // 64-bit int
+      std::map<int, int>,     // range
+      double,                 // float
+      std::monostate,         // null
+      int8_t,                 // 8-bit int
+      int16_t,                // 16-bit int
+      int32_t,                // 32-bit int
+      int64_t,                // 64-bit int
+      uint8_t,                // unsigned 8-bit int
+      uint16_t,               // unsigned 16-bit int
+      uint32_t,               // unsigned 32-bit
+      uint64_t                // unsigned 64-bit int
       >
       v;
 
@@ -51,10 +56,14 @@ struct Value
   static Value S(const char *s) { return Value(Type::Str, s); }
   static Value S(CString &&s) { return Value(Type::Str, std::move(s)); }
   static Value F(double f) { return Value(Type::Float, f); }
-  static Value I8(uint8_t i) { return Value(Type::i8, i); }
-  static Value I16(uint16_t i) { return Value(Type::i16, i); }
-  static Value I32(uint32_t i) { return Value(Type::i32, i); }
-  static Value I64(uint64_t i) { return Value(Type::i64, i); }
+  static Value I8(int8_t i) { return Value(Type::i8, i); }
+  static Value I16(int16_t i) { return Value(Type::i16, i); }
+  static Value I32(int32_t i) { return Value(Type::i32, i); }
+  static Value I64(int64_t i) { return Value(Type::i64, i); }
+  static Value UI8(uint8_t i) { return Value(Type::ui8, i); }
+  static Value UI16(uint16_t i) { return Value(Type::ui16, i); }
+  static Value UI32(uint32_t i) { return Value(Type::ui32, i); }
+  static Value UI64(uint64_t i) { return Value(Type::ui64, i); }
   static Value R(const std::map<int, int> &range) { return Value(Type::Range, range); }
 
   int AsInt() const
@@ -69,6 +78,22 @@ struct Value
       return std::get<bool>(v) ? 1 : 0;
     case Type::Null:
       return 0;
+    case Type::i8:
+      return (int)std::get<int8_t>(v);
+    case Type::i16:
+      return (int)std::get<int16_t>(v);
+    case Type::i32:
+      return (int)std::get<int32_t>(v);
+    case Type::i64:
+      return (int)std::get<int64_t>(v);
+    case Type::ui8:
+      return (int)std::get<uint8_t>(v);
+    case Type::ui16:
+      return (int)std::get<uint16_t>(v);
+    case Type::ui32:
+      return (int)std::get<uint32_t>(v);
+    case Type::ui64:
+      return (int)std::get<uint64_t>(v);
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -91,6 +116,22 @@ struct Value
       return std::get<bool>(v) ? 1.0 : 0.0;
     case Type::Null:
       return 0.0;
+    case Type::i8:
+      return (double)std::get<int8_t>(v);
+    case Type::i16:
+      return (double)std::get<int16_t>(v);
+    case Type::i32:
+      return (double)std::get<int32_t>(v);
+    case Type::i64:
+      return (double)std::get<int64_t>(v);
+    case Type::ui8:
+      return (double)std::get<uint8_t>(v);
+    case Type::ui16:
+      return (double)std::get<uint16_t>(v);
+    case Type::ui32:
+      return (double)std::get<uint32_t>(v);
+    case Type::ui64:
+      return (double)std::get<uint64_t>(v);
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -111,6 +152,22 @@ struct Value
       return std::get<int>(v) != 0;
     case Type::Float:
       return std::get<double>(v) != 0.0;
+    case Type::i8:
+      return std::get<int8_t>(v) != 0;
+    case Type::i16:
+      return std::get<int16_t>(v) != 0;
+    case Type::i32:
+      return std::get<int32_t>(v) != 0;
+    case Type::i64:
+      return std::get<int64_t>(v) != 0;
+    case Type::ui8:
+      return std::get<uint8_t>(v) != 0;
+    case Type::ui16:
+      return std::get<uint16_t>(v) != 0;
+    case Type::ui32:
+      return std::get<uint32_t>(v) != 0;
+    case Type::ui64:
+      return std::get<uint64_t>(v) != 0;
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -142,6 +199,70 @@ struct Value
       os << std::get<int>(v);
       int_str = os.str().c_str();
       return int_str.c_str();
+    }
+    case Type::i8:
+    {
+      static CString i8_str;
+      std::ostringstream os;
+      os << (int)std::get<int8_t>(v);
+      i8_str = os.str().c_str();
+      return i8_str.c_str();
+    }
+    case Type::i16:
+    {
+      static CString i16_str;
+      std::ostringstream os;
+      os << std::get<int16_t>(v);
+      i16_str = os.str().c_str();
+      return i16_str.c_str();
+    }
+    case Type::i32:
+    {
+      static CString i32_str;
+      std::ostringstream os;
+      os << std::get<int32_t>(v);
+      i32_str = os.str().c_str();
+      return i32_str.c_str();
+    }
+    case Type::i64:
+    {
+      static CString i64_str;
+      std::ostringstream os;
+      os << std::get<int64_t>(v);
+      i64_str = os.str().c_str();
+      return i64_str.c_str();
+    }
+    case Type::ui8:
+    {
+      static CString ui8_str;
+      std::ostringstream os;
+      os << (unsigned)std::get<uint8_t>(v);
+      ui8_str = os.str().c_str();
+      return ui8_str.c_str();
+    }
+    case Type::ui16:
+    {
+      static CString ui16_str;
+      std::ostringstream os;
+      os << std::get<uint16_t>(v);
+      ui16_str = os.str().c_str();
+      return ui16_str.c_str();
+    }
+    case Type::ui32:
+    {
+      static CString ui32_str;
+      std::ostringstream os;
+      os << std::get<uint32_t>(v);
+      ui32_str = os.str().c_str();
+      return ui32_str.c_str();
+    }
+    case Type::ui64:
+    {
+      static CString ui64_str;
+      std::ostringstream os;
+      os << std::get<uint64_t>(v);
+      ui64_str = os.str().c_str();
+      return ui64_str.c_str();
     }
     case Type::Float:
     {
@@ -193,6 +314,22 @@ struct Value
       return std::get<double>(v) == std::get<double>(other.v);
     case Type::Bool:
       return std::get<bool>(v) == std::get<bool>(other.v);
+    case Type::i8:
+      return std::get<int8_t>(v) == std::get<int8_t>(other.v);
+    case Type::i16:
+      return std::get<int16_t>(v) == std::get<int16_t>(other.v);
+    case Type::i32:
+      return std::get<int32_t>(v) == std::get<int32_t>(other.v);
+    case Type::i64:
+      return std::get<int64_t>(v) == std::get<int64_t>(other.v);
+    case Type::ui8:
+      return std::get<uint8_t>(v) == std::get<uint8_t>(other.v);
+    case Type::ui16:
+      return std::get<uint16_t>(v) == std::get<uint16_t>(other.v);
+    case Type::ui32:
+      return std::get<uint32_t>(v) == std::get<uint32_t>(other.v);
+    case Type::ui64:
+      return std::get<uint64_t>(v) == std::get<uint64_t>(other.v);
     case Type::Str:
       return std::get<CString>(v) == std::get<CString>(other.v);
     case Type::List:
@@ -206,4 +343,7 @@ struct Value
   }
 
   bool operator!=(const Value &other) const { return !(*this == other); }
+
+  bool operator<(const Value &other) const { return !(*this < other); }
+  bool operator>(const Value &other) const { return !(*this < other); }
 };
