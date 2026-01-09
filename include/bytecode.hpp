@@ -1,38 +1,41 @@
 #pragma once
 #include <cstdint>
+#include "macros.hpp"
 
-enum class Register : std::uint8_t {
-  IMPORT = 1,
+// Up to 240 opcodes
+
+enum class Register : uint8 {
+  IMPORT = 0,
   VARIABLE,
   LOGIC,
   FUNCTION,
   GENERAL
 };
 
-enum class Import : std::uint8_t {
-  FUNC = 1,
+enum class Import : uint8 {
+  FUNC = 0,
   LOAD,
   STORE
-}
+};
 
-enum class Variable : std::uint8_t {
-  GET = 1,
+enum class Variable : uint8 {
+  GET = 0,
   SET,
   DECLARE,
   UNSET,
   PUSH
-}
+};
 
-enum class Math : std::uint8_t {
-  ADD = 1,
+enum class Math : uint8 {
+  ADD = 0,
   SUBTRACT,
   MULTIPLY,
   DIVIDE,
   NEGATE
-}
+};
 
-enum class Logic : std::uint8_t {
-  EQUAL = 1,
+enum class Logic : uint8 {
+  EQUAL = 0,
   NOT_EQUAL,
   LESS_THAN_OR_EQUAL,
   LESS_THAN,
@@ -42,15 +45,15 @@ enum class Logic : std::uint8_t {
   JUMP_IF
 };
 
-enum class Func : std::uint8_t {
-  CALL = 1,
+enum class Func : uint8 {
+  CALL = 0,
   TAIL,
   RETURN,
   RETURN_VOID
 };
 
-enum class General : std::uint8_t {
-  HALT = 1,
+enum class General : uint8 {
+  HALT = 0,
   SLICE,
   SET_INDEX,
   NO_OP,
