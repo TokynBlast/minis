@@ -5,16 +5,18 @@
 #include "../include/plugin.hpp"
 #include "../include/value.hpp"
 #include "../include/sso.hpp"
+#include "../include/macros.hpp"
 
 using namespace minis;
 
+// FIXME: Use the ones in io.hpp
 // I/O helper functions
-inline void write_u8(FILE* f, uint8_t v) { fwrite(&v, 1, 1, f); }
-inline void write_u16(FILE* f, uint16_t v) { fwrite(&v, 2, 1, f); }
-inline void write_u32(FILE* f, uint32_t v) { fwrite(&v, 4, 1, f); }
-inline void write_u64(FILE* f, uint64_t v) { fwrite(&v, 8, 1, f); }
-inline bool read_u32(FILE* f, uint32_t& v) { return fread(&v, 4, 1, f) == 1; }
-inline bool read_u64(FILE* f, uint64_t& v) { return fread(&v, 8, 1, f) == 1; }
+inline void write_u8(FILE* f, uint8 v) { fwrite(&v, 1, 1, f); }
+inline void write_u16(FILE* f, uint16 v) { fwrite(&v, 2, 1, f); }
+inline void write_u32(FILE* f, uint32 v) { fwrite(&v, 4, 1, f); }
+inline void write_u64(FILE* f, uint64 v) { fwrite(&v, 8, 1, f); }
+inline bool read_u32(FILE* f, uint32& v) { return fread(&v, 4, 1, f) == 1; }
+inline bool read_u64(FILE* f, uint64& v) { return fread(&v, 8, 1, f) == 1; }
 
 static std::unordered_map<int, FILE*> fileHandles;
 static int nextHandle = 1;
@@ -50,7 +52,7 @@ static Value devWriteBytes(const std::vector<Value>& args) {
 
     for (const auto& byteVal : bytes) {
         if (byteVal.t == Type::Int) {
-            uint8_t b = (uint8_t)std::get<int>(byteVal.v);
+            uint8 b = (uint8)std::get<int>(byteVal.v);
             fwrite(&b, 1, 1, file);
         }
     }
@@ -71,7 +73,7 @@ static Value devReadBytes(const std::vector<Value>& args) {
     bytes.reserve((size_t)count);
 
     for (int i = 0; i < count; ++i) {
-        uint8_t b;
+        uint8 b;
         if (fread(&b, 1, 1, file) != 1) break;
         bytes.push_back(Value::I((int)b));
     }
@@ -82,7 +84,7 @@ static Value devReadBytes(const std::vector<Value>& args) {
 static Value devEmitU16(const std::vector<Value>& args) {
     if (args.size() != 2) return Value::B(false);
     FILE* file = getFileHandle(args[0]);
-    uint16_t v = (uint16_t)args[1].AsInt();
+    uint16 v = (uint16)args[1].AsInt();
     if (!file) return Value::B(false);
     write_u16(file, v);
     return Value::B(true);
@@ -92,7 +94,7 @@ static Value devEmitU16(const std::vector<Value>& args) {
 static Value devEmitU8(const std::vector<Value>& args) {
     if (args.size() != 2) return Value::B(false);
     FILE* file = getFileHandle(args[0]);
-    uint8_t v = (uint8_t)args[1].AsInt();
+    uint8 v = (uint8)args[1].AsInt();
     if (!file) return Value::B(false);
     write_u8(file, v);
     return Value::B(true);
@@ -102,7 +104,7 @@ static Value devEmitU8(const std::vector<Value>& args) {
 static Value devEmitU32(const std::vector<Value>& args) {
     if (args.size() != 2) return Value::B(false);
     FILE* file = getFileHandle(args[0]);
-    uint32_t v = (uint32_t)args[1].AsInt();
+    uint32 v = (uint32)args[1].AsInt();
     if (!file) return Value::B(false);
     write_u32(file, v);
     return Value::B(true);
@@ -112,7 +114,7 @@ static Value devEmitU32(const std::vector<Value>& args) {
 static Value devEmitU64(const std::vector<Value>& args) {
     if (args.size() != 2) return Value::B(false);
     FILE* file = getFileHandle(args[0]);
-    uint64_t v = (uint64_t)args[1].AsInt();
+    uint64 v = (uint64)args[1].AsInt();
     if (!file) return Value::B(false);
     write_u64(file, v);
     return Value::B(true);
@@ -123,7 +125,7 @@ static Value devReadU8(const std::vector<Value>& args) {
     if (args.size() != 1) return Value::N();
     FILE* file = getFileHandle(args[0]);
     if (!file) return Value::N();
-    uint8_t v;
+    uint8 v;
     if (fread(&v, 1, 1, file) != 1) return Value::N();
     return Value::I((int)v);
 }
@@ -133,7 +135,7 @@ static Value devReadU32(const std::vector<Value>& args) {
     if (args.size() != 1) return Value::N();
     FILE* file = getFileHandle(args[0]);
     if (!file) return Value::N();
-    uint32_t v;
+    uint32 v;
     if (!read_u32(file, v)) return Value::N();
     return Value::I((int)v);
 }
@@ -143,7 +145,7 @@ static Value devReadU64(const std::vector<Value>& args) {
     if (args.size() != 1) return Value::N();
     FILE* file = getFileHandle(args[0]);
     if (!file) return Value::N();
-    uint64_t v;
+    uint64 v;
     if (!read_u64(file, v)) return Value::N();
     return Value::I((int)v);
 }
@@ -155,7 +157,7 @@ static Value devEmitStr(const std::vector<Value>& args) {
     if (!file) return Value::B(false);
 
     const CString& str = std::get<CString>(args[1].v);
-    uint64_t len = str.size();
+    uint64 len = str.size();
     write_u64(file, len);
     if (fwrite(str.c_str(), 1, len, file) != len) return Value::B(false);
     return Value::B(true);
@@ -167,7 +169,7 @@ static Value devReadStr(const std::vector<Value>& args) {
     FILE* file = getFileHandle(args[0]);
     if (!file) return Value::N();
 
-    uint64_t len;
+    uint64 len;
     if (!read_u64(file, len)) return Value::N();
     char* buffer = (char*)malloc(len + 1);
     if (fread(buffer, 1, len, file) != len) {
