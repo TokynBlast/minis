@@ -58,7 +58,7 @@ enum class General : uint8 {
   HALT = 0,  // Stop program
   SLICE,     // ???
   SET_INDEX, // ???
-  NO_OP,     // Do nothing
+  NOP,     // Do nothing
   POP,       // Pop current value on top of stack
   INDEX,     // ???
   EMIT       // ???
