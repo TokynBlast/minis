@@ -16,16 +16,16 @@
 #define int32 int32_t
 #define int64 int64_t
 
+#if !defined(_WIN32) && !defined(__linux__) && !defined(__APPLE__)
+  #error "Use Windows, Linux, or Apple."
+#endif
+
 #if defined(__gnu__)
   #define hot __attribute__((hot))
   #define cold __attribute__((cold))
   #define impossible __builtin_unreachable()
   #define noreturn __attribute__((noreturn))
   #define nouse __attribute__((unusued))
-#elif !defined(__gnu__) && defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
-  #error "Use g++ or Clang."
-#elif !defined(_WIN32) && !defined(__linux__) && !defined(__APPLE__)
-  #error "Use Windows, Linux, or Apple."
 # else
-  #error "Unknown error."
+  #error "Use g++ or Clang to compile."
 #endif
