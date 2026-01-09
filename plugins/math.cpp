@@ -2,7 +2,7 @@
 #include "../include/value.hpp"
 #include <cmath>
 
-using namespace lang;
+using namespace minis;
 
 static Value mathSin(const std::vector<Value>& args) {
     if (args.size() == 1 && args[0].t == Type::Float) {

@@ -3,7 +3,7 @@
 #include <random>
 #include <chrono>
 
-using namespace lang;
+using namespace minis;
 
 static std::mt19937_64& rng() {
     static std::mt19937_64 gen(std::chrono::steady_clock::now().time_since_epoch().count());
