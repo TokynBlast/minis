@@ -1,4 +1,3 @@
-#include "../include/macros.hpp"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -9,12 +8,15 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
 #include "../include/value.hpp"
 #include "../include/vm.hpp"
 #include "../include/sso.hpp"
 #include "../include/plugin.hpp"
+#include "../include/macros.hpp"
+#include "../include/io.hpp"
 
 namespace minis {
   /*=============================
@@ -104,7 +106,7 @@ namespace minis {
     {"sort", [](std::vector<Value>& args) {
       std::vector<Value> list = args[0].AsList();
       std::sort(list.begin(), list.end(),
-        [](const Value& a, const Value& b) { return a.AsFloat(0) < b.AsFloat(0); });
+        [](const Value& a, const Value& b) { return a.AsFloat() < b.AsFloat(); });
       return Value::L(list);
     }},
     {"reverse", [](std::vector<Value>& args) -> Value {
@@ -123,8 +125,8 @@ namespace minis {
       const auto& list = args[0].AsList();
       Value sum = Value::I(0);
       for (const auto& v : list) {
-        if (v.t == Type::Float) sum = Value::F(sum.AsFloat(p.i) + v.AsFloat(p.i));
-        else sum = Value::I(sum.AsInt(p.i) + v.AsInt(p.i));
+        if (v.t == Type::Float) sum = Value::F(sum.AsFloat() + v.AsFloat());
+        else sum = Value::I(sum.AsInt() + v.AsInt());
       }
       return sum;
     }},
@@ -181,13 +183,13 @@ namespace minis {
       return Value::S(result.c_str());
     }},
     {"round", [](std::vector<Value>& args) -> Value {
-      return Value::I((long long)std::round(args[0].AsFloat(p.i)));
+      return Value::I((long long)std::round(args[0].AsFloat()));
     }},
     {"random", [](std::vector<Value>& args) -> Value {
       if (args.empty()) {
         return Value::F((double)rand() / RAND_MAX);
       } else {
-        long long max_val = args[0].AsInt(p.i);
+        long long max_val = args[0].AsInt();
         return Value::I(rand() % max_val);
       }
     }},
@@ -223,7 +225,7 @@ namespace minis {
     }},
 
     {"close", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
       if (file && file != stdin && file != stdout && file != stderr) {
         fclose(file);
       }
@@ -231,18 +233,19 @@ namespace minis {
     }},
 
     {"write", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
       const char* data = args[1].AsStr();
 
-      if (!file) return std::abort();
+      // We should use exit(1), not abort()
+      if (!file) std::exit(1);
 
       size_t written = fwrite(data, 1, strlen(data), file);
       return Value::I((long long)written);
     }},
 
     {"read", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
-      long long size = args[1].AsInt(p.i);
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
+      long long size = args[1].AsInt();
 
       if (!file) std::abort();
       if (size <= 0) return Value::S("");
@@ -257,7 +260,7 @@ namespace minis {
     }},
 
     {"flush", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
+      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
       if (file) {
         fflush(file);
       }
@@ -272,7 +275,7 @@ namespace minis {
         case Type::Bool:  return Value::I(3);
         case Type::List:  return Value::I(4);
         case Type::Null:  return Value::I(5);
-        default: std::abort()
+        default: std::abort();
       }
     }},
 
@@ -305,9 +308,9 @@ namespace minis {
   void Coerce(Type t, Value& v) {
     if (v.t == t) return;
     switch (t) {
-      case Type::Int:   v = Value::I(v.AsInt(p.i)); break;
-      case Type::Float: v = Value::F(v.AsFloat(p.i)); break;
-      case Type::Bool:  v = Value::B(v.AsBool(p.i)); break;
+      case Type::Int:   v = Value::I(v.AsInt()); break;
+      case Type::Float: v = Value::F(v.AsFloat()); break;
+      case Type::Bool:  v = Value::B(v.AsBool()); break;
       case Type::List:  v = Value::L(v.AsList()); break;
       case Type::Str:   v = Value::S(v.AsStr()); break;
       case Type::Null:  v = Value::N(); break;
@@ -337,7 +340,7 @@ namespace minis {
     const Var& Get(const CString& n) const {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
-      if (parent) return parent->Get(n, loc);
+      if (parent) return parent->Get(n);
       std::abort();
     }
 
@@ -380,25 +383,26 @@ namespace minis {
     Env globals;
 
     FILE* f = nullptr;
-    uint64_t ip = 0, table_off = 0, code_end = 0;
+    uint64 ip = 0, table_off = 0, code_end = 0;
     std::vector<Value> stack;
 
     // FIXME: Strip data MVME doesn't need
     struct Frame {
-      uint64_t ret_ip;
+      uint64 ret_ip;
       std::unique_ptr<Env> env;   // heap-allocated, stable address
       bool isVoid = false;
       bool typed  = false;
       Type ret    = Type::Int;
 
-      Frame(uint64_t rip, std::unique_ptr<Env> e, bool v, bool t, Type r)
+      Frame(uint64 rip, std::unique_ptr<Env> e, bool v, bool t, Type r)
         : ret_ip(rip), env(std::move(e)), isVoid(v), typed(t), ret(r) {}
     };
 
     std::vector<Frame> frames;
 
+    // FIXME: We don't need to know void or typed at runtime
     struct FnMeta {
-      uint64_t entry;
+      uint64 entry;
       bool isVoid;
       bool typed;
       Type ret;
@@ -409,43 +413,23 @@ namespace minis {
     explicit VMEngine() {}
     ~VMEngine() { if (f) fclose(f); }
 
-
-
-
-
-inline static void sendu16(FILE*f, uint16_t v){ fwrite(&v,2,1,f); }
-inline static void sendu8 (FILE*f, uint8_t  v){ fwrite(&v,1,1,f); }
-inline static void sendu32(FILE*f, uint32_t v){ fwrite(&v,4,1,f); }
-inline static void write_u64(FILE*f, uint64_t v){ fwrite(&v,8,1,f); }
-inline static void write_s64(FILE*f, int64_t  v){ fwrite(&v,8,1,f); }
-inline static void write_f64(FILE*f, double   v){ fwrite(&v,8,1,f); }
-inline static void write_str(FILE*f, const minis::CString& s){
-  uint64_t n=s.size();
-  write_u64(f,n); if(n)
-  fwrite(s.c_str(),1,n,f);
-}
-
-    inline void jump(uint64_t target) { ip = target; fseek(f, (long)ip, SEEK_SET); }
+    inline void jump(uint64 target) { ip = target; fseek(f, (long)ip, SEEK_SET); }
 
     // unsigned ints
-    inline uint8_t fetchu8() { uint8_t v; fread(&v, 1, 1, f); ++ip; return v; }
-    inline uint8_t fetchu16() { uint16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
-    inline uint8_t fetchu32() { uint32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
-    inline uint64_t fetchu64() { uint64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
+    inline uint8 GETu8() { uint8 v; fread(&v, 1, 1, f); ip++; return v; }
+    inline uint16 GETu16() { uint16 v; fread(&v, 2, 1, f); ip+=2; return v; }
+    inline uint32 GETu32() { uint32 v; fread(&v, 4, 1, f); ip+=4; return v; }
+    inline uint64 GETu64() { uint64 v; fread(&v, 8, 1, f); ip+=8; return v; }
 
     // signed ints
-    inline int8_t fetch8() { int8_t v; fread(&v, 1, 1, f); ++ip; return v; }
-    inline int8_t fetch16() { int16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
-    inline int8_t fetch32() { int32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
-    inline int64_t fetch64() { int64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline int8_t fetchu8() { uint8_t v; fread(&v, 1, 1, f); ++ip; return v; }
-    inline int8_t fetchu16() { uint16_t v; fread(&v, 2, 1, f); ip+=2; return v; }
-    inline int8_t fetchu32() { uint32_t v; fread(&v, 4, 1, f); ip+=4; return v; }
-    inline int64_t fetchu64() { uint64_t v; fread(&v, 8, 1, f); ip += 8; return v; }
+    inline int8 GETs8() { int8 v; fread(&v, 1, 1, f); ip++; return v; }
+    inline int8 GETs16() { int16 v; fread(&v, 2, 1, f); ip+=2; return v; }
+    inline int8 GETs32() { int32 v; fread(&v, 4, 1, f); ip+=4; return v; }
+    inline int64 GETs64() { int64 v; fread(&v, 8, 1, f); ip += 8; return v; }
 
-    inline double fetchd64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline CString fetchStr() {
-      uint64_t n = fetchu64();
+    inline double GETd64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
+    inline CString GETstr() {
+      uint64 n = GETu64();
       char* buffer = static_cast<char*>(malloc(n + 1));
       if (n) fread(buffer, 1, n, f);
       buffer[n] = '\0';
@@ -461,7 +445,7 @@ inline static void write_str(FILE*f, const minis::CString& s){
           fprintf(stderr, "FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
           std::exit(1);
         }
-        // NOTE: This is kept around, only because the compiler sometimes makes mistakes
+        // FIXME: This should use err.hpp (vm_err.hpp)
         if (stack.back().t == Type::Null) {
           fprintf(stderr, "FATAL ERROR: Stack had null top value.");
           std::exit(1);
@@ -496,26 +480,27 @@ inline static void write_str(FILE*f, const minis::CString& s){
       if (std::strcmp(magic, "AVOCADO1") != 0)
         throw std::runtime_error("bad bytecode verification");
 
-      table_off = read_u64(f);
-      uint64_t fnCount = read_u64(f);
-      uint64_t entry_main = read_u64(f);
-      uint64_t line_map_off = read_u64(f); // Skip line map offset (not used)
+      table_off = GETu64();
+      uint64 fnCount = GETu64();
+      uint64 entry_main = GETu64();
+      uint64 line_map_off = GETu64(); // Skip line map offset (not used)
 
       // Header is now exactly 40 bytes (8 magic + 32 data), no padding
       ip = entry_main;
       code_end = table_off;
 
       fseek(f, (long)table_off, SEEK_SET);
-      for (uint64_t i = 0; i < fnCount; ++i) {
-        CString name = read_str(f);
-        uint64_t entry = read_u64(f);
-        bool isVoid = read_u8(f) != 0;
-        bool typed = read_u8(f) != 0;
-        Type ret = (Type)read_u8(f);
-        uint64_t pcnt = read_u64(f);
+      for (uint64 i = 0; i < fnCount; i++) {
+        CString name = GETstr();
+        uint64 entry = GETu64();
+        // FIXME: isVoid & typed aren't needed at runtime
+        bool isVoid = GETu8() != 0;
+        bool typed = GETu8() != 0;
+        Type ret = (Type)GETu8();
+        uint64 pcnt = GETu64();
         std::vector<CString> params;
         params.reserve((size_t)pcnt);
-        for (uint64_t j = 0; j < pcnt; ++j) params.push_back(read_str(f));
+        for (uint64 j = 0; j < pcnt; ++j) params.push_back(read_str(f));
         fnEntry[name] = FnMeta{ entry, isVoid, typed, ret, params };
       }
 
@@ -524,19 +509,20 @@ inline static void write_str(FILE*f, const minis::CString& s){
       if (line_map_off > 0) {
         fseek(f, (long)line_map_off, SEEK_SET);
         // Skip line map
-        uint64_t line_map_count = read_u64(f);
-        for (uint64_t i = 0; i < line_map_count; ++i) {
-          read_u64(f); // offset
-          read_u32(f); // line
+        uint64 line_map_count = GETu64();
+        for (uint64 i = 0; i < line_map_count; i++) {
+          GETu64(); // offset
+          GETu32(); // line
         }
 
         // Now read plugin table
-        uint64_t plugin_count = read_u64(f);
-        for (uint64_t i = 0; i < plugin_count; ++i) {
-          CString module_name = read_str(f);
-          CString library_path = read_str(f);
+        uint64 plugin_count = GETu64();
+        for (uint64 i = 0; i < plugin_count; ++i) {
+          CString module_name = GETstr();
+          CString library_path = GETstr();
 
           // Load plugin
+          // FIXME: We should use the custom Minis buffer instead
           if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
             std::cerr << "Warning: Failed to load plugin " << module_name.c_str() << std::endl;
           }
@@ -544,40 +530,98 @@ inline static void write_str(FILE*f, const minis::CString& s){
       }
 
       jump(entry_main);
-      frames.push_back(Frame{ (uint64_t)-1, nullptr, true, false, Type::Int });
+      frames.push_back(Frame{ (uint64)-1, nullptr, true, false, Type::Int });
       frames.back().env = std::make_unique<Env>(&globals);
     }
 
     inline void run() {
       for (;;) {
         if (ip >= code_end) return;
-        unisgned char op = fetch8();
-        switch (op >> 4) {
-          case Register::LOGIC: {
-
+        unsigned char op = GETu8();
+        // FIXME: This needs to possibly lead to another switch, or have switches in the switches.
+        switch (op >> 5) {
+          case static_cast<int>(Register::LOGIC): {
+            case static_cast<int>(Logic::ADD): {
+              Value b = pop();
+              Value a = pop();
+              // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
+              //        I found the first if as an else if.
+              if (a.t == Type::List) {
+                if (b.t == Type::List) {
+                  std::vector<Value> result;
+                  // FIXME: Prefer specific type over auto
+                  const auto& L = std::get<std::vector<Value>>(a.v);
+                  const auto& R = std::get<std::vector<Value>>(b.v);
+                  result.reserve(L.size() + R.size());
+                  result.insert(result.end(), L.begin(), L.end());
+                  result.insert(result.end(), R.begin(), R.end());
+                  push(Value::L(std::move(result)));
+                } else {
+                  std::vector<Value> result = std::get<std::vector<Value>>(a.v);
+                  result.push_back(b);
+                  push(Value::L(std::move(result)));
+                }
+              } else if (a.t == Type::Str || b.t == Type::Str) {
+                CString result = CString(a.AsStr()) + b.AsStr();
+                push(Value::S(std::move(result)));
+              } else if (a.t == Type::Float || b.t == Type::Float) {
+                push(Value::F(a.AsFloat() + b.AsFloat()));
+              } else if (a.t == Type::Int || b.t == Type::Int) {
+                push(Value::I(a.AsInt() + b.AsInt()));
+            } break;
+            case static_cast<int>(Logic::EQUAL): {
+              Value b = pop(), a = pop();
+              bool eq = (a.t == b.t) ? (a == b)
+                        : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
+                            ? (a.AsFloat() == b.AsFloat()) : false);
+              push(Value::B(eq));
+            } break;
+            case static_cast<int>(Logic::SUBTRACT): {
+              Value b = pop(), a = pop();
+              if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
+                if (a.t == Type::Float || b.t == Type::Float) {
+                  push(Value::F(a.AsFloat() - b.AsFloat()));
+                } else {
+                  push(Value::I(a.AsInt() - b.AsInt()));
+                }
+            } break;
+            case static_cast<int>(Logic::MULTIPLY): {
+              Value b = pop(), a = pop();
+              if (a.t == Type::Float || b.t == Type::Float)
+                push(Value::F(a.AsFloat() * b.AsFloat()));
+              else
+                push(Value::I(a.AsInt() * b.AsInt()));
+            } break;
+            case static_cast<int>(Logic::DIVIDE): {
+              Value b = pop(), a = pop();
+              push(Value::F(a.AsFloat() / b.AsFloat()));
+            } break;
+            case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
           } break;
-          case Register::VARIABLE: {
-            case Variable::PUSH: {
-              switch (op & 0xF0) {
-                case 0:{
-                  unsigned char meta = fetch8();
-                  uint8_t type = meta >> 4;
+          case static_cast<int>(Register::VARIABLE): {
+            switch (op & 0x1F) {
+              case static_cast<int>(Variable::PUSH): {
+                switch (op & 0xF0) {
+                  case 0:{
+                  unsigned char meta = GETu8();
+                  uint8 type = meta >> 4;
                   // uint8_t signedness = meta & 0b11110111; // Not currently implemented; Commented to reduce unused variable warning
                   // NOTE: In this implementation, 0 is false, 1 is true
                   switch(type) {
-                    case 0x00: push(Value::I8(fetch8())); break;
-                    case 0x01: push(Value::I16(fetch16()); break;
-                    case 0x02: push(Value::I32(fetch32()); break;
-                    case 0x03: push(Value::I64(fetch64())); break;
-                    case 0x04: push(Value::UI8(fetchU8())); break;
-                    case 0x05: push(Value::UI16(fetchU16()); break;
-                    case 0x06: push(Value::UI32(fetchU32()); break;
-                    case 0x07: push(Value::UI64(fetchU64())); break;
-                    case 0x08: push(Value::F(fetchd64()); break;
+                    case 0x00: push(Value::I8(GETs8())); break;
+                    case 0x01: push(Value::I16(GETs16())); break;
+                    case 0x02: push(Value::I32(GETs32())); break;
+                    case 0x03: push(Value::I64(GETs64())); break;
+
+                    case 0x04: push(Value::UI8(GETu8())); break;
+                    case 0x05: push(Value::UI16(GETu16())); break;
+                    case 0x06: push(Value::UI32(GETu32())); break;
+                    case 0x07: push(Value::UI64(GETu64())); break;
+                    case 0x08: push(Value::F(GETd64())); break;
                     case 0x09: {
-                      bool_val = meta;
+                      unsigned char bool_val = meta;
                       bool_val & 0b00000100;
-                      if !(meta && 0b00000000) {
+                      if (!(meta && 0b00000000)) {
                         push(Value::B(false));
                       } else {
                         push(Value::B(true));
@@ -596,11 +640,11 @@ inline static void write_str(FILE*f, const minis::CString& s){
                   }*/
                 } break;
 
-                case 3: push(Value::S(fetchStr())); break;
+                case 3: push(Value::S(GETstr())); break;
                 case 4: {
-                  uint64_t n = fetch64();
+                  uint64 n = GETu64();
                   std::vector<Value> xs; xs.resize(n);
-                  for (uint64_t i = 0; i < n; ++i) xs[n-1-i] = pop();
+                  for (uint64 i = 0; i < n; ++i) xs[n-1-i] = pop();
                   push(Value::L(std::move(xs)));
                 } break;
                 default: {
@@ -609,139 +653,81 @@ inline static void write_str(FILE*f, const minis::CString& s){
                 }
               }
             } break;
-            case SET: frames.back().env->SetOrDeclare(fetchStr(), pop()); break;
-            case DECLARE: {
-              CString id = fetchStr();
+            case static_cast<int>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
+            case static_cast<int>(Variable::DECLARE): {
+              CString id = GETstr();
               // FIXME:
-              uint64_t tt = fetch64();
+              uint64 tt = GETu64();
               Value v  = pop();
-              if (tt == 0xECull) frames.back().env->Declare(id, v.t, v, 0);
-              else               frames.back().env->Declare(id, (Type)tt, v, 0);
+              if (tt == 0xECull) frames.back().env->Declare(id, v.t, v);
+              else               frames.back().env->Declare(id, (Type)tt, v);
+            } break;
+            case static_cast<int>(Variable::GET): {
+              CString id = GETstr();
+              push(frames.back().env->Get(id).val);
+            } break;
+
+            // FIXME: This is possibly incomplete
+            case static_cast<int>(Variable::UNSET): {
+              CString id = GETstr();
+              if (!frames.back().env->Unset(id)) {}
             } break;
           } break;
-          case Register::GENERAL: {
 
+
+          case static_cast<int>(Register::GENERAL): {
+            case static_cast<int>(General::HALT): return;
+            case static_cast<int>(General::NOP): break;
+            case static_cast<int>(General::POP): { discard(); } break;
           } break;
-          case Register::FUNCTION: {
+          case static_cast<int>(Register::FUNCTION): {
+            // FIXME: Could be simpler to implement via other MVME opcodes
+            case static_cast<int>(Func::TAIL): {
+              CString name = GETstr();
+              uint64 argc = GETu64();
+              std::vector<Value> args(argc);
+              for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
 
-          } break;
-          case Register::IMPORT: {
-
-          } break;
-          case HALT: return;
-          case NOP:  break;
-
-          case GET: {
-            CString id = fetchStr();
-            push(frames.back().env->Get(id, ip).val);
-          } break;
-
-          case POP: { discard(); } break;
-
-          case ADD: {
-            Value b = pop();
-            Value a = pop();
-            else if (a.t == Type::List) {
-              if (b.t == Type::List) {
-                std::vector<Value> result;
-                // FIXME: Prefer specific type over auto
-                const auto& L = std::get<std::vector<Value>>(a.v);
-                const auto& R = std::get<std::vector<Value>>(b.v);
-                result.reserve(L.size() + R.size());
-                result.insert(result.end(), L.begin(), L.end());
-                result.insert(result.end(), R.begin(), R.end());
-                push(Value::L(std::move(result)));
-              } else {
-                std::vector<Value> result = std::get<std::vector<Value>>(a.v);
-                result.push_back(b);
-                push(Value::L(std::move(result)));
+              auto it = fnEntry.find(name);
+              if (it == fnEntry.end()) {
+                auto bit = builtins.find(name);
+                if (bit == builtins.end()) {
+                  // FIXME: Should have an error message
+                  // FIXMENOTE: We can remove this, if it's completely preventable by the compiler :)
+                  std::exit(1);
+                }
+                auto rv = bit->second(args);
+                push(std::move(rv));
+                break;
               }
-            } else if (a.t == Type::Str || b.t == Type::Str) {
-              CString result = CString(a.AsStr()) + b.AsStr();
-              push(Value::S(std::move(result)));
-            } else if (a.t == Type::Float || b.t == Type::Float) {
-              push(Value::F(a.AsFloat(p.i) + b.AsFloat(p.i)));
-            } else if (a.t == Type::Int || b.t == Type::Int) {
-              push(Value::I(a.AsInt(p.i) + b.AsInt(p.i)));
-          } break;
+              const auto& meta = it->second;
 
-          // FIXME: This is incomplete?
-          case UNSET: {
-            CString id = fetchStr();
-            if (!frames.back().env->Unset(id)) {}
-          } break;
+              // FIXME: We don't need to know isVoid or typed at runtime
+              Frame& currentFrame = frames.back();
+              currentFrame.isVoid = meta.isVoid;
+              currentFrame.typed = meta.typed;
+              currentFrame.ret = meta.ret;
 
-          case TAIL: {
-            CString name = fetchStr();
-            uint64_t argc = fetch64();
-            std::vector<Value> args(argc);
-            for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
+              Env* callerEnv = frames[frames.size()-2].env.get();
+              currentFrame.env = std::make_unique<Env>(callerEnv);
 
-            auto it = fnEntry.find(name);
-            if (it == fnEntry.end()) {
-              auto bit = builtins.find(name);
-              if (bit == builtins.end()) {
-                // FIXME: Should have an error message
-                // FIXMENOTE: We can remove this, if it's completely preventable by the compiler :)
-                std::exit(1);
+              for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
+                // FIXME: We might be able to use just args[i] then do .t in the function
+                currentFrame.env->Declare(meta.params[i], args[i].t, args[i]);
               }
-              auto rv = bit->second(args);
-              push(std::move(rv));
-              break;
-            }
-            const auto& meta = it->second;
 
-            Frame& currentFrame = frames.back();
-            currentFrame.isVoid = meta.isVoid;
-            currentFrame.typed = meta.typed;
-            currentFrame.ret = meta.ret;
-
-            Env* callerEnv = frames[frames.size()-2].env.get();
-            currentFrame.env = std::make_unique<Env>(callerEnv);
-
-            for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-              currentFrame.env->Declare(meta.params[i], args[i].t, args[i]);
-            }
-
-            jump(meta.entry);
+              jump(meta.entry);
+            } break;
           } break;
+          case static_cast<int>(Register::IMPORT): {
 
-          case SUB: {
-            Value b = pop(), a = pop();
-            if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
-              if (a.t == Type::Float || b.t == Type::Float) {
-                push(Value::F(a.AsFloat(p.i) - b.AsFloat(p.i)));
-              } else {
-                push(Value::I(a.AsInt(p.i) - b.AsInt(p.i)));
-              }
-          } break;
-
-          case MUL: {
-            Value b = pop(), a = pop();
-            if (a.t == Type::Float || b.t == Type::Float)
-              push(Value::F(a.AsFloat(p.i) * b.AsFloat(p.i)));
-            else
-              push(Value::I(a.AsInt(p.i) * b.AsInt(p.i)));
-          } break;
-
-          case DIV: {
-            Value b = pop(), a = pop();
-            push(Value::F(a.AsFloat(p.i) / b.AsFloat(p.i)));
-          } break;
-
-          case EQ: {
-            Value b = pop(), a = pop();
-            bool eq = (a.t == b.t) ? (a == b)
-                      : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                          ? (a.AsFloat(p.i) == b.AsFloat(p.i)) : false);
-            push(Value::B(eq));
           } break;
 
           case NE: {
             Value b = pop(), a = pop();
             bool ne = (a.t == b.t) ? !(a == b)
                       : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                          ? (a.AsFloat(p.i) != b.AsFloat(p.i)) : true);
+                          ? (a.AsFloat() != b.AsFloat()) : true);
             push(Value::B(ne));
           } break;
 
@@ -750,7 +736,7 @@ inline static void write_str(FILE*f, const minis::CString& s){
             if (a.t == Type::Str && b.t == Type::Str)
               push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) < 0));
             else
-              push(Value::B(a.AsFloat(p.i) < b.AsFloat(p.i)));
+              push(Value::B(a.AsFloat() < b.AsFloat()));
           } break;
 
           case LE: {
@@ -758,14 +744,13 @@ inline static void write_str(FILE*f, const minis::CString& s){
             if (a.t == Type::Str && b.t == Type::Str)
               push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) <= 0));
             else
-              push(Value::B(a.AsFloat(p.i) <= b.AsFloat(p.i)));
+              push(Value::B(a.AsFloat() <= b.AsFloat()));
           } break;
 
-          case AND: { Value b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) && b.AsBool(p.i))); } break;
-          case OR:  { Value b = pop(), a = pop(); push(Value::B(a.AsBool(p.i) || b.AsBool(p.i))); } break;
+          case AND: { Value b = pop(), a = pop(); push(Value::B(a.AsBool() && b.AsBool())); } break;
+          case OR:  { Value b = pop(), a = pop(); push(Value::B(a.AsBool() || b.AsBool())); } break;
 
-          case JMP: { uint64_t tgt = fetchU64(); jump(tgt); } break;
-          case JF:  { uin64_t tgt = fetchU64(); Value v = pop(); if (!v.AsBool(p.i)) jump(tgt); } break; // Jump if false
+          case JMP: { uint64 tgt = GETu64(); jump(tgt); } break;
 
           case YIELD: {
             #ifdef _WIN32
@@ -776,8 +761,8 @@ inline static void write_str(FILE*f, const minis::CString& s){
           } break;
 
           case CALL: {
-            CString name = fetchStr();
-            uint64_t argc = fetchU64();
+            CString name = GETstr();
+            uint64 argc = GETu64();
             std::vector<Value> args(argc);
             for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
 
@@ -814,7 +799,7 @@ inline static void write_str(FILE*f, const minis::CString& s){
             Value rv = pop();
             if (frames.size() == 1) return;
             if (frames.back().typed) { Coerce(frames.back().ret, rv); }
-            uint64_t ret = frames.back().ret_ip;
+            uint64 ret = frames.back().ret_ip;
             frames.pop_back();
             jump(ret);
             push(rv);
@@ -823,7 +808,7 @@ inline static void write_str(FILE*f, const minis::CString& s){
           case INDEX: {
             Value idxV = pop();
             Value base = pop();
-            long long i = idxV.AsInt(p.i);
+            long long i = idxV.AsInt();
             if (base.t == Type::List) {
               // FIXME: Prefer explicit over auto
               auto& xs = std::get<std::vector<Value>>(base.v);
@@ -843,7 +828,7 @@ inline static void write_str(FILE*f, const minis::CString& s){
 
           case RET_VOID: {
             if (frames.size() == 1) return;
-            uint64_t ret = frames.back().ret_ip;
+            uint64 ret = frames.back().ret_ip;
             frames.pop_back();
             jump(ret);
             push(Value::I(0));
