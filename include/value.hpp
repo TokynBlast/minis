@@ -28,10 +28,10 @@ struct Value
       int16_t,                // 16-bit int
       int32_t,                // 32-bit int
       int64_t,                // 64-bit int
-      uint8_t,                // unsigned 8-bit int
-      uint16_t,               // unsigned 16-bit int
-      uint32_t,               // unsigned 32-bit
-      uint64_t                // unsigned 64-bit int
+      uint8,                // unsigned 8-bit int
+      uint16,               // unsigned 16-bit int
+      uint32,               // unsigned 32-bit
+      uint64                // unsigned 64-bit int
       >
       v;
 
@@ -44,10 +44,10 @@ struct Value
   Value(Type type, const std::vector<Value> &list) : t(type), v(list) {}
   Value(Type type, const std::map<Value, Value> &dict) : t(type), v(dict) {}
   Value(Type type, const std::map<int, int> &range) : t(type), v(range) {}
-  Value(Type type, uint8_t i) : t(type), v(i) {}
-  Value(Type type, uint16_t i) : t(type), v(i) {}
-  Value(Type type, uint32_t i) : t(type), v(i) {}
-  Value(Type type, uint64_t i) : t(type), v(i) {}
+  Value(Type type, uint8 i) : t(type), v(i) {}
+  Value(Type type, uint16 i) : t(type), v(i) {}
+  Value(Type type, uint32 i) : t(type), v(i) {}
+  Value(Type type, uint64 i) : t(type), v(i) {}
 
   static Value N() { return Value(Type::Null); }
   static Value B(bool b) { return Value(Type::Bool, b); }
@@ -60,10 +60,10 @@ struct Value
   static Value I16(int16_t i) { return Value(Type::i16, i); }
   static Value I32(int32_t i) { return Value(Type::i32, i); }
   static Value I64(int64_t i) { return Value(Type::i64, i); }
-  static Value UI8(uint8_t i) { return Value(Type::ui8, i); }
-  static Value UI16(uint16_t i) { return Value(Type::ui16, i); }
-  static Value UI32(uint32_t i) { return Value(Type::ui32, i); }
-  static Value UI64(uint64_t i) { return Value(Type::ui64, i); }
+  static Value UI8(uint8 i) { return Value(Type::ui8, i); }
+  static Value UI16(uint16 i) { return Value(Type::ui16, i); }
+  static Value UI32(uint32 i) { return Value(Type::ui32, i); }
+  static Value UI64(uint64 i) { return Value(Type::ui64, i); }
   static Value R(const std::map<int, int> &range) { return Value(Type::Range, range); }
 
   int AsInt() const
@@ -87,13 +87,13 @@ struct Value
     case Type::i64:
       return (int)std::get<int64_t>(v);
     case Type::ui8:
-      return (int)std::get<uint8_t>(v);
+      return (int)std::get<uint8>(v);
     case Type::ui16:
-      return (int)std::get<uint16_t>(v);
+      return (int)std::get<uint16>(v);
     case Type::ui32:
-      return (int)std::get<uint32_t>(v);
+      return (int)std::get<uint32>(v);
     case Type::ui64:
-      return (int)std::get<uint64_t>(v);
+      return (int)std::get<uint64>(v);
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -125,13 +125,13 @@ struct Value
     case Type::i64:
       return (double)std::get<int64_t>(v);
     case Type::ui8:
-      return (double)std::get<uint8_t>(v);
+      return (double)std::get<uint8>(v);
     case Type::ui16:
-      return (double)std::get<uint16_t>(v);
+      return (double)std::get<uint16>(v);
     case Type::ui32:
-      return (double)std::get<uint32_t>(v);
+      return (double)std::get<uint32>(v);
     case Type::ui64:
-      return (double)std::get<uint64_t>(v);
+      return (double)std::get<uint64>(v);
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -161,13 +161,13 @@ struct Value
     case Type::i64:
       return std::get<int64_t>(v) != 0;
     case Type::ui8:
-      return std::get<uint8_t>(v) != 0;
+      return std::get<uint8>(v) != 0;
     case Type::ui16:
-      return std::get<uint16_t>(v) != 0;
+      return std::get<uint16>(v) != 0;
     case Type::ui32:
-      return std::get<uint32_t>(v) != 0;
+      return std::get<uint32>(v) != 0;
     case Type::ui64:
-      return std::get<uint64_t>(v) != 0;
+      return std::get<uint64>(v) != 0;
     case Type::Str:
     {
       const CString &s = std::get<CString>(v);
@@ -236,7 +236,7 @@ struct Value
     {
       static CString ui8_str;
       std::ostringstream os;
-      os << (unsigned)std::get<uint8_t>(v);
+      os << (unsigned)std::get<uint8>(v);
       ui8_str = os.str().c_str();
       return ui8_str.c_str();
     }
@@ -244,7 +244,7 @@ struct Value
     {
       static CString ui16_str;
       std::ostringstream os;
-      os << std::get<uint16_t>(v);
+      os << std::get<uint16>(v);
       ui16_str = os.str().c_str();
       return ui16_str.c_str();
     }
@@ -252,7 +252,7 @@ struct Value
     {
       static CString ui32_str;
       std::ostringstream os;
-      os << std::get<uint32_t>(v);
+      os << std::get<uint32>(v);
       ui32_str = os.str().c_str();
       return ui32_str.c_str();
     }
@@ -260,7 +260,7 @@ struct Value
     {
       static CString ui64_str;
       std::ostringstream os;
-      os << std::get<uint64_t>(v);
+      os << std::get<uint64>(v);
       ui64_str = os.str().c_str();
       return ui64_str.c_str();
     }
@@ -323,13 +323,13 @@ struct Value
     case Type::i64:
       return std::get<int64_t>(v) == std::get<int64_t>(other.v);
     case Type::ui8:
-      return std::get<uint8_t>(v) == std::get<uint8_t>(other.v);
+      return std::get<uint8>(v) == std::get<uint8>(other.v);
     case Type::ui16:
-      return std::get<uint16_t>(v) == std::get<uint16_t>(other.v);
+      return std::get<uint16>(v) == std::get<uint16>(other.v);
     case Type::ui32:
-      return std::get<uint32_t>(v) == std::get<uint32_t>(other.v);
+      return std::get<uint32>(v) == std::get<uint32>(other.v);
     case Type::ui64:
-      return std::get<uint64_t>(v) == std::get<uint64_t>(other.v);
+      return std::get<uint64>(v) == std::get<uint64>(other.v);
     case Type::Str:
       return std::get<CString>(v) == std::get<CString>(other.v);
     case Type::List:

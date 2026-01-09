@@ -21,7 +21,8 @@ namespace lang {
   =============================*/
 
   // FIXME: Errors shouldn't be baked in unless debug code was added. The source shouldn't be assumed to exist.
-  inline const Source* src = nullptr;
+  // FIXME: Should use view over raw pointer
+  // inline const Source* src = nullptr;
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
@@ -30,9 +31,9 @@ namespace lang {
   // FIXME: Instead of storing every function as a string, we should store it some other way, like an enum or computed goto, to improve speed.
   inline static std::unordered_map<CString, BuiltinFn> builtins = {
     // FIXME: We need to add the ability to add the end line manually.
-    // Args can be Value or 
+    // Args can be Value or
     {"print", [](std::vector<Value>& args) {
-      size_t arg_amnt = args.sizeof();
+      size_t arg_amnt = sizeof(args);
       for (size_t i = 0; i < arg_amnt; i++) {
         fputs(args[i].AsStr(), stdout);
         if (i < arg_amnt) {
@@ -43,13 +44,13 @@ namespace lang {
     }},
     {"abs", [](std::vector<Value>& args) {
       auto val = args[0];
-      if (val.t == Type::Float) return Value::F(std::abs(val.AsFloat(p.i)));
-      return Value::I(std::abs(val.AsInt(p.i)));
+      if (val.t == Type::Float) return Value::F(std::abs(val.AsFloat()));
+      return Value::I(std::abs(val.AsInt()));
     }},
     {"neg", [](std::vector<Value>& args) {
       auto val = args[0];
-      if (val.t == Type::Float) return Value::F(-val.AsFloat(p.i));
-      return Value::I(-val.AsInt(p.i));
+      if (val.t == Type::Float) return Value::F(-val.AsFloat());
+      return Value::I(-val.AsInt());
     }},
 
     // FIXME: [comment expansion]
@@ -69,32 +70,33 @@ namespace lang {
     * This would give us greater control, as our current version is held as a function baked into the VM.
     * This is also a HUGE load off of RAM, since we not store two integers, rather than every number, one (1) through 50.
     */
+    // Memory-efficient range: stores only start and end values, not the entire list
+    // Usage: range(5) -> Range(0,5) or range(2,5) -> Range(2,5)
     {"range", [](std::vector<Value>& args) {
-      long long start = 0, end;
+      int start = 0, end;
       if (args.size() == 1) {
-        end = args[0].AsInt(p.i);
+        end = args[0].AsInt();
       } else {
-        start = args[0].AsInt(p.i);
-        end = args[1].AsInt(p.i);
+        start = args[0].AsInt();
+        end = args[1].AsInt();
       }
 
-      std::vector<Value> result;
-      for (long long i = start; i <= end; i++) {
-        result.push_back(Value::I(i));
-      }
-      return Value::L(result);
+      std::map<int, int> range_map;
+      range_map[0] = start;  // Store start at key 0
+      range_map[1] = end;    // Store end at key 1
+      return Value::R(range_map);
     }},
     {"max", [](std::vector<Value>& args) {
       Value max = args[0];
       for (size_t i = 1; i < args.size(); i++) {
-        if (args[i].AsFloat(p.i) > max.AsFloat(p.i)) max = args[i];
+        if (args[i] > max) max = args[i];
       }
       return max;
     }},
     {"min", [](std::vector<Value>& args) {
       Value min = args[0];
       for (size_t i = 1; i < args.size(); i++) {
-        if (args[i].AsFloat(p.i) < min.AsFloat(p.i)) min = args[i];
+        if (args[i] < min) min = args[i];
       }
       return min;
     }},
@@ -208,16 +210,16 @@ namespace lang {
       */
       else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
       else if (strcmp(mode_str, "a") == 0) c_mode = "a";   // also support append directly
-      
+
       FILE* file = fopen(filename, c_mode);
       if (!file) {
         return Value::I(-1); // Error code
       }
-      
+
       // Store file pointer as integer (simple approach)
       return Value::I((long long)(uintptr_t)file);
     }},
-    
+
     {"close", [](std::vector<Value>& args) -> Value {
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       if (file && file != stdin && file != stdout && file != stderr) {
@@ -225,7 +227,7 @@ namespace lang {
       }
       return Value::I(0);
     }},
-    
+
     {"write", [](std::vector<Value>& args) -> Value {
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       const char* data = args[1].AsStr();
@@ -246,12 +248,12 @@ namespace lang {
       char* buffer = (char*)malloc(size + 1);
       size_t bytes_read = fread(buffer, 1, size, file);
       buffer[bytes_read] = '\0';
-      
+
       Value result = Value::S(buffer);
       free(buffer);
       return result;
     }},
-    
+
     {"flush", [](std::vector<Value>& args) -> Value {
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt(p.i);
       if (file) {
@@ -271,28 +273,28 @@ namespace lang {
         default: std::abort()
       }
     }},
-    
+
     // FIXME: type checks should join into one
     {"isInt", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::Int);
     }},
-    
+
     {"isFloat", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::Float);
     }},
-    
+
     {"isString", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::Str);
     }},
-    
+
     {"isList", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::List);
     }},
-    
+
     {"isBool", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::Bool);
     }},
-    
+
     {"isNull", [](std::vector<Value>& args) -> Value {
       return Value::B(args[0].t == Type::Null);
     }}
@@ -496,7 +498,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
       uint64_t fnCount = read_u64(f);
       uint64_t entry_main = read_u64(f);
       uint64_t line_map_off = read_u64(f); // Skip line map offset (not used)
-      
+
       // Header is now exactly 40 bytes (8 magic + 32 data), no padding
       ip = entry_main;
       code_end = table_off;
@@ -525,20 +527,20 @@ inline static void write_str(FILE*f, const lang::CString& s){
           read_u64(f); // offset
           read_u32(f); // line
         }
-        
+
         // Now read plugin table
         uint64_t plugin_count = read_u64(f);
         for (uint64_t i = 0; i < plugin_count; ++i) {
           CString module_name = read_str(f);
           CString library_path = read_str(f);
-          
+
           // Load plugin
           if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
             std::cerr << "Warning: Failed to load plugin " << module_name.c_str() << std::endl;
           }
         }
       }
-      
+
       jump(entry_main);
       frames.push_back(Frame{ (uint64_t)-1, nullptr, true, false, Type::Int });
       frames.back().env = std::make_unique<Env>(&globals);
@@ -550,7 +552,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
         unisgned char op = fetch8();
         switch (op >> 4) {
           case Register::LOGIC: {
-            
+
           } break;
           case Register::VARIABLE: {
             case Variable::PUSH: {
@@ -608,7 +610,7 @@ inline static void write_str(FILE*f, const lang::CString& s){
             case SET: frames.back().env->SetOrDeclare(fetchStr(), pop()); break;
             case DECLARE: {
               CString id = fetchStr();
-              // FIXME: 
+              // FIXME:
               uint64_t tt = fetch64();
               Value v  = pop();
               if (tt == 0xECull) frames.back().env->Declare(id, v.t, v, 0);
@@ -616,13 +618,13 @@ inline static void write_str(FILE*f, const lang::CString& s){
             } break;
           } break;
           case Register::GENERAL: {
-            
+
           } break;
           case Register::FUNCTION: {
-            
+
           } break;
           case Register::IMPORT: {
-            
+
           } break;
           case HALT: return;
           case NOP:  break;
