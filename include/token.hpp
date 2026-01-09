@@ -9,7 +9,7 @@
 #include "ast.hpp"
 #include "err.hpp"
 
-namespace lang {
+namespace minis {
 
   enum class Tok {
     // Types
@@ -45,8 +45,6 @@ namespace lang {
     WS,
     Sym
   };
-
-  struct Stmt;
 
   struct Token {
     Tok k;

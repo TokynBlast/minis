@@ -5,7 +5,7 @@
 #include "types.hpp"
 #include "sso.hpp"
 
-namespace lang{
+namespace minis{
   struct Param { CString name; Type type = Type::Int; };
   struct Expr { virtual ~Expr() = default; Type type=Type::Int; };
   struct Stmt { virtual ~Stmt() = default; };
