@@ -1,3 +1,4 @@
+#include "../include/macros.hpp"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -15,7 +16,7 @@
 #include "../include/sso.hpp"
 #include "../include/plugin.hpp"
 
-namespace lang {
+namespace minis {
   /*=============================
   =          Values/Env         =
   =============================*/
@@ -129,6 +130,7 @@ namespace lang {
     }},
     {"input", [](std::vector<Value>& args) {
       if (!args.empty()) {
+        // FIXME: Should use buffer.hpp instea of cout
         std::cout << args[0].AsStr();
       }
       char input[1024];
@@ -417,7 +419,7 @@ inline static void sendu32(FILE*f, uint32_t v){ fwrite(&v,4,1,f); }
 inline static void write_u64(FILE*f, uint64_t v){ fwrite(&v,8,1,f); }
 inline static void write_s64(FILE*f, int64_t  v){ fwrite(&v,8,1,f); }
 inline static void write_f64(FILE*f, double   v){ fwrite(&v,8,1,f); }
-inline static void write_str(FILE*f, const lang::CString& s){
+inline static void write_str(FILE*f, const minis::CString& s){
   uint64_t n=s.size();
   write_u64(f,n); if(n)
   fwrite(s.c_str(),1,n,f);
