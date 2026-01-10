@@ -540,68 +540,72 @@ namespace minis {
         // FIXME: This needs to possibly lead to another switch, or have switches in the switches.
         switch (op >> 5) {
           case static_cast<int>(Register::LOGIC): {
-            case static_cast<int>(Logic::ADD): {
-              Value b = pop();
-              Value a = pop();
-              // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
-              //        I found the first if as an else if.
-              if (a.t == Type::List) {
-                if (b.t == Type::List) {
-                  std::vector<Value> result;
-                  // FIXME: Prefer specific type over auto
-                  const auto& L = std::get<std::vector<Value>>(a.v);
-                  const auto& R = std::get<std::vector<Value>>(b.v);
-                  result.reserve(L.size() + R.size());
-                  result.insert(result.end(), L.begin(), L.end());
-                  result.insert(result.end(), R.begin(), R.end());
-                  push(Value::L(std::move(result)));
-                } else {
-                  std::vector<Value> result = std::get<std::vector<Value>>(a.v);
-                  result.push_back(b);
-                  push(Value::L(std::move(result)));
+            switch ((op << 3) >> 3) {
+              case static_cast<int>(Logic::ADD): {
+                Value b = pop();
+                Value a = pop();
+                // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
+                //        I found the first if as an else if.
+                if (a.t == Type::List) {
+                  if (b.t == Type::List) {
+                    std::vector<Value> result;
+                    // FIXME: Prefer specific type over auto
+                    const auto& L = std::get<std::vector<Value>>(a.v);
+                    const auto& R = std::get<std::vector<Value>>(b.v);
+                    result.reserve(L.size() + R.size());
+                    result.insert(result.end(), L.begin(), L.end());
+                    result.insert(result.end(), R.begin(), R.end());
+                    push(Value::L(std::move(result)));
+                  } else {
+                    std::vector<Value> result = std::get<std::vector<Value>>(a.v);
+                    result.push_back(b);
+                    push(Value::L(std::move(result)));
+                  }
+                } else if (a.t == Type::Str || b.t == Type::Str) {
+                  CString result = CString(a.AsStr()) + b.AsStr();
+                  push(Value::S(std::move(result)));
+                } else if (a.t == Type::Float || b.t == Type::Float) {
+                  push(Value::F(a.AsFloat() + b.AsFloat()));
+                } else if (a.t == Type::Int || b.t == Type::Int) {
+                  push(Value::I(a.AsInt() + b.AsInt()));
                 }
-              } else if (a.t == Type::Str || b.t == Type::Str) {
-                CString result = CString(a.AsStr()) + b.AsStr();
-                push(Value::S(std::move(result)));
-              } else if (a.t == Type::Float || b.t == Type::Float) {
-                push(Value::F(a.AsFloat() + b.AsFloat()));
-              } else if (a.t == Type::Int || b.t == Type::Int) {
-                push(Value::I(a.AsInt() + b.AsInt()));
-            } break;
-            case static_cast<int>(Logic::EQUAL): {
-              Value b = pop(), a = pop();
-              bool eq = (a.t == b.t) ? (a == b)
-                        : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                            ? (a.AsFloat() == b.AsFloat()) : false);
-              push(Value::B(eq));
-            } break;
-            case static_cast<int>(Logic::SUBTRACT): {
-              Value b = pop(), a = pop();
-              if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
-                if (a.t == Type::Float || b.t == Type::Float) {
-                  push(Value::F(a.AsFloat() - b.AsFloat()));
-                } else {
-                  push(Value::I(a.AsInt() - b.AsInt()));
+              } break;
+              case static_cast<int>(Logic::EQUAL): {
+                Value b = pop(), a = pop();
+                bool eq = (a.t == b.t) ? (a == b)
+                          : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
+                              ? (a.AsFloat() == b.AsFloat()) : false);
+                push(Value::B(eq));
+              } break;
+              case static_cast<int>(Logic::SUBTRACT): {
+                Value b = pop(), a = pop();
+                if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
+                  if (a.t == Type::Float || b.t == Type::Float) {
+                    push(Value::F(a.AsFloat() - b.AsFloat()));
+                  } else {
+                    push(Value::I(a.AsInt() - b.AsInt()));
+                  }
                 }
-            } break;
-            case static_cast<int>(Logic::MULTIPLY): {
-              Value b = pop(), a = pop();
-              if (a.t == Type::Float || b.t == Type::Float)
-                push(Value::F(a.AsFloat() * b.AsFloat()));
-              else
-                push(Value::I(a.AsInt() * b.AsInt()));
-            } break;
-            case static_cast<int>(Logic::DIVIDE): {
-              Value b = pop(), a = pop();
-              push(Value::F(a.AsFloat() / b.AsFloat()));
-            } break;
-            case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
+              } break;
+              case static_cast<int>(Logic::MULTIPLY): {
+                Value b = pop(), a = pop();
+                if (a.t == Type::Float || b.t == Type::Float)
+                  push(Value::F(a.AsFloat() * b.AsFloat()));
+                else
+                  push(Value::I(a.AsInt() * b.AsInt()));
+              } break;
+              case static_cast<int>(Logic::DIVIDE): {
+                Value b = pop(), a = pop();
+                push(Value::F(a.AsFloat() / b.AsFloat()));
+              } break;
+              case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
+            }
           } break;
           case static_cast<int>(Register::VARIABLE): {
             switch (op & 0x1F) {
               case static_cast<int>(Variable::PUSH): {
                 switch (op & 0xF0) {
-                  case 0:{
+                  case 0: {
                   unsigned char meta = GETu8();
                   uint8 type = meta >> 4;
                   // uint8_t signedness = meta & 0b11110111; // Not currently implemented; Commented to reduce unused variable warning
@@ -675,13 +679,16 @@ namespace minis {
 
 
           case static_cast<int>(Register::GENERAL): {
-            case static_cast<int>(General::HALT): return;
-            case static_cast<int>(General::NOP): break;
-            case static_cast<int>(General::POP): { discard(); } break;
+            switch (op & 0x1F) {
+              case static_cast<int>(General::HALT): return;
+              case static_cast<int>(General::NOP): break;
+              case static_cast<int>(General::POP): discard(); break;
+            }
           } break;
           case static_cast<int>(Register::FUNCTION): {
-            // FIXME: Could be simpler to implement via other MVME opcodes
-            case static_cast<int>(Func::TAIL): {
+            switch (op & 0x1F) {
+              // FIXME: Could be simpler to implement via other MVME opcodes
+              case static_cast<int>(Func::TAIL): {
               CString name = GETstr();
               uint64 argc = GETu64();
               std::vector<Value> args(argc);
@@ -716,7 +723,8 @@ namespace minis {
               }
 
               jump(meta.entry);
-            } break;
+              } break;
+            }
           } break;
           case static_cast<int>(Register::IMPORT): {
 
@@ -823,6 +831,7 @@ namespace minis {
               }*/
               char single[2] = {s[i], '\0'};
               push(Value::S(single));
+            }
           } break;
 
           case RET_VOID: {
