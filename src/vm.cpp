@@ -599,6 +599,8 @@ namespace minis {
                 push(Value::F(a.AsFloat() / b.AsFloat()));
               } break;
               case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
+              case static_cast<int>(Logic::AND): { Value b = pop(), a = pop(); push(Value::B(a.AsBool() && b.AsBool())); } break;
+              case static_cast<int>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::B(a.AsBool() || b.AsBool())); } break;
             }
           } break;
           case static_cast<int>(Register::VARIABLE): {
@@ -753,9 +755,6 @@ namespace minis {
             else
               push(Value::B(a.AsFloat() <= b.AsFloat()));
           } break;
-
-          case AND: { Value b = pop(), a = pop(); push(Value::B(a.AsBool() && b.AsBool())); } break;
-          case OR:  { Value b = pop(), a = pop(); push(Value::B(a.AsBool() || b.AsBool())); } break;
 
           case JMP: { uint64 tgt = GETu64(); jump(tgt); } break;
 
