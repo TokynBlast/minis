@@ -2,9 +2,11 @@
 #include <cstdio>
 #include <cstring>
 
+#define MAX_CHARS 4096
+
 namespace minis {
   struct OutBuffer {
-    static constexpr size_t BUF_SIZE = 4096;
+    static constexpr size_t BUF_SIZE = MAX_CHARS;
     char buf[BUF_SIZE];
     size_t pos = 0;
 
@@ -32,3 +34,5 @@ namespace minis {
 
   inline static OutBuffer screen;
 }
+
+#undef MAX_CHARS
