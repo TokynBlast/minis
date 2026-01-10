@@ -470,7 +470,6 @@ namespace minis {
       stack.pop_back();
     }
 
-    // FIXME: This uses old patterns, such as io.hpp, we should instead use fetch functions instead
     inline void load(const CString& path) {
       f = fopen(path.c_str(), "rb");
       if (!f) throw std::runtime_error("cannot open bytecode");
