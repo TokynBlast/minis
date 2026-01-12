@@ -1,5 +1,4 @@
 #pragma once
-#include "sso.hpp"
 #include <cstdlib>
 // FiXME: Should use Minis buffer instead
 #include <iostream>
