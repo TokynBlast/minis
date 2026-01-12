@@ -1,8 +1,7 @@
 #pragma once
 #include <memory>
 #include <cstdio>
-#include <cstdint>
-#include "sso.hpp"
+#include <string>
 
 namespace minis {
   struct VMEngine;
@@ -15,10 +14,10 @@ namespace minis {
     VM();
     ~VM();
 
-    void load(const CString& path);
+    void load(const std::string& path);
     void run();
   };
 
 
-  void run(const CString& path);
+  void run(const std::string& path);
 }
