@@ -33,7 +33,7 @@ namespace minis {
 
   // Registry of built-in functions
   // FIXME: Instead of storing every function as a string, we should store it some other way, like an enum or computed goto, to improve speed.
-  inline static std::unordered_map<CString, BuiltinFn> builtins = {
+  inline static std::unordered_map<std::string, BuiltinFn> builtins = {
     // FIXME: We need to add the ability to add the end line manually.
     // Args can be Value or
     {"print", [](std::vector<Value>& args) {
@@ -119,7 +119,7 @@ namespace minis {
         const char* str = args[0].AsStr();
         std::string reversed(str);
         std::reverse(reversed.begin(), reversed.end());
-        return Value::S(CString(reversed.c_str()));
+        return Value::S(std::string(reversed.c_str()));
       }
     }},
     {"sum", [](std::vector<Value>& args) {
@@ -270,6 +270,7 @@ namespace minis {
     }},
 
     // FIXME: We need better type checking
+    // FIXME: Add returning multiple values
     {"typeof", [](std::vector<Value>& args) -> Value {
       switch (args[0].t) {
         case Type::Int:   return Value::I(0);
@@ -328,30 +329,30 @@ namespace minis {
       Var(Type t, Value v) : declared(t), val(v) {}
     };
 
-    std::unordered_map<CString, Var> m;
+    std::unordered_map<std::string, Var> m;
     Env* parent = nullptr;
     Value val;
 
     explicit Env(Env* p = nullptr) : parent(p), val{} {}
 
-    bool ExistsLocal(const CString& n) const { return m.find(n) != m.end(); }
+    bool ExistsLocal(const std::string& n) const { return m.find(n) != m.end(); }
 
     // FIXME: This should be recursive, not limitied to two parent scopes
-    bool Exists(const CString& n) const { return ExistsLocal(n) || (parent && parent->Exists(n)); }
+    bool Exists(const std::string& n) const { return ExistsLocal(n) || (parent && parent->Exists(n)); }
 
     // FIXME: should not return dummy, we assume it will exist. Compiler handles those errors.
-    const Var& Get(const CString& n) const {
+    const Var& Get(const std::string& n) const {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
       if (parent) return parent->Get(n);
       std::abort();
     }
 
-    void Declare(const CString& n, Type t, Value v) {
+    void Declare(const std::string& n, Type t, Value v) {
       Coerce(t, v); m.emplace(n, Var{t, v});
     }
 
-    void Set(const CString& n, Value v) {
+    void Set(const std::string& n, Value v) {
       auto it = m.find(n);
       if (it != m.end()) {
         Coerce(it->second.declared, v);
@@ -365,7 +366,7 @@ namespace minis {
       std::abort();
     }
 
-    void SetOrDeclare(const CString& n, Value v) {
+    void SetOrDeclare(const std::string& n, Value v) {
       if (ExistsLocal(n))
         Set(n, v);
       else if (parent && parent->Exists(n))
@@ -374,9 +375,9 @@ namespace minis {
         Declare(n, v.t, v);
     }
 
-    bool Erase(const CString& n) { return m.erase(n) != 0; }
+    bool Erase(const std::string& n) { return m.erase(n) != 0; }
 
-    bool Unset(const CString& n) {
+    bool Unset(const std::string& n) {
       if (Erase(n)) return true;
       return parent ? parent->Unset(n) : false;
     }
@@ -393,12 +394,10 @@ namespace minis {
     struct Frame {
       uint64 ret_ip;
       std::unique_ptr<Env> env;   // heap-allocated, stable address
-      bool isVoid = false;
-      bool typed  = false;
       Type ret    = Type::Int;
 
       Frame(uint64 rip, std::unique_ptr<Env> e, bool v, bool t, Type r)
-        : ret_ip(rip), env(std::move(e)), isVoid(v), typed(t), ret(r) {}
+        : ret_ip(rip), env(std::move(e)), ret(r) {}
     };
 
     std::vector<Frame> frames;
@@ -406,12 +405,10 @@ namespace minis {
     // FIXME: We don't need to know void or typed at runtime
     struct FnMeta {
       uint64 entry;
-      bool isVoid;
-      bool typed;
-      Type ret;
-      std::vector<CString> params;
+      Type ret; // Return values :)
+      std::vector<std::string> params;
     };
-    std::unordered_map<CString, FnMeta> fnEntry;
+    std::unordered_map<std::string, FnMeta> fnEntry;
 
     explicit VMEngine() {}
     ~VMEngine() { if (f) fclose(f); }
@@ -431,17 +428,17 @@ namespace minis {
     inline int64 GETs64() { int64 v; fread(&v, 8, 1, f); ip += 8; return v; }
 
     inline double GETd64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline CString GETstr() {
-      uint64 n = GETu64();
-      char* buffer = static_cast<char*>(malloc(n + 1));
-      if (n) fread(buffer, 1, n, f);
-      buffer[n] = '\0';
-      CString result(buffer);
-      free(buffer);
+    inline std::string GETstr(){
+      uint64 n=GETu64();
+      if(n == 0) return std::string();
+
+      std::string s(n, '\0');
+      fread(&s[0], 1, n, f);
       ip += n;
-      return result;
+      return s;
     }
 
+    // FIXME: Should use VM buffer instead
     inline Value pop() {
       try {
         if (stack.empty()) {
@@ -473,7 +470,7 @@ namespace minis {
       stack.pop_back();
     }
 
-    inline void load(const CString& path) {
+    inline void load(const std::string& path) {
       f = fopen(path.c_str(), "rb");
       if (!f) throw std::runtime_error("cannot open bytecode");
 
@@ -493,17 +490,17 @@ namespace minis {
 
       fseek(f, (long)table_off, SEEK_SET);
       for (uint64 i = 0; i < fnCount; i++) {
-        CString name = GETstr();
+        std::string name = GETstr();
         uint64 entry = GETu64();
         // FIXME: isVoid & typed aren't needed at runtime
         bool isVoid = GETu8() != 0;
         bool typed = GETu8() != 0;
         Type ret = (Type)GETu8();
         uint64 pcnt = GETu64();
-        std::vector<CString> params;
+        std::vector<std::string> params;
         params.reserve((size_t)pcnt);
-        for (uint64 j = 0; j < pcnt; ++j) params.push_back(read_str(f));
-        fnEntry[name] = FnMeta{ entry, isVoid, typed, ret, params };
+        for (uint64 j = 0; j < pcnt; ++j) params.push_back(GETstr());
+        fnEntry[name] = FnMeta{ entry, ret, params };
       }
 
       // Read and load plugins if line_map_off points to plugin table
@@ -520,8 +517,8 @@ namespace minis {
         // Now read plugin table
         uint64 plugin_count = GETu64();
         for (uint64 i = 0; i < plugin_count; ++i) {
-          CString module_name = GETstr();
-          CString library_path = GETstr();
+          std::string module_name = GETstr();
+          std::string library_path = GETstr();
 
           // Load plugin
           // FIXME: We should use the custom Minis buffer instead
@@ -565,7 +562,7 @@ namespace minis {
                     push(Value::L(std::move(result)));
                   }
                 } else if (a.t == Type::Str || b.t == Type::Str) {
-                  CString result = CString(a.AsStr()) + b.AsStr();
+                  std::string result = std::string(a.AsStr()) + b.AsStr();
                   push(Value::S(std::move(result)));
                 } else if (a.t == Type::Float || b.t == Type::Float) {
                   push(Value::F(a.AsFloat() + b.AsFloat()));
@@ -688,7 +685,7 @@ namespace minis {
             } break;
             case static_cast<int>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
             case static_cast<int>(Variable::DECLARE): {
-              CString id = GETstr();
+              std::string id = GETstr();
               // FIXME:
               uint64 tt = GETu64();
               Value v  = pop();
@@ -696,13 +693,13 @@ namespace minis {
               else               frames.back().env->Declare(id, (Type)tt, v);
             } break;
             case static_cast<int>(Variable::GET): {
-              CString id = GETstr();
+              std::string id = GETstr();
               push(frames.back().env->Get(id).val);
             } break;
 
             // FIXME: This is possibly incomplete
             case static_cast<int>(Variable::UNSET): {
-              CString id = GETstr();
+              std::string id = GETstr();
               if (!frames.back().env->Unset(id)) {}
             } break;
           } break;
@@ -745,7 +742,7 @@ namespace minis {
             switch (op & 0x1F) {
               // FIXME: Could be simpler to implement via other MVME opcodes
               case static_cast<int>(Func::TAIL): {
-              CString name = GETstr();
+              std::string name = GETstr();
               uint64 argc = GETu64();
               std::vector<Value> args(argc);
               for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
@@ -766,8 +763,6 @@ namespace minis {
 
               // FIXME: We don't need to know isVoid or typed at runtime
               Frame& currentFrame = frames.back();
-              currentFrame.isVoid = meta.isVoid;
-              currentFrame.typed = meta.typed;
               currentFrame.ret = meta.ret;
 
               Env* callerEnv = frames[frames.size()-2].env.get();
@@ -792,6 +787,8 @@ namespace minis {
               case static_cast<int>(Func::RETURN): {
                 Value rv = pop();
                 if (frames.size() == 1) return;
+                // FIXME: We removed isVoid and typed from frames and function meta
+                //        This causes the problem of not knowing if it's legal to coerce or not.
                 if (frames.back().typed) { Coerce(frames.back().ret, rv); }
                 uint64 ret = frames.back().ret_ip;
                 frames.pop_back();
@@ -800,7 +797,7 @@ namespace minis {
               } break;
 
               case static_cast<int>(Func::CALL): {
-                CString name = GETstr();
+                std::string name = GETstr();
                 uint64 argc = GETu64();
                 std::vector<Value> args(argc);
                 for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
@@ -823,7 +820,7 @@ namespace minis {
                 }
                 const auto& meta = it->second;
 
-                frames.push_back(Frame{ ip, nullptr, meta.isVoid, meta.typed, meta.ret });
+                frames.push_back(Frame{ ip, nullptr, meta.ret });
                 Env* callerEnv = frames[frames.size()-2].env.get();
                 frames.back().env = std::make_unique<Env>(callerEnv);
 
@@ -849,7 +846,7 @@ namespace minis {
   VM::VM() = default;
   VM::~VM() = default;
 
-  void VM::load(const CString& path) {
+  void VM::load(const std::string& path) {
     engine = std::make_unique<VMEngine>();
     engine->load(path);
   }
@@ -861,7 +858,7 @@ namespace minis {
   }
 
   // Global run function
-  void run(const CString& path) {
+  void run(const std::string& path) {
     VMEngine vm;
     vm.load(path);
     vm.run();
