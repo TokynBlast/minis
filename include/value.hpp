@@ -72,6 +72,7 @@ struct Value
   static Value R(const std::map<int, int> &range) { return Value(Type::Range, range); }
   static Value Void() {return Value(Type::Void); }
 
+  // FIXME: We should do more predictable transformations, and make conversion compile time
   int AsInt() const
   {
     switch (t)
