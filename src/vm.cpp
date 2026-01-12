@@ -540,7 +540,7 @@ namespace minis {
         // FIXME: This needs to possibly lead to another switch, or have switches in the switches.
         switch (op >> 5) {
           case static_cast<int>(Register::LOGIC): {
-            switch ((op << 3) >> 3) {
+            switch (op & 0x0f) {
               case static_cast<int>(Logic::ADD): {
                 Value b = pop();
                 Value a = pop();
