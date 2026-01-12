@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdio>
 #include <cstdint>
-#include "sso.hpp"
 #include "macros.hpp"
 
 // NOTE: Using specific compile arguments, we can make it so unused data & functions aren't included
@@ -18,7 +17,7 @@ inline static void OUTs32(FILE*f, int32  v){ fwrite(&v,4,1,f); }
 inline static void OUTs64(FILE*f, int64  v){ fwrite(&v,8,1,f); }
 
 inline static void OUTf64(FILE*f, double v){ fwrite(&v,8,1,f); }
-inline static void OUTstr(FILE*f, const minis::CString& s){
+inline static void OUTstr(FILE*f, const std::string& s){
   uint64 n=s.size();
   OUTu64(f,n); if(n)
     fwrite(s.c_str(),1,n,f);
@@ -36,14 +35,11 @@ inline static int32  GETs32(FILE*f) { int8 v;   fread(&v,4,1,f); return v; }
 inline static int64  GETs64(FILE*f) { int64 v;  fread(&v,8,1,f); return v; }
 
 inline static double GETf64(FILE*f) { double v; fread(&v,8,1,f); return v; }
-inline static minis::CString read_str(FILE*f){
+inline static std::string GETstr(FILE*f){
   uint64 n=GETu64(f);
-  if(n == 0) return minis::CString();
+  if(n == 0) return std::string();
 
-  char* buffer = static_cast<char*>(malloc(n + 1));
-  fread(buffer, 1, n, f);
-  buffer[n] = '\0';
-  minis::CString s(buffer);
-  free(buffer);
+  std::string s(n, '\0');
+  fread(&s[0], 1, n, f);
   return s;
 }
