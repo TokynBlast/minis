@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <array>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
