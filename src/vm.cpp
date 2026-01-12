@@ -247,7 +247,7 @@ namespace minis {
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
       long long size = args[1].AsInt();
 
-      if (!file) std::abort();
+      if (!file) std::exit(1);
       if (size <= 0) return Value::S("");
 
       char* buffer = (char*)malloc(size + 1);
@@ -259,6 +259,7 @@ namespace minis {
       return result;
     }},
 
+    // FIXME: We don't need to take any arguments
     {"flush", [](std::vector<Value>& args) -> Value {
       FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
       if (file) {
@@ -266,6 +267,7 @@ namespace minis {
       }
       return Value::I(0);
     }},
+
     // FIXME: We need better type checking
     {"typeof", [](std::vector<Value>& args) -> Value {
       switch (args[0].t) {
