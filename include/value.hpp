@@ -57,6 +57,7 @@ struct Value
   static Value B(bool b) { return Value(Type::Bool, b); }
   static Value L(const std::vector<Value> &l) { return Value(Type::List, l); }
   static Value I(int i) { return Value(Type::Int, i); }
+  // FIXME: We shouldn't use chars
   static Value S(const char *s) { return Value(Type::Str, s); }
   static Value S(std::string &&s) { return Value(Type::Str, std::move(s)); }
   static Value F(double f) { return Value(Type::Float, f); }
@@ -69,6 +70,7 @@ struct Value
   static Value UI32(uint32 i) { return Value(Type::ui32, i); }
   static Value UI64(uint64 i) { return Value(Type::ui64, i); }
   static Value R(const std::map<int, int> &range) { return Value(Type::Range, range); }
+  static Value Void() {return Value(Type::Void); }
 
   int AsInt() const
   {
