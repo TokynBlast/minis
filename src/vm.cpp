@@ -587,6 +587,7 @@ namespace minis {
                   }
                 }
               } break;
+
               case static_cast<int>(Logic::MULTIPLY): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Float || b.t == Type::Float)
@@ -598,9 +599,33 @@ namespace minis {
                 Value b = pop(), a = pop();
                 push(Value::F(a.AsFloat() / b.AsFloat()));
               } break;
+
+              case static_cast<int>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
               case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
               case static_cast<int>(Logic::AND): { Value b = pop(), a = pop(); push(Value::B(a.AsBool() && b.AsBool())); } break;
               case static_cast<int>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::B(a.AsBool() || b.AsBool())); } break;
+              case static_cast<int>(Logic::LESS_OR_EQUAL): {
+                Value b = pop(), a = pop();
+                if (a.t == Type::Str && b.t == Type::Str)
+                  push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) <= 0));
+                else
+                  push(Value::B(a.AsFloat() <= b.AsFloat()));
+              } break;
+
+              case static_cast<int>(Logic::LESS_THAN): {
+                Value b = pop(), a = pop();
+                if (a.t == Type::Str && b.t == Type::Str)
+                  push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) < 0));
+                else
+                  push(Value::B(a.AsFloat() < b.AsFloat()));
+              } break;
+              case static_cast<int>(Logic::NOT_EQUAL): {
+                Value b = pop(), a = pop();
+                bool ne = (a.t == b.t) ? !(a == b)
+                          : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
+                              ? (a.AsFloat() != b.AsFloat()) : true);
+                push(Value::B(ne));
+              } break;
             }
           } break;
           case static_cast<int>(Register::VARIABLE): {
@@ -685,6 +710,32 @@ namespace minis {
               case static_cast<int>(General::HALT): return;
               case static_cast<int>(General::NOP): break;
               case static_cast<int>(General::POP): discard(); break;
+              case static_cast<int>(General::YIELD): {
+                #ifdef _WIN32
+                  _getch();
+                #else
+                  system("read -n 1");
+                #endif
+              } break;
+              case static_cast<int>(General::INDEX): {
+                Value idxV = pop();
+                Value base = pop();
+                long long i = idxV.AsInt();
+                if (base.t == Type::List) {
+                  // FIXME: Prefer explicit over auto
+                  auto& xs = std::get<std::vector<Value>>(base.v);
+                  push(xs[(size_t)i]);
+                } else if (base.t == Type::Str) {
+                  const char* s = base.AsStr();
+                  size_t len = std::strlen(s);
+                  if (i < 0 || (size_t)i >= len) {
+                    screen.flush();
+                    screen.write("[FATAL ERROR]: Index too large. Attempt to get item in list or string that doesn't exist.");
+                  }
+                  char single[2] = {s[i], '\0'};
+                  push(Value::S(single));
+                }
+              } break;
             }
           } break;
           case static_cast<int>(Register::FUNCTION): {
@@ -726,121 +777,64 @@ namespace minis {
 
               jump(meta.entry);
               } break;
+
+              case static_cast<int>(Func::RETURN_VOID): {
+                if (frames.size() == 1) return;
+                uint64 ret = frames.back().ret_ip;
+                frames.pop_back();
+                jump(ret);
+                push(Value::I(0));
+              } break;
+
+              case static_cast<int>(Func::RETURN): {
+                Value rv = pop();
+                if (frames.size() == 1) return;
+                if (frames.back().typed) { Coerce(frames.back().ret, rv); }
+                uint64 ret = frames.back().ret_ip;
+                frames.pop_back();
+                jump(ret);
+                push(rv);
+              } break;
+
+              case static_cast<int>(Func::CALL): {
+                CString name = GETstr();
+                uint64 argc = GETu64();
+                std::vector<Value> args(argc);
+                for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
+
+                auto it = fnEntry.find(name);
+                if (it == fnEntry.end()) {
+                  auto bit = builtins.find(name);
+                  if (bit == builtins.end()) {
+                    // Check plugin functions
+                    auto pfn = PluginManager::get_function(name.c_str());
+                    if (pfn) {
+                      auto rv = pfn(args);
+                      push(std::move(rv));
+                      break;
+                    }
+                  }
+                  auto rv = bit->second(args);
+                  push(std::move(rv));
+                  break;
+                }
+                const auto& meta = it->second;
+
+                frames.push_back(Frame{ ip, nullptr, meta.isVoid, meta.typed, meta.ret });
+                Env* callerEnv = frames[frames.size()-2].env.get();
+                frames.back().env = std::make_unique<Env>(callerEnv);
+
+                for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
+                  frames.back().env->Declare(meta.params[i], args[i].t, args[i]);
+                }
+
+                jump(meta.entry);
+              } break;
             }
           } break;
           case static_cast<int>(Register::IMPORT): {
 
           } break;
-
-          case NE: {
-            Value b = pop(), a = pop();
-            bool ne = (a.t == b.t) ? !(a == b)
-                      : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                          ? (a.AsFloat() != b.AsFloat()) : true);
-            push(Value::B(ne));
-          } break;
-
-          case LT: {
-            Value b = pop(), a = pop();
-            if (a.t == Type::Str && b.t == Type::Str)
-              push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) < 0));
-            else
-              push(Value::B(a.AsFloat() < b.AsFloat()));
-          } break;
-
-          case LE: {
-            Value b = pop(), a = pop();
-            if (a.t == Type::Str && b.t == Type::Str)
-              push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) <= 0));
-            else
-              push(Value::B(a.AsFloat() <= b.AsFloat()));
-          } break;
-
-          case JMP: { uint64 tgt = GETu64(); jump(tgt); } break;
-
-          case YIELD: {
-            #ifdef _WIN32
-              _getch();
-            #else
-              system("read -n 1");
-            #endif
-          } break;
-
-          case CALL: {
-            CString name = GETstr();
-            uint64 argc = GETu64();
-            std::vector<Value> args(argc);
-            for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
-
-            auto it = fnEntry.find(name);
-            if (it == fnEntry.end()) {
-              auto bit = builtins.find(name);
-              if (bit == builtins.end()) {
-                // Check plugin functions
-                auto pfn = PluginManager::get_function(name.c_str());
-                if (pfn) {
-                  auto rv = pfn(args);
-                  push(std::move(rv));
-                  break;
-                }
-              }
-              auto rv = bit->second(args);
-              push(std::move(rv));
-              break;
-            }
-            const auto& meta = it->second;
-
-            frames.push_back(Frame{ ip, nullptr, meta.isVoid, meta.typed, meta.ret });
-            Env* callerEnv = frames[frames.size()-2].env.get();
-            frames.back().env = std::make_unique<Env>(callerEnv);
-
-            for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-              frames.back().env->Declare(meta.params[i], args[i].t, args[i]);
-            }
-
-            jump(meta.entry);
-          } break;
-
-          case RET: {
-            Value rv = pop();
-            if (frames.size() == 1) return;
-            if (frames.back().typed) { Coerce(frames.back().ret, rv); }
-            uint64 ret = frames.back().ret_ip;
-            frames.pop_back();
-            jump(ret);
-            push(rv);
-          } break;
-
-          case INDEX: {
-            Value idxV = pop();
-            Value base = pop();
-            long long i = idxV.AsInt();
-            if (base.t == Type::List) {
-              // FIXME: Prefer explicit over auto
-              auto& xs = std::get<std::vector<Value>>(base.v);
-              push(xs[(size_t)i]);
-            } else if (base.t == Type::Str) {
-              const char* s = base.AsStr();
-              // FIXME: This error is hard to prevent with just the compiler
-              //        The error could go over expected amount, during run...
-              /*size_t len = std::strlen(s);
-              if (i < 0 || (size_t)i >= len) {
-                Loc L = locate(p.i);
-                ERR(L, "index out of bounds");
-              }*/
-              char single[2] = {s[i], '\0'};
-              push(Value::S(single));
-            }
-          } break;
-
-          case RET_VOID: {
-            if (frames.size() == 1) return;
-            uint64 ret = frames.back().ret_ip;
-            frames.pop_back();
-            jump(ret);
-            push(Value::I(0));
-          } break;
-
           default: {
             std::cerr<< "FATAL ERROR: Bad or unknown opcode.";
           }
