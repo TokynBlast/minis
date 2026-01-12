@@ -19,8 +19,8 @@ inline static void OUTs64(FILE*f, int64  v){ fwrite(&v,8,1,f); }
 inline static void OUTf64(FILE*f, double v){ fwrite(&v,8,1,f); }
 inline static void OUTstr(FILE*f, const std::string& s){
   uint64 n=s.size();
-  OUTu64(f,n); if(n)
-    fwrite(s.c_str(),1,n,f);
+  OUTu64(f,n);
+  if(n) fwrite(s.c_str(),1,n,f);
 }
 
 // FIXME: Instead of read_u8, etc., we should do GETu8
