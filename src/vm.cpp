@@ -394,10 +394,10 @@ namespace minis {
     struct Frame {
       uint64 ret_ip;
       std::unique_ptr<Env> env;   // heap-allocated, stable address
-      Type ret    = Type::Int;
+      size_t stack_base;
 
-      Frame(uint64 rip, std::unique_ptr<Env> e, bool v, bool t, Type r)
-        : ret_ip(rip), env(std::move(e)), ret(r) {}
+      Frame(uint64 rip, std::unique_ptr<Env> e, size_t base)
+        : ret_ip(rip), env(std::move(e)), stack_base(base) {}
     };
 
     std::vector<Frame> frames;
@@ -529,7 +529,7 @@ namespace minis {
       }
 
       jump(entry_main);
-      frames.push_back(Frame{ (uint64)-1, nullptr, true, false, Type::Int });
+      frames.push_back(Frame{ (uint64)-1, nullptr, 0 });
       frames.back().env = std::make_unique<Env>(&globals);
     }
 
@@ -761,9 +761,7 @@ namespace minis {
               }
               const auto& meta = it->second;
 
-              // FIXME: We don't need to know isVoid or typed at runtime
               Frame& currentFrame = frames.back();
-              currentFrame.ret = meta.ret;
 
               Env* callerEnv = frames[frames.size()-2].env.get();
               currentFrame.env = std::make_unique<Env>(callerEnv);
@@ -776,22 +774,22 @@ namespace minis {
               jump(meta.entry);
               } break;
 
-              case static_cast<int>(Func::RETURN_VOID): {
-                if (frames.size() == 1) return;
-                uint64 ret = frames.back().ret_ip;
-                frames.pop_back();
-                jump(ret);
-                push(Value::I(0));
-              } break;
-
               case static_cast<int>(Func::RETURN): {
-                Value rv = pop();
+                Value rv;
+                if (stack.size() > frames.back().stack_base) {
+                  rv = pop();
+                } else {
+                  rv = Value::Void();
+                }
                 if (frames.size() == 1) return;
-                // FIXME: We removed isVoid and typed from frames and function meta
-                //        This causes the problem of not knowing if it's legal to coerce or not.
-                if (frames.back().typed) { Coerce(frames.back().ret, rv); }
                 uint64 ret = frames.back().ret_ip;
+                size_t caller_base = frames.back().stack_base;
                 frames.pop_back();
+
+                while (stack.size() > caller_base) {
+                  stack.pop_back();
+                }
+
                 jump(ret);
                 push(rv);
               } break;
@@ -820,7 +818,7 @@ namespace minis {
                 }
                 const auto& meta = it->second;
 
-                frames.push_back(Frame{ ip, nullptr, meta.ret });
+                frames.push_back(Frame{ ip, nullptr, stack.size() });
                 Env* callerEnv = frames[frames.size()-2].env.get();
                 frames.back().env = std::make_unique<Env>(callerEnv);
 

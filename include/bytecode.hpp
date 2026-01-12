@@ -50,8 +50,7 @@ enum class Logic : uint8 {
 enum class Func : uint8 {
   CALL = 0,   // Call a function
   TAIL,       // Clear and reuse stack
-  RETURN,     // Return a value
-  RETURN_VOID // Give no value
+  RETURN,     // Return any amount of values
 };
 
 enum class General : uint8 {
