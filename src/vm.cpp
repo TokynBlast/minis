@@ -17,7 +17,7 @@
 #include "../include/plugin.hpp"
 #include "../include/macros.hpp"
 #include "../include/io.hpp"
-#include "../buffer.hpp"
+#include "../include/buffer.hpp"
 
 namespace minis {
   /*=============================
