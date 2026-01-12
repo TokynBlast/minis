@@ -31,7 +31,7 @@ triBool (std::bool_set from TR2)
 
 
 Maybe:
-Use deque over vector
+Use deque over vector (Or seperate types)
 Add compiler grouping
 Add personal scopes
 Folding
