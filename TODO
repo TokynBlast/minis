@@ -15,12 +15,13 @@ Add inline short-ciruct variables
 ```
 int x = 358;
 int z = 232;
-int y = z ? ( z < 103 ) >>> x ? ( x > 800 ) >>> 900;
+int y = ( z < 103 ) ? z >>> ( x > 800 ) ? x >>> 900;
 ```
 
 Add hive variant of list (Use std::hive)
 
 for keyword
+
 
 Maybe:
 Use deque over vector
@@ -44,8 +45,6 @@ case
 struct
 enum
 async
-
-type long long (Instead of int, same purpose as C++)
 
 let file = open("test.txt") ? throw NameError("File missing!") : print(file);
 
