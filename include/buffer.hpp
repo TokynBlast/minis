@@ -34,5 +34,3 @@ namespace minis {
 
   inline static OutBuffer screen;
 }
-
-#undef MAX_CHARS
