@@ -20,7 +20,7 @@ int y = ( z < 103 ) ? z >>> ( x > 800 ) ? x >>> 900;
 
 Add hive variant of list (Use std::hive)
 
-for keyword
+"for" keyword
 
 
 Maybe:
