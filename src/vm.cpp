@@ -13,7 +13,6 @@
 #include "../include/types.hpp"
 #include "../include/value.hpp"
 #include "../include/vm.hpp"
-#include "../include/sso.hpp"
 #include "../include/plugin.hpp"
 #include "../include/macros.hpp"
 #include "../include/io.hpp"
