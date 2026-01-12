@@ -1,7 +1,7 @@
 TODO:
 
 Garunteed:
-Change ++int to int++
+Add int++ along side ++int
 Add file opening
      + read/write/binary flags
 inline functions
@@ -13,8 +13,19 @@ Make a dev file for making Mini libraries
 
 Add a zip library made with [this](https://github.com/PlutoLang/pluto-zip)
 
+Add inline short-ciruct variables
+```
+int x = 358;
+int z = 232;
+int y = z ? ( z < 103 ) >>> x ? ( x > 800 ) >>> 900;
+```
+
+Add hive variant of list (Use std::hive)
+
+for keyword
 
 Maybe:
+Use deque over vector
 Add compiler grouping
 Add personal scopes
 Folding
@@ -28,7 +39,6 @@ AOT pre-linking for imports (cache held in ~/.minis/cache/)
 64KB sized packets for custom TCP (delete after use)
 
 More keywords
-for
 class
 as
 in
@@ -40,9 +50,5 @@ async
 type long long (Instead of int, same purpose as C++)
 
 let file = open("test.txt") ? throw NameError("File missing!") : print(file);
-
-Add fallback chain
-auto x = input("Hey! Who are you?\n");
-int c = x || 233
 
 This will make it so, if x is not int, it will become 233 :3
