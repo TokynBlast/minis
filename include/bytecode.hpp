@@ -31,7 +31,7 @@ enum class Logic : uint8 {
   NOT_EQUAL,     // True if values are not equal
                  // NOTE: the following replace greater than and greater than or equal to
   LESS_OR_EQUAL, // True if left is less than or equal to right
-  LESS,          // True if left is less but not equal to right
+  LESS_THAN,     // True if left is less but not equal to right
   AND,           // True if left and right are true
   OR,            // True if left or right are true
   JUMP,          // Jump to location
@@ -58,8 +58,9 @@ enum class General : uint8 {
   HALT = 0,  // Stop program
   SLICE,     // ???
   SET_INDEX, // ???
-  NOP,     // Do nothing
+  NOP,       // Do nothing
   POP,       // Pop current value on top of stack
-  INDEX,     // ???
-  EMIT       // ???
+  INDEX,     // Split a list or string
+  EMIT,      // ???
+  YIELD      // Wait for enter key
 };
