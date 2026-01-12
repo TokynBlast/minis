@@ -17,6 +17,7 @@ namespace minis {
     ui32,
     ui64,
     Null,
-    Range
+    Range,
+    Void
   };
 }
