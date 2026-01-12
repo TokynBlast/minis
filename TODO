@@ -29,6 +29,8 @@ float
 double float (just double?)
 triBool (std::bool_set from TR2)
 
+Make typed, void, etc. compile-time
+
 
 Maybe:
 Use deque over vector (Or seperate types)
