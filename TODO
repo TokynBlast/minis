@@ -26,6 +26,8 @@ Use explicit wrappers instead of a variant, to get full compile-time converions.
 
 Make typed, void, etc. compile-time
 
+Remove unnecesarry bloat from io_fast
+
 
 Maybe:
 Use deque over vector (Or seperate types)
