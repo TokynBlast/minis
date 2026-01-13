@@ -20,8 +20,5 @@ namespace minis {
     Range,
     Void,
     TriBool,
-    Long,
-    LongLong,
-    TriBool
   };
 }
