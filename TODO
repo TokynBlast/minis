@@ -16,6 +16,14 @@ Add inline short-ciruct variables
 int x = 358;
 int z = 232;
 int y = ( z < 103 ) ? z >>> ( x > 800 ) ? x >>> 900;
+int y = {
+  z < 103: z;
+  x > 800: x;
+  _: {
+    print("FATAl");
+    exit();
+  };
+}
 ```
 
 Add hive variant of list (Use std::hive)
@@ -28,6 +36,7 @@ Make typed, void, etc. compile-time
 
 Remove unnecesarry bloat from io_fast
 
+Remove int, in place of Rust-style integers
 
 Maybe:
 Use deque over vector (Or seperate types)
