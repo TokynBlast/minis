@@ -312,7 +312,10 @@ namespace minis {
         case Type::Range:  return Value::Str("range");
         case Type::Void:   return Value::Str("void"); // Safety
         case Type::TriBool:return Value::Str("tribool");
-        default: std::exit(1);
+        default:{
+          print("Unknown type");
+          std::exit(1);
+        }
       }
     }},
 
@@ -494,7 +497,7 @@ namespace minis {
 
       char magic[9] = {0};
       fread(magic, 1, 8, f);
-      if (std::strcmp(magic, "AVOCADO1") != 0)
+      if (std::strcmp(magic, "RuGHoM16VSMINI") != 0)
         throw std::runtime_error("bad bytecode verification");
 
       table_off = GETu64();
@@ -510,7 +513,6 @@ namespace minis {
       for (uint64 i = 0; i < fnCount; i++) {
         std::string name = GETstr();
         uint64 entry = GETu64();
-        // FIXME: isVoid & typed aren't needed at runtime
         bool isVoid = GETu8() != 0;
         bool typed = GETu8() != 0;
         Type ret = (Type)GETu8();
@@ -880,4 +882,8 @@ namespace minis {
     vm.load(path);
     vm.run();
   }
+}
+
+int main() {
+  return 0;
 }
