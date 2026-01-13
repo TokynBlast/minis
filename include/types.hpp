@@ -18,6 +18,10 @@ namespace minis {
     ui64,
     Null,
     Range,
-    Void
+    Void,
+    TriBool,
+    Long,
+    LongLong,
+    TriBool
   };
 }
