@@ -26,6 +26,8 @@
   #define impossible __builtin_unreachable()
   #define noreturn __attribute__((noreturn))
   #define nouse __attribute__((unused))
+  #define uint128 unsigned __int128
+  #define int128 __int128
 #else
   #error "Use g++ or Clang to compile."
 #endif
