@@ -22,12 +22,7 @@ Add hive variant of list (Use std::hive)
 
 "for" keyword
 
-types:
-long
-long long
-float
-double float (just double?)
-triBool (std::bool_set from TR2)
+Use explicit wrappers instead of a variant, to get full compile-time converions.
 
 Make typed, void, etc. compile-time
 
