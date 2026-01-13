@@ -51,5 +51,3 @@ enum
 async
 
 let file = open("test.txt") ? throw NameError("File missing!") : print(file);
-
-This will make it so, if x is not int, it will become 233 :3
