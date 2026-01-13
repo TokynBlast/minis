@@ -13,8 +13,6 @@
 using namespace minis;
 
 // Helper structs to avoid type ambiguity in std::variant
-struct LongWrapper { long value; };
-struct LongLongWrapper { long long value; };
 
 struct Value
 {
@@ -39,8 +37,6 @@ struct Value
       uint16,               // unsigned 16-bit int
       uint32,               // unsigned 32-bit
       uint64,               // unsigned 64-bit int
-      LongLongWrapper,        // long long
-      LongWrapper,            // long
       std::tr2::bool_set      // TriBool
       >
       v;
@@ -60,8 +56,6 @@ struct Value
   Value(Type type, uint16 ui16) : t(type), v(ui16) {}
   Value(Type type, uint32 ui32) : t(type), v(ui32) {}
   Value(Type type, uint64 ui64) : t(type), v(ui64) {}
-  Value(Type type, long long i) : t(type), v(LongLongWrapper{i}) {}
-  Value(Type type, long i) : t(type), v(LongWrapper{i}) {}
   Value(Type type, std::tr2::bool_set tb) : t(type), v(tb) {}
 
 
@@ -81,8 +75,6 @@ struct Value
   static Value UI64(uint64 i) { Value v(Type::ui64); v.v = static_cast<uint64>(i); return v; }
   static Value Range(const std::map<int, int> &range) { Value v(Type::Range); v.v = range; return v; }
   static Value Void() {return Value(Type::Void); }
-  static Value LongLong(long long i) { Value v(Type::LongLong); v.v = LongLongWrapper{i}; return v; }
-  static Value Long(long i) { Value v(Type::Long); v.v = LongWrapper{i}; return v; }
   static Value TriBool(std::tr2::bool_set tb) { return Value(Type::TriBool, tb);  }
   // FIXME: Need a standard dict input style
   // std::unordered_map<Value::v, Value::v> may work
@@ -116,10 +108,6 @@ struct Value
       return std::get<uint32>(v) == std::get<uint32>(other.v);
     case Type::ui64:
       return std::get<uint64>(v) == std::get<uint64>(other.v);
-    case Type::Long:
-      return std::get<LongWrapper>(v).value == std::get<LongWrapper>(other.v).value;
-    case Type::LongLong:
-      return std::get<LongLongWrapper>(v).value == std::get<LongLongWrapper>(other.v).value;
     case Type::Str:
       return std::get<std::string>(v) == std::get<std::string>(other.v);
     case Type::List:
