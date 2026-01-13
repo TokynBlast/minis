@@ -38,6 +38,8 @@ Remove unnecesarry bloat from io_fast
 
 Remove int, in place of Rust-style integers
 
+Implement 256-bit integers using C?
+
 Change to Rust:
   Stack operations
   Built-ins
