@@ -40,7 +40,7 @@ namespace minis {
       static bool load_plugin(const std::string& plugin_name, const std::string& library_path);
 
       // Get a plugin function by name
-      static PluginFn get_functions(const std::string& name);
+      static PluginFn get_function(const std::string& name);
 
       // Get a plugin variable by name
       static PluginVar get_variable(const std::string& name);
