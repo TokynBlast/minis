@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "macros.hpp"
+#include "macros.h"
 
 // NOTE: We may do 3-bit register and 5-bit opcode
 enum class Register : uint8 {

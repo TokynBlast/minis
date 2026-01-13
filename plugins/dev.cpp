@@ -5,7 +5,7 @@
 #include "../include/plugin.hpp"
 #include "../include/value.hpp"
 #include "../include/sso.hpp"
-#include "../include/macros.hpp"
+#include "../include/macros.h"
 
 using namespace minis;
 

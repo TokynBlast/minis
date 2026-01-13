@@ -6,7 +6,7 @@
 #include <string>
 #include <stdint.h>
 #include "types.hpp"
-#include "macros.hpp"
+#include "macros.h"
 
 
 using namespace minis;
@@ -26,22 +26,24 @@ struct Value
 
   Type t = Type::Null;
   std::variant<
-      bool,                   // Bool
-      std::string,            // String
-      std::vector<Value>,     // List
-      std::map<Value, Value>, // dictionary
-      std::map<int, int>,     // range
-      double,                 // float
-      std::monostate,         // null
-      int8,                   // 8-bit int
-      int16,                  // 16-bit int
-      int32,                  // 32-bit int (also covers 'int' on most platforms)
-      int64,                  // 64-bit int
-      uint8,                  // unsigned 8-bit int
-      uint16,                 // unsigned 16-bit int
-      uint32,                 // unsigned 32-bit
-      uint64,                 // unsigned 64-bit int
-      TriBool                 // TriBool
+      bool,                     // Bool
+      std::string,              // String
+      std::vector<Value>,       // List
+      std::map<Value, Value>,   // dictionary
+      std::map<uint64, uint64>, // range // Should add variant for 8-125, signed and unsigned :)
+      double,                   // float
+      std::monostate,           // null
+      int8,                     // 8-bit int
+      int16,                    // 16-bit int
+      int32,                    // 32-bit int (also covers 'int' on most platforms)
+      int64,                    // 64-bit int
+      int128,                   // 128-bit int
+      uint8,                    // unsigned 8-bit int
+      uint16,                   // unsigned 16-bit int
+      uint32,                   // unsigned 32-bit
+      uint64,                   // unsigned 64-bit int
+      uint128,                  // unsigned
+      TriBool                   // TriBool
       >
       v;
 
@@ -51,7 +53,7 @@ struct Value
   Value(Type type, std::string &&s) : t(type), v(std::move(s)) {}
   Value(Type type, const std::vector<Value> &list) : t(type), v(list) {}
   Value(Type type, const std::map<Value, Value> &dict) : t(type), v(dict) {}
-  Value(Type type, const std::map<int, int> &range) : t(type), v(range) {}
+  Value(Type type, const std::map<uint64, uint64> &range) : t(type), v(range) {}
   Value(Type type, int8 i8) : t(type), v(i8) {}
   Value(Type type, int16 i16) : t(type), v(i16) {}
   Value(Type type, int32 i32) : t(type), v(i32) {}
@@ -66,7 +68,6 @@ struct Value
   static Value Null() { return Value(Type::Null); }
   static Value Bool(bool b) { return Value(Type::Bool, b); }
   static Value List(const std::vector<Value> &l) { return Value(Type::List, l); }
-  static Value Int(int i) { return Value(Type::Int, i); }
   static Value Str(std::string &&s) { return Value(Type::Str, std::move(s)); }
   static Value Float(double f) { return Value(Type::Float, f); }
   static Value I8(int8 i) { Value v(Type::i8); v.v = static_cast<int8>(i); return v; }
@@ -77,7 +78,7 @@ struct Value
   static Value UI16(uint16 i) { Value v(Type::ui16); v.v = static_cast<uint16>(i); return v; }
   static Value UI32(uint32 i) { Value v(Type::ui32); v.v = static_cast<uint32>(i); return v; }
   static Value UI64(uint64 i) { Value v(Type::ui64); v.v = static_cast<uint64>(i); return v; }
-  static Value Range(const std::map<int, int> &range) { Value v(Type::Range); v.v = range; return v; }
+  static Value Range(const std::map<uint64, uint64> &range) { Value v(Type::Range); v.v = range; return v; }
   static Value Void() {return Value(Type::Void); }
   static Value TriBool(TriBool tb) { return Value(Type::TriBool, tb);  }
   // FIXME: Need a standard dict input style

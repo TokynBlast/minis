@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <cstdint>
-#include "macros.hpp"
+#include "macros.h"
 
 // NOTE: Using specific compile arguments, we can make it so unused data & functions aren't included
 

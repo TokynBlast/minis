@@ -16,7 +16,7 @@
 #include "../include/value.hpp"
 #include "../include/vm.hpp"
 #include "../include/plugin.hpp"
-#include "../include/macros.hpp"
+#include "../include/macros.h"
 #include "../include/io.hpp"
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
