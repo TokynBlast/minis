@@ -18,7 +18,6 @@
 #include "../include/plugin.hpp"
 #include "../include/macros.hpp"
 #include "../include/io.hpp"
-#include "../include/buffer.hpp"
 #include "../fast_io/include/fast_io.h"
 
 // using std::print;
@@ -437,7 +436,6 @@ namespace minis {
       return s;
     }
 
-    // FIXME: Should use VM buffer instead
     inline Value pop() {
       try {
         if (stack.empty()) {
@@ -520,7 +518,6 @@ namespace minis {
           std::string library_path = GETstr();
 
           // Load plugin
-          // FIXME: We should use the custom Minis buffer instead
           if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
             print("FATAL ERROR: Failed to load plugin ", module_name, "\n");
             std::exit(1);
