@@ -1,14 +1,12 @@
 #pragma once
 #include <cstdlib>
-// FiXME: Should use Minis buffer instead
-#include "buffer.hpp"
-#include <string>
+#include <print>
 
 namespace minis {
   // VM error: always fatal, no location
-  inline void fatal(std::string msg) {
-    screen.write("FATAL ERROR: " + msg + "\n");
+  inline void fatal(const char* msg) {
+    std::print("FATAL ERROR: {}\n");
     std::exit(1);
   }
-  #define VM_ERR(MSG) ::minis::vm_fatal(MSG)
+  #define ERR(MSG) ::minis::vm_fatal(MSG)
 }
