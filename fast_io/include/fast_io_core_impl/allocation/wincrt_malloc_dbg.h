@@ -1,9 +1,4 @@
-#pragma once
-
-#if defined(_MSC_VER) && !defined(__clang__)
-#pragma warning(push)
-#pragma warning(disable : 6308)
-#endif
+﻿#pragma once
 
 #include <crtdbg.h>
 
@@ -63,7 +58,7 @@ public:
 	}
 	static inline void deallocate(void *p) noexcept
 	{
-		if (p == nullptr)
+		if (p == nullptr) [[unlikely]]
 		{
 			return;
 		}
@@ -90,7 +85,3 @@ public:
 };
 
 } // namespace fast_io
-
-#if defined(_MSC_VER) && !defined(__clang__)
-#pragma warning(pop)
-#endif

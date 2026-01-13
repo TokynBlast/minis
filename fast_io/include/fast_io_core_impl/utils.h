@@ -21,12 +21,8 @@ inline
 	return ::std::bit_cast<To>(src);
 #else
 	To dst;
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memcpy)
+#if FAST_IO_HAS_BUILTIN(__builtin_memcpy)
 	__builtin_memcpy
-#else
-	::std::memcpy
-#endif
 #else
 	::std::memcpy
 #endif
@@ -45,22 +41,23 @@ struct io_lock_guard
 {
 	using mutex_type = mutx_type;
 	mutex_type &device;
-	explicit constexpr io_lock_guard(mutex_type &m) noexcept
+	inline explicit constexpr io_lock_guard(mutex_type &m) noexcept
 		: device(m)
 	{
 		device.lock();
 	}
 
+	inline
 #if __cpp_constexpr >= 201907L
-	constexpr
+		constexpr
 #endif
 		~io_lock_guard() noexcept
 	{
 		device.unlock();
 	}
 
-	io_lock_guard(io_lock_guard const &) = delete;
-	io_lock_guard &operator=(io_lock_guard const &) = delete;
+	inline io_lock_guard(io_lock_guard const &) = delete;
+	inline io_lock_guard &operator=(io_lock_guard const &) = delete;
 };
 
 template <typename stream_type>
@@ -68,12 +65,13 @@ struct io_flush_guard
 {
 	using handle_type = stream_type;
 	handle_type &device;
-	explicit constexpr io_flush_guard(handle_type &m) noexcept
+	inline explicit constexpr io_flush_guard(handle_type &m) noexcept
 		: device(m)
 	{}
 
+	inline
 #if __cpp_constexpr >= 201907L
-	constexpr
+		constexpr
 #endif
 		~io_flush_guard() noexcept
 	{
@@ -93,8 +91,8 @@ struct io_flush_guard
 #endif
 #endif
 	}
-	io_flush_guard(io_flush_guard const &) = delete;
-	io_flush_guard &operator=(io_flush_guard const &) = delete;
+	inline io_flush_guard(io_flush_guard const &) = delete;
+	inline io_flush_guard &operator=(io_flush_guard const &) = delete;
 };
 
 namespace details
@@ -245,7 +243,7 @@ inline constexpr U byte_swap(U a) noexcept
 #if (defined(__GNUC__) || defined(__clang__))
 #ifdef __SIZEOF_INT128__
 		if constexpr (sizeof(U) == 16)
-#if __has_builtin(__builtin_bswap128)
+#if FAST_IO_HAS_BUILTIN(__builtin_bswap128)
 			return __builtin_bswap128(a);
 #else
 		{
@@ -271,7 +269,7 @@ inline constexpr U byte_swap(U a) noexcept
 #else
 
 #if __cpp_lib_is_constant_evaluated >= 201811L
-		if (::std::is_constant_evaluated())
+		if (__builtin_is_constant_evaluated())
 		{
 			return details::byte_swap_naive_impl(a);
 		}
@@ -344,12 +342,8 @@ inline
 	void
 	compile_time_type_punning_copy_n(range_type const *first, ::std::size_t bytes, ::std::byte *out)
 {
-#if (__cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L) && __cpp_lib_bit_cast >= 201806L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
+#if __cpp_lib_bit_cast >= 201806L
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		if constexpr (::std::same_as<range_type, ::std::byte>)
 		{
@@ -385,17 +379,11 @@ template <::std::input_or_output_iterator output_iter, typename T>
 	requires(::std::is_trivially_copyable_v<T> && sizeof(T) <= sizeof(::std::uintmax_t))
 inline constexpr output_iter my_fill_n(output_iter first, ::std::size_t count, T value)
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		::fast_io::freestanding::fill_n(first, count, value);
 	}
 	else
-#endif
 	{
 		using output_value_type = ::std::iter_value_t<output_iter>;
 		if constexpr (::std::contiguous_iterator<output_iter> && ::std::is_trivially_copyable_v<output_value_type> &&
@@ -464,17 +452,22 @@ inline constexpr T compile_time_pow(T base, ::std::size_t pow) noexcept
 	return t;
 }
 
-template <my_integral T, ::std::size_t pow>
-inline constexpr T compile_pow10{::fast_io::details::compile_time_pow<::std::remove_cvref_t<T>>(10, pow)};
+template <my_integral T, ::std::size_t base, ::std::size_t pow>
+inline constexpr T compile_pow_n{::fast_io::details::compile_time_pow<::std::remove_cvref_t<T>>(static_cast<T>(base), pow)};
 
 template <my_integral T, ::std::size_t pow>
-inline constexpr T compile_pow5{::fast_io::details::compile_time_pow<::std::remove_cvref_t<T>>(5, pow)};
+inline constexpr T compile_pow10{::fast_io::details::compile_pow_n<T, 10, pow>};
 
 template <my_integral T, ::std::size_t pow>
-inline constexpr T compile_pow2{::fast_io::details::compile_time_pow<::std::remove_cvref_t<T>>(2, pow)};
+inline constexpr T compile_pow5{::fast_io::details::compile_pow_n<T, 5, pow>};
+
+template <my_integral T, ::std::size_t pow>
+inline constexpr T compile_pow2{::fast_io::details::compile_pow_n<T, 2, pow>};
+
+
 
 inline constexpr bool is_wasi_environment{
-#if __wasi__
+#ifdef __wasi__
 	true
 #endif
 };
@@ -490,7 +483,7 @@ inline constexpr bool need_seperate_print{(sizeof(T) > sizeof(optimal_print_unsi
 
 template <::std::uint_least32_t base, bool ryu_mode = false,
 		  ::std::size_t mx_size = ::std::numeric_limits<::std::size_t>::max(), my_unsigned_integral U>
-constexpr ::std::size_t chars_len(U value) noexcept
+inline constexpr ::std::size_t chars_len(U value) noexcept
 {
 	if constexpr (base == 10 && sizeof(U) <= 16)
 	{
@@ -900,6 +893,9 @@ inline constexpr ::std::size_t cal_max_int_size() noexcept
 	}
 	return i;
 }
+
+template <my_integral T, char8_t base>
+inline constexpr auto max_int_size_result{cal_max_int_size<T, base>()};
 
 // static_assert(cal_max_int_size<::std::uint_least64_t,10>()==20);
 // static_assert(cal_max_int_size<::std::uint_least32_t,10>()==10);

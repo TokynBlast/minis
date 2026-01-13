@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 namespace fast_io
 {
@@ -55,8 +55,7 @@ inline
 #endif
 	decltype(auto) noexcept_call(F *f, Args &&...args) noexcept
 {
-#if __cpp_if_consteval >= 202106L
-	if consteval
+	if (__builtin_is_constant_evaluated())
 	{
 		return f(::std::forward<Args>(args)...); // EH unwinding does not matter here
 	}
@@ -64,20 +63,10 @@ inline
 	{
 		return noexcept_cast(f)(::std::forward<Args>(args)...);
 	}
-#else
-#if __cpp_lib_is_constant_evaluated >= 201811
-	if (::std::is_constant_evaluated())
-	{
-		return f(::std::forward<Args>(args)...); // EH unwinding does not matter here
-	}
-	else
-#endif
-		return noexcept_cast(f)(::std::forward<Args>(args)...);
-#endif
 }
 
-}
+} // namespace freestanding
 
 using ::fast_io::freestanding::noexcept_call;
 
-}
+} // namespace fast_io

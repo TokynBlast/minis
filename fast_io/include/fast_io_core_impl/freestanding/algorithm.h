@@ -3,9 +3,50 @@
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC system_header
 #endif
-#if defined(_MSC_VER) && !defined(__clang__)
-#pragma warning(push)
-#pragma warning(disable : 4365)
+
+#if __cpp_impl_three_way_comparison >= 201907L
+#if __cpp_lib_three_way_comparison >= 201907L
+namespace fast_io::freestanding
+{
+using ::std::lexicographical_compare_three_way;
+using ::std::compare_three_way;
+} // namespace fast_io::freestanding
+#else
+namespace fast_io::freestanding
+{
+template <typename I1, typename I2, typename Cmp>
+constexpr auto lexicographical_compare_three_way(I1 f1, I1 l1, I2 f2, I2 l2, Cmp comp)
+	-> decltype(comp(*f1, *f2))
+{
+	using ret_t = decltype(comp(*f1, *f2));
+	static_assert(::std::disjunction_v<
+					  ::std::is_same<ret_t, ::std::strong_ordering>,
+					  ::std::is_same<ret_t, ::std::weak_ordering>,
+					  ::std::is_same<ret_t, ::std::partial_ordering>>,
+				  "The return type must be a comparison category type.");
+
+	bool exhaust1{f1 == l1};
+	bool exhaust2{f2 == l2};
+	for (; !exhaust1 && !exhaust2; exhaust1 = (++f1 == l1), exhaust2 = (++f2 == l2))
+	{
+		if (auto c = comp(*f1, *f2); c != 0)
+		{
+			return c;
+		}
+	}
+
+	return !exhaust1 ? ::std::strong_ordering::greater : !exhaust2 ? ::std::strong_ordering::less
+																   : ::std::strong_ordering::equal;
+}
+
+template <typename I1, typename I2>
+constexpr auto lexicographical_compare_three_way(I1 f1, I1 l1, I2 f2, I2 l2)
+{
+	return lexicographical_compare_three_way(f1, l1, f2, l2, ::std::compare_three_way{});
+}
+
+} // namespace fast_io::freestanding
+#endif
 #endif
 
 #if 0
@@ -95,6 +136,28 @@ inline constexpr output_iter copy(input_iter first, input_iter last, output_iter
 template <::std::input_iterator fwd_iter, typename T>
 inline constexpr void fill(fwd_iter first, fwd_iter last, T value)
 {
+	if constexpr (::std::contiguous_iterator<fwd_iter>)
+	{
+		if constexpr (::std::is_trivially_copyable_v<fwd_iter> &&
+					  ::std::is_scalar_v<fwd_iter> && sizeof(fwd_iter) == 1)
+		{
+#ifdef __cpp_if_consteval
+			if !consteval
+#else
+			if (!__builtin_is_constant_evaluated())
+#endif
+			{
+#if FAST_IO_HAS_BUILTIN(__builtin_memset)
+				__builtin_memset
+#else
+				::std::memset
+#endif
+					(::std::to_address(first),
+					 static_cast<fwd_iter>(value),
+					 static_cast<::std::size_t>(last - first));
+			}
+		}
+	}
 	for (; first != last; ++first)
 	{
 		*first = value;
@@ -104,6 +167,28 @@ inline constexpr void fill(fwd_iter first, fwd_iter last, T value)
 template <::std::input_iterator fwd_iter, typename T>
 inline constexpr void fill_n(fwd_iter first, ::std::size_t n, T value)
 {
+	if constexpr (::std::contiguous_iterator<fwd_iter>)
+	{
+		if constexpr (::std::is_trivially_copyable_v<fwd_iter> &&
+					  ::std::is_scalar_v<fwd_iter> && sizeof(fwd_iter) == 1)
+		{
+#ifdef __cpp_if_consteval
+			if !consteval
+#else
+			if (!__builtin_is_constant_evaluated())
+#endif
+			{
+#if FAST_IO_HAS_BUILTIN(__builtin_memset)
+				__builtin_memset
+#else
+				::std::memset
+#endif
+					(::std::to_address(first),
+					 static_cast<fwd_iter>(value),
+					 n);
+			}
+		}
+	}
 	for (::std::size_t i{}; i != n; ++i)
 	{
 		*first = value;
@@ -112,7 +197,7 @@ inline constexpr void fill_n(fwd_iter first, ::std::size_t n, T value)
 }
 
 template <::std::bidirectional_iterator BidirIt1, ::std::bidirectional_iterator BidirIt2>
-constexpr BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last)
+inline constexpr BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last)
 {
 	for (; first != last; *(--d_last) = *(--last))
 		;
@@ -120,7 +205,7 @@ constexpr BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last)
 }
 
 template <::std::bidirectional_iterator BidirIt1, ::std::bidirectional_iterator BidirIt2>
-constexpr BidirIt2 move_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last)
+inline constexpr BidirIt2 move_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last)
 {
 	for (; first != last; *(--d_last) = ::std::move(*(--last)))
 		;
@@ -149,6 +234,7 @@ inline constexpr Iter find(Iter first, Iter last, T t)
 	return last;
 }
 
+#if 0
 template <::std::input_iterator Iter, ::std::integral T>
 // requires (::std::is_trivially_copyable_v<T>&&sizeof(T)<=sizeof(::std::uintmax_t))
 	requires(::std::is_trivially_copyable_v<T>)
@@ -163,6 +249,7 @@ inline constexpr Iter find_not(Iter first, Iter last, T t)
 	}
 	return last;
 }
+#endif
 
 template <::std::input_iterator Iter, ::std::input_iterator Iter2>
 struct mismatch_result
@@ -199,26 +286,42 @@ inline constexpr ForwardIt remove(ForwardIt first, ForwardIt last, T value)
 	return first;
 }
 } // namespace fast_io::freestanding
+namespace fast_io::details
+{
+template <::std::random_access_iterator input_iter, ::std::random_access_iterator output_iter>
+	requires((::std::same_as<::std::iter_value_t<input_iter>, ::std::iter_value_t<output_iter>> ||
+			  (::std::contiguous_iterator<input_iter> && ::std::contiguous_iterator<output_iter>)) &&
+			 (::std::is_trivially_copyable_v<::std::iter_value_t<input_iter>> &&
+			  ::std::is_trivially_copyable_v<::std::iter_value_t<output_iter>>))
+inline constexpr output_iter overlapped_copy_trivial(input_iter first, ::std::size_t n, output_iter result)
+{
+	::fast_io::details::overlapped_copy_buffer_ptr<::std::iter_value_t<output_iter>> tempbuffer(n);
+	auto tempbufferptr{tempbuffer.ptr};
+	for (::std::size_t i{}; i != n; ++i)
+	{
+		tempbufferptr[i] = first[i];
+	}
+	for (::std::size_t i{}; i != n; ++i)
+	{
+		result[i] = ::std::move(tempbufferptr[i]);
+	}
+	return result + n;
+}
+} // namespace fast_io::details
 
 namespace fast_io::freestanding
 {
 
 inline
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memcpy)
+#if FAST_IO_HAS_BUILTIN(__builtin_memcpy)
 	constexpr
-#endif
 #endif
 	void *
 	my_memcpy(void *dest, void const *src, ::std::size_t count) noexcept
 {
 	return
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memcpy)
+#if FAST_IO_HAS_BUILTIN(__builtin_memcpy)
 		__builtin_memcpy
-#else
-		::std::memcpy
-#endif
 #else
 		::std::memcpy
 #endif
@@ -226,21 +329,15 @@ inline
 }
 
 inline
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memmove)
+#if FAST_IO_HAS_BUILTIN(__builtin_memmove)
 	constexpr
-#endif
 #endif
 	void *
 	my_memmove(void *dest, void const *src, ::std::size_t count) noexcept
 {
 	return
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memmove)
+#if FAST_IO_HAS_BUILTIN(__builtin_memmove)
 		__builtin_memmove
-#else
-		::std::memmove
-#endif
 #else
 		::std::memmove
 #endif
@@ -250,12 +347,8 @@ inline
 inline void *my_memset(void *dest, int ch, ::std::size_t count) noexcept
 {
 	return
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memset)
+#if FAST_IO_HAS_BUILTIN(__builtin_memset)
 		__builtin_memset
-#else
-		::std::memset
-#endif
 #else
 		::std::memset
 #endif
@@ -263,21 +356,15 @@ inline void *my_memset(void *dest, int ch, ::std::size_t count) noexcept
 }
 
 inline
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memcmp)
+#if FAST_IO_HAS_BUILTIN(__builtin_memcmp)
 	constexpr
-#endif
 #endif
 	int
 	my_memcmp(void const *dest, void const *src, ::std::size_t count) noexcept
 {
 	return
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_memcmp)
+#if FAST_IO_HAS_BUILTIN(__builtin_memcmp)
 		__builtin_memcmp
-#else
-		::std::memcmp
-#endif
 #else
 		::std::memcmp
 #endif
@@ -287,17 +374,12 @@ inline
 template <::std::input_iterator input_iter, ::std::input_or_output_iterator output_iter>
 inline constexpr output_iter non_overlapped_copy_n(input_iter first, ::std::size_t count, output_iter result)
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
+
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		return ::fast_io::freestanding::copy_n(first, count, result);
 	}
 	else
-#endif
 	{
 		using input_value_type = ::std::iter_value_t<input_iter>;
 		using output_value_type = ::std::iter_value_t<output_iter>;
@@ -324,17 +406,11 @@ inline constexpr output_iter non_overlapped_copy_n(input_iter first, ::std::size
 template <::std::input_iterator input_iter, ::std::input_or_output_iterator output_iter>
 inline constexpr output_iter non_overlapped_copy(input_iter first, input_iter last, output_iter result)
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		return ::fast_io::freestanding::copy(first, last, result);
 	}
 	else
-#endif
 	{
 		using input_value_type = ::std::iter_value_t<input_iter>;
 		using output_value_type = ::std::iter_value_t<output_iter>;
@@ -359,20 +435,102 @@ inline constexpr output_iter non_overlapped_copy(input_iter first, input_iter la
 	}
 }
 
+template <::std::contiguous_iterator input_iter, ::std::contiguous_iterator output_iter>
+	requires(::std::same_as<::std::iter_value_t<input_iter>, ::std::iter_value_t<output_iter>>)
+inline constexpr output_iter overlapped_copy(input_iter first, input_iter last, output_iter result)
+{
+	if (__builtin_is_constant_evaluated())
+	{
+		return ::fast_io::details::overlapped_copy_trivial(first, static_cast<::std::size_t>(last - first), result);
+	}
+	else
+	{
+		using input_value_type = ::std::iter_value_t<input_iter>;
+		using output_value_type = ::std::iter_value_t<output_iter>;
+#if 0
+		if constexpr (::std::contiguous_iterator<input_iter> && ::std::contiguous_iterator<output_iter> &&
+						::std::is_trivially_copyable_v<input_value_type> &&
+						::std::is_trivially_copyable_v<output_value_type> &&
+						(::std::same_as<input_value_type, output_value_type> ||
+						(::std::integral<input_value_type> && ::std::integral<output_value_type> &&
+						sizeof(input_value_type) == sizeof(output_value_type))))
+#endif
+		{
+			auto resulttoaddr{::std::to_address(result)};
+			auto firsttoaddr{::std::to_address(first)};
+			auto lasttoaddr{::std::to_address(last)};
+			::std::size_t count{static_cast<::std::size_t>(lasttoaddr - firsttoaddr)};
+			if (count) // to avoid nullptr UB
+			{
+				my_memmove(resulttoaddr, firsttoaddr,
+						   sizeof(::std::iter_value_t<input_iter>) * count);
+			}
+			return result += count;
+		}
+#if 0
+		else
+		{
+			::std::size_t count{static_cast<::std::size_t>(last-first)};
+			auto result_last{result+count};
+			if (first <= result_last && result_last < last)
+			{
+				//copy_backward
+				::fast_io::freestanding::copy_backward(first, last, result_last);
+				return result_last;
+			}
+			return ::fast_io::freestanding::copy(first, last, result);
+		}
+#endif
+	}
+}
+
+template <::std::contiguous_iterator input_iter, ::std::contiguous_iterator output_iter>
+	requires(::std::same_as<::std::iter_value_t<input_iter>, ::std::iter_value_t<output_iter>>)
+inline output_iter overlapped_copy_n(input_iter first, ::std::size_t count, output_iter result)
+{
+	if (__builtin_is_constant_evaluated())
+	{
+		return ::fast_io::details::overlapped_copy_trivial(first, count, result);
+	}
+	else
+	{
+		using input_value_type = ::std::iter_value_t<input_iter>;
+		using output_value_type = ::std::iter_value_t<output_iter>;
+#if 0
+		if constexpr (::std::contiguous_iterator<input_iter> && ::std::contiguous_iterator<output_iter> &&
+						::std::is_trivially_copyable_v<input_value_type> &&
+						::std::is_trivially_copyable_v<output_value_type> &&
+						(::std::same_as<input_value_type, output_value_type> ||
+						(::std::integral<input_value_type> && ::std::integral<output_value_type> &&
+						sizeof(input_value_type) == sizeof(output_value_type))))
+#endif
+		{
+			auto resulttoaddr{::std::to_address(result)};
+			auto firsttoaddr{::std::to_address(first)};
+			if (count) // to avoid nullptr UB
+			{
+				my_memmove(resulttoaddr, firsttoaddr,
+						   sizeof(::std::iter_value_t<input_iter>) * count);
+			}
+			return result += count;
+		}
+#if 0
+		else
+		{
+			return ::fast_io::freestanding::overlapped_copy(first, first+count, result);
+		}
+#endif
+	}
+}
+
 template <::std::input_iterator input_iter, ::std::input_or_output_iterator output_iter>
 inline constexpr output_iter my_copy_n(input_iter first, ::std::size_t count, output_iter result)
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		return ::fast_io::freestanding::copy_n(first, count, result);
 	}
 	else
-#endif
 	{
 		using input_value_type = ::std::iter_value_t<input_iter>;
 		using output_value_type = ::std::iter_value_t<output_iter>;
@@ -407,7 +565,8 @@ inline constexpr output_iter my_copy(input_iter first, input_iter second, output
 				  ::std::is_trivially_copyable_v<output_value_type> &&
 				  (::std::same_as<input_value_type, output_value_type> ||
 				   (::std::integral<input_value_type> && ::std::integral<output_value_type> &&
-					sizeof(input_value_type) == sizeof(output_value_type))))
+					::std::is_trivially_copyable_v<input_value_type> &&
+					::std::is_trivially_copyable_v<output_value_type>)))
 	{
 		my_copy_n(first, static_cast<::std::size_t>(second - first), result);
 		return result + (second - first);
@@ -421,17 +580,11 @@ inline constexpr output_iter my_copy(input_iter first, input_iter second, output
 template <::std::bidirectional_iterator input_iter, ::std::bidirectional_iterator output_iter>
 inline constexpr output_iter my_copy_backward(input_iter first, input_iter last, output_iter d_last)
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		return ::fast_io::freestanding::copy_backward(first, last, d_last);
 	}
 	else
-#endif
 	{
 		using input_value_type = typename ::std::iter_value_t<input_iter>;
 		using output_value_type = typename ::std::iter_value_t<output_iter>;
@@ -460,12 +613,7 @@ inline constexpr output_iter my_copy_backward(input_iter first, input_iter last,
 template <::std::random_access_iterator input_iter, ::std::random_access_iterator output_iter>
 inline constexpr bool my_compare_iter_n(input_iter first, ::std::size_t n, output_iter outier) noexcept
 {
-#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
-#if __cpp_if_consteval >= 202106L
-	if consteval
-#else
 	if (__builtin_is_constant_evaluated())
-#endif
 	{
 		for (auto last{first + n}; first != last; ++first)
 		{
@@ -478,7 +626,6 @@ inline constexpr bool my_compare_iter_n(input_iter first, ::std::size_t n, outpu
 		return true;
 	}
 	else
-#endif
 	{
 		using input_value_type = typename ::std::iter_value_t<input_iter>;
 		using output_value_type = typename ::std::iter_value_t<output_iter>;
@@ -489,13 +636,13 @@ inline constexpr bool my_compare_iter_n(input_iter first, ::std::size_t n, outpu
 					   (::std::integral<input_value_type> && ::std::integral<output_value_type> &&
 						sizeof(input_value_type) == sizeof(output_value_type))))
 		{
-			return my_memcmp(::std::to_address(first), ::std::to_address(outier), sizeof(input_value_type) * n) == 0;
+			return my_memcmp(::std::to_address(first), ::std::to_address(outier), n * sizeof(input_value_type)) == 0;
 		}
 		else
 		{
 			for (auto last{first + n}; first != last; ++first)
 			{
-				if (*first != outier)
+				if (*first != *outier)
 				{
 					return false;
 				}
@@ -539,13 +686,13 @@ inline constexpr ForwardIt lower_bound(ForwardIt first, ForwardIt last, T const 
 {
 	ForwardIt it;
 	typename ::std::iterator_traits<ForwardIt>::difference_type count, step;
-	count = last - first;
+	count = ::std::distance(first, last);
 
 	while (count > 0)
 	{
 		it = first;
 		step = count / 2;
-		it += step;
+		::std::advance(it, step);
 
 		if (comp(*it, value))
 		{
@@ -568,7 +715,7 @@ inline constexpr NoThrowForwardIt uninitialized_copy(InputIt first, InputIt last
 	{
 		NoThrowForwardIt d_first;
 		NoThrowForwardIt current;
-		constexpr ~destroyer()
+		inline constexpr ~destroyer()
 		{
 			for (; d_first != current; ++d_first)
 			{
@@ -624,7 +771,7 @@ uninitialized_copy_n(InputIt first, ::std::size_t n, NoThrowForwardIt d_first) n
 	{
 		NoThrowForwardIt d_first;
 		NoThrowForwardIt current;
-		constexpr ~destroyer() noexcept
+		inline constexpr ~destroyer() noexcept
 		{
 			for (; d_first != current; ++d_first)
 			{
@@ -710,6 +857,75 @@ uninitialized_move_n(InputIt first, ::std::size_t n, NoThrowForwardIt d_first) n
 		++first;
 	}
 	return d_first;
+}
+
+template <::std::input_iterator ForwardIt>
+inline constexpr void uninitialized_default_construct(ForwardIt first, ForwardIt last) noexcept(
+	::std::is_nothrow_default_constructible_v<typename ::std::iterator_traits<ForwardIt>::value_type>)
+{
+	using T = typename ::std::iterator_traits<ForwardIt>::value_type;
+	if constexpr (::fast_io::freestanding::is_zero_default_constructible_v<T> &&
+				  ::std::contiguous_iterator<ForwardIt> && !::std::is_volatile_v<T>)
+	{
+#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
+#if __cpp_if_consteval >= 202106L
+		if !consteval
+#else
+		if (!__builtin_is_constant_evaluated())
+#endif
+		{
+			::fast_io::freestanding::my_memset(::std::to_address(first), 0, sizeof(T) * static_cast<::std::size_t>(last - first));
+			return;
+		}
+#endif
+	}
+	for (; first != last; ++first)
+	{
+		::std::construct_at(::std::to_address(first));
+	}
+}
+
+template <::std::input_iterator ForwardIt>
+inline constexpr void uninitialized_default_construct_n(ForwardIt first, ::std::size_t n) noexcept(
+	::std::is_nothrow_default_constructible_v<typename ::std::iterator_traits<ForwardIt>::value_type>)
+{
+	::fast_io::freestanding::uninitialized_default_construct(first, ::std::next(first, n));
+}
+
+template <::std::input_iterator ForwardIt, typename T>
+inline constexpr ForwardIt uninitialized_fill(ForwardIt first, ForwardIt last, T const &x) noexcept(
+	::std::is_nothrow_copy_constructible_v<typename ::std::iterator_traits<ForwardIt>::value_type>)
+{
+	using valuetype = typename ::std::iterator_traits<ForwardIt>::value_type;
+
+	if constexpr (::std::integral<valuetype> && ::std::integral<T> &&
+				  sizeof(T) == 1 && sizeof(valuetype) == 1 && ::std::contiguous_iterator<ForwardIt>)
+	{
+#if __cpp_if_consteval >= 202106L || __cpp_lib_is_constant_evaluated >= 201811L
+#if __cpp_if_consteval >= 202106L
+		if !consteval
+#else
+		if (!__builtin_is_constant_evaluated())
+#endif
+		{
+			::fast_io::freestanding::my_memset(::std::to_address(first), static_cast<int>(static_cast<::std::uint_least8_t>(x)), sizeof(T) * static_cast<::std::size_t>(last - first));
+			return last;
+		}
+#endif
+	}
+
+	for (; first != last; ++first)
+	{
+		::std::construct_at(::std::to_address(first), x);
+	}
+	return last;
+}
+
+template <::std::input_iterator ForwardIt, typename T>
+inline constexpr ForwardIt uninitialized_fill_n(ForwardIt first, ::std::size_t n, T const &x) noexcept(
+	::std::is_nothrow_copy_constructible_v<typename ::std::iterator_traits<ForwardIt>::value_type>)
+{
+	return ::fast_io::freestanding::uninitialized_fill(first, ::std::next(first, n), x);
 }
 
 template <::std::forward_iterator ForwardIt>
@@ -844,7 +1060,3 @@ using ::fast_io::freestanding::non_overlapped_copy;
 using ::fast_io::freestanding::non_overlapped_copy_n;
 
 } // namespace fast_io::details
-
-#if defined(_MSC_VER) && !defined(__clang__)
-#pragma warning(pop)
-#endif

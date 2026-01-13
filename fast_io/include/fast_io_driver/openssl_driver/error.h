@@ -8,7 +8,6 @@ class openssl_error
 public:
 };
 
-
 inline void throw_openssl_error()
 {
 #ifdef __cpp_exceptions
@@ -22,4 +21,4 @@ inline void throw_openssl_error()
 #endif
 }
 
-}
+} // namespace fast_io

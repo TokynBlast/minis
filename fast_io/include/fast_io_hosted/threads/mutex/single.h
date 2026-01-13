@@ -5,9 +5,16 @@ namespace fast_io
 
 struct single_thread_noop_mutex
 {
-	constexpr void lock() noexcept {}
-	constexpr void unlock() noexcept {}
-	constexpr void try_lock() noexcept {}
+	inline constexpr void lock() noexcept
+	{}
+	
+	inline constexpr void unlock() noexcept
+	{}
+
+	inline constexpr bool try_lock() noexcept
+	{
+		return true;
+	}
 };
 
-}
+} // namespace fast_io

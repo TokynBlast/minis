@@ -26,7 +26,7 @@ inline constexpr T addc(T a, T b, bool carryin, bool &carryout) noexcept
 	if (!__builtin_is_constant_evaluated())
 #endif
 	{
-#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_IX86) || defined(_M_AMD64))
+#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_IX86) || defined(_M_AMD64)) && !defined(__arm64ec__) && !defined(_M_ARM64EC)
 #if !__has_cpp_attribute(assume)
 		__assume(carryin == 0 || carryin == 1);
 #endif
@@ -74,16 +74,15 @@ inline constexpr T addc(T a, T b, bool carryin, bool &carryout) noexcept
 				return (static_cast<long long unsigned>(reshigh) << 32u) | reslow;
 			}
 		}
-#elif defined(__has_builtin)
-#if __has_builtin(__builtin_add_overflow)
+#elif  FAST_IO_HAS_BUILTIN(__builtin_add_overflow)
 		T s;
 		auto c1 = __builtin_add_overflow(a, b, __builtin_addressof(s));
 		auto c2 = __builtin_add_overflow(s, carryin, __builtin_addressof(s));
 		carryout = c1 | c2;
 		return s;
 #endif
-#endif
 	}
+
 	a += b;
 	carryout = a < b;
 	a += carryin;
@@ -104,7 +103,7 @@ inline constexpr T subc(T a, T b, bool carryin, bool &carryout) noexcept
 	if (!__builtin_is_constant_evaluated())
 #endif
 	{
-#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_IX86) || defined(_M_AMD64))
+#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_IX86) || defined(_M_AMD64)) && !defined(__arm64ec__) && !defined(_M_ARM64EC)
 #if !__has_cpp_attribute(assume)
 		__assume(carryin == 0 || carryin == 1);
 #endif
@@ -148,23 +147,25 @@ inline constexpr T subc(T a, T b, bool carryin, bool &carryout) noexcept
 				bool carrytemp{static_cast<bool>(::fast_io::intrinsics::msvc::x86::_subborrow_u32(
 					static_cast<char unsigned>(carryin), alow, blow, __builtin_addressof(reslow)))};
 				carryout = static_cast<bool>(::fast_io::intrinsics::msvc::x86::_subborrow_u32(
-					carrytemp, alow, bhigh, __builtin_addressof(reshigh)));
+					carrytemp, ahigh, bhigh, __builtin_addressof(reshigh)));
 				return (static_cast<long long unsigned>(reshigh) << 32u) | reslow;
 			}
 		}
-#elif defined(__has_builtin)
-#if __has_builtin(__builtin_sub_overflow)
+		
+#elif FAST_IO_HAS_BUILTIN(__builtin_sub_overflow)
 		T s;
 		auto c1 = __builtin_sub_overflow(a, b, __builtin_addressof(s));
 		auto c2 = __builtin_sub_overflow(s, carryin, __builtin_addressof(s));
 		carryout = c1 | c2;
 		return s;
 #endif
-#endif
 	}
+
 	b = a - b;
 	carryout = a < b;
-	a = b - carryin;
+	// b is a-b but does not handle the result of the abdication, 
+	// at which point a can be reused for subsequent abdication underflow judgments
+	a = b - static_cast<T>(carryin);
 	carryout |= b < a;
 	return a;
 }

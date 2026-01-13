@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 namespace fast_io::intrinsics::msvc::x86
 {
@@ -20,6 +20,8 @@ extern "C"
 	unsigned __int64 _udiv128(unsigned __int64, unsigned __int64, unsigned __int64, unsigned __int64 *);
 	unsigned __int64 __shiftleft128(unsigned __int64, unsigned __int64, unsigned char);
 	unsigned __int64 __shiftright128(unsigned __int64, unsigned __int64, unsigned char);
+	unsigned __int64 _umul128(unsigned __int64, unsigned __int64, unsigned __int64 *);
+	unsigned __int64 __umulh(unsigned __int64, unsigned __int64);
 }
 
 } // namespace fast_io::intrinsics::msvc::x86

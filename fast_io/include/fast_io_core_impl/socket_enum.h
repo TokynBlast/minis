@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-//https://github.com/bminor/glibc/blob/5f72f9800b250410cad3abfeeb09469ef12b2438/sysdeps/unix/sysv/linux/bits/socket.h
-//https://github.com/freebsd/freebsd/blob/230874c33e0e80cfe736ebb023cd26102b0572e2/sys/sys/socket.h
+// https://github.com/bminor/glibc/blob/5f72f9800b250410cad3abfeeb09469ef12b2438/sysdeps/unix/sysv/linux/bits/socket.h
+// https://github.com/freebsd/freebsd/blob/230874c33e0e80cfe736ebb023cd26102b0572e2/sys/sys/socket.h
 
 namespace fast_io
 {
 
-enum class protocol_family: std::uint_least32_t
+enum class protocol_family : ::std::uint_least32_t
 {
 	unspec = 0,
 	local = 1,
@@ -58,4 +58,4 @@ enum class protocol_family: std::uint_least32_t
 
 using address_family = protocol_family;
 
-}
+} // namespace fast_io

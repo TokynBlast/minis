@@ -22,4 +22,4 @@ inline auto u32dbg() noexcept
 {
 	return native_stderr<char32_t>();
 }
-}
+} // namespace fast_io

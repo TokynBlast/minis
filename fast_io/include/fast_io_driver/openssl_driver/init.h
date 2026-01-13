@@ -12,5 +12,4 @@ public:
 	}
 };
 
-
-}
+} // namespace fast_io

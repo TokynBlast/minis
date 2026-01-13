@@ -1,11 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #if __has_cpp_attribute(__gnu__::__flatten__)
 [[__gnu__::__flatten__]]
 #endif
-inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::byte const* __restrict block,std::byte const* __restrict blocks_last) noexcept
+inline void sha256_runtime_routine(::std::uint_least32_t *__restrict state, ::std::byte const *__restrict block,
+								   ::std::byte const *__restrict blocks_last) noexcept
 {
-	constexpr std::size_t block_size{64};
+	constexpr ::std::size_t block_size{64};
 	__m128i STATE0, STATE1;
 	__m128i MSG, TMP;
 	__m128i MSG0, MSG1, MSG2, MSG3;
@@ -13,21 +14,21 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 	__m128i const MASK = _mm_set_epi64x(0x0c0d0e0f08090a0bULL, 0x0405060700010203ULL);
 
 	/* Load initial values */
-	TMP = _mm_loadu_si128((__m128i const*) state);
-	STATE1 = _mm_loadu_si128((__m128i const*) (state+4));
+	TMP = _mm_loadu_si128((__m128i const *)state);
+	STATE1 = _mm_loadu_si128((__m128i const *)(state + 4));
 
 	TMP = _mm_shuffle_epi32(TMP, 0xB1);          /* CDAB */
 	STATE1 = _mm_shuffle_epi32(STATE1, 0x1B);    /* EFGH */
 	STATE0 = _mm_alignr_epi8(TMP, STATE1, 8);    /* ABEF */
 	STATE1 = _mm_blend_epi16(STATE1, TMP, 0xF0); /* CDGH */
-	for(;block!=blocks_last;block+=block_size)
+	for (; block != blocks_last; block += block_size)
 	{
 		/* Save current state */
 		ABEF_SAVE = STATE0;
 		CDGH_SAVE = STATE1;
 
 		/* Rounds 0-3 */
-		MSG = _mm_loadu_si128((__m128i const*) block);
+		MSG = _mm_loadu_si128((__m128i const *)block);
 		MSG0 = _mm_shuffle_epi8(MSG, MASK);
 		MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0xE9B5DBA5B5C0FBCFULL, 0x71374491428A2F98ULL));
 		STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -35,7 +36,7 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 		STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
 
 		/* Rounds 4-7 */
-		MSG1 = _mm_loadu_si128((__m128i const*) (block+16));
+		MSG1 = _mm_loadu_si128((__m128i const *)(block + 16));
 		MSG1 = _mm_shuffle_epi8(MSG1, MASK);
 		MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0xAB1C5ED5923F82A4ULL, 0x59F111F13956C25BULL));
 		STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -44,7 +45,7 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 		MSG0 = _mm_sha256msg1_epu32(MSG0, MSG1);
 
 		/* Rounds 8-11 */
-		MSG2 = _mm_loadu_si128((__m128i const*) (block+32));
+		MSG2 = _mm_loadu_si128((__m128i const *)(block + 32));
 		MSG2 = _mm_shuffle_epi8(MSG2, MASK);
 		MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x550C7DC3243185BEULL, 0x12835B01D807AA98ULL));
 		STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -52,9 +53,8 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 		STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
 		MSG1 = _mm_sha256msg1_epu32(MSG1, MSG2);
 
-
 		/* Rounds 12-15 */
-		MSG3 = _mm_loadu_si128((__m128i const*) (block+48));
+		MSG3 = _mm_loadu_si128((__m128i const *)(block + 48));
 		MSG3 = _mm_shuffle_epi8(MSG3, MASK);
 		MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC19BF1749BDC06A7ULL, 0x80DEB1FE72BE5D74ULL));
 		STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -96,7 +96,7 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 		MSG1 = _mm_sha256msg1_epu32(MSG1, MSG2);
 
 		/* Rounds 28-31 */
-		MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x1429296706CA6351ULL,  0xD5A79147C6E00BF3ULL));
+		MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0x1429296706CA6351ULL, 0xD5A79147C6E00BF3ULL));
 		STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
 		TMP = _mm_alignr_epi8(MSG3, MSG2, 4);
 		MSG0 = _mm_add_epi32(MSG0, TMP);
@@ -188,6 +188,6 @@ inline void sha256_runtime_routine(std::uint_least32_t* __restrict state,std::by
 	STATE0 = _mm_blend_epi16(TMP, STATE1, 0xF0); /* DCBA */
 	STATE1 = _mm_alignr_epi8(STATE1, TMP, 8);    /* ABEF */
 	/* Save state */
-	_mm_storeu_si128((__m128i*) (state), STATE0);
-	_mm_storeu_si128((__m128i*) (state+4), STATE1);
+	_mm_storeu_si128((__m128i *)(state), STATE0);
+	_mm_storeu_si128((__m128i *)(state + 4), STATE1);
 }

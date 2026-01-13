@@ -3,7 +3,7 @@
 namespace fast_io::details
 {
 
-template<typename T>
+template <typename T>
 class observer
 {
 public:
@@ -13,24 +13,24 @@ public:
 	{
 		return handle;
 	}
-	constexpr auto& native_handle() const noexcept
+	constexpr auto &native_handle() const noexcept
 	{
 		return handle;
 	}
-	constexpr auto& native_handle() noexcept
+	constexpr auto &native_handle() noexcept
 	{
 		return handle;
 	}
-	constexpr void reset(native_handle_type newhandle=nullptr) noexcept
+	constexpr void reset(native_handle_type newhandle = nullptr) noexcept
 	{
-		handle=newhandle;
+		handle = newhandle;
 	}
 	constexpr native_handle_type release() noexcept
 	{
 		auto temp{handle};
-		handle=nullptr;
+		handle = nullptr;
 		return temp;
 	}
 };
 
-}
+} // namespace fast_io::details
