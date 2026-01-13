@@ -1,7 +1,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
+// #include <iostream>
 #include <functional>
 #include <algorithm>
 #include <cstdio>
@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cmath>
 #include <array>
+// #include <print>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
@@ -18,15 +19,22 @@
 #include "../include/macros.hpp"
 #include "../include/io.hpp"
 #include "../include/buffer.hpp"
+#include "../fast_io/include/fast_io.h"
+
+// using std::print;
+
+// fast_io is here to replace standard iostream
+// until one of the following occurs:
+// iostream gets replaced or improved
+// fast_io is depreceated
+// something better is found
+
+using namespace fast_io::io;
 
 namespace minis {
   /*=============================
   =          Values/Env         =
   =============================*/
-
-  // FIXME: Errors shouldn't be baked in unless debug code was added. The source shouldn't be assumed to exist.
-  // FIXME: Should use view over raw pointer
-  // inline const Source* src = nullptr;
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
@@ -35,26 +43,27 @@ namespace minis {
   // FIXME: Instead of storing every function as a string, we should store it some other way, like an enum or computed goto, to improve speed.
   inline static std::unordered_map<std::string, BuiltinFn> builtins = {
     // FIXME: We need to add the ability to add the end line manually.
-    // Args can be Value or
+    // FIXME: We need to make print more customizable
     {"print", [](std::vector<Value>& args) {
       size_t arg_amnt = sizeof(args);
       for (size_t i = 0; i < arg_amnt; i++) {
-        fputs(args[i].AsStr(), stdout);
+        print(args[i]);
         if (i < arg_amnt) {
-          fputs(" ", stdout);
+          print(" ");
         }
       }
-      return Value::N();
+      // FIXME: print should return nothing
+      return Value::Null();
     }},
     {"abs", [](std::vector<Value>& args) {
       auto val = args[0];
-      if (val.t == Type::Float) return Value::F(std::abs(val.AsFloat()));
-      return Value::I(std::abs(val.AsInt()));
+      if (val.t == Type::Float) return Value::Float(std::abs(std::get<double>(val.v)));
+      return Value::Int(std::abs(std::get<int32>(val.v)));
     }},
     {"neg", [](std::vector<Value>& args) {
-      auto val = args[0];
-      if (val.t == Type::Float) return Value::F(-val.AsFloat());
-      return Value::I(-val.AsInt());
+      auto& arg = args[0];
+      if (arg.t == Type::Float) return Value::Float(-std::get<double>(arg.v));
+      return Value::Int(-std::get<int32>(arg.v));
     }},
 
     // FIXME: [comment expansion]
@@ -79,16 +88,16 @@ namespace minis {
     {"range", [](std::vector<Value>& args) {
       int start = 0, end;
       if (args.size() == 1) {
-        end = args[0].AsInt();
+        end = std::get<int32>(args[0].v);
       } else {
-        start = args[0].AsInt();
-        end = args[1].AsInt();
+        start = std::get<int32>(args[0].v);
+        end = std::get<int32>(args[1].v);
       }
 
       std::map<int, int> range_map;
       range_map[0] = start;  // Store start at key 0
       range_map[1] = end;    // Store end at key 1
-      return Value::R(range_map);
+      return Value::Range(range_map);
     }},
     {"max", [](std::vector<Value>& args) {
       Value max = args[0];
@@ -105,58 +114,53 @@ namespace minis {
       return min;
     }},
     {"sort", [](std::vector<Value>& args) {
-      std::vector<Value> list = args[0].AsList();
+      std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
       std::sort(list.begin(), list.end(),
-        [](const Value& a, const Value& b) { return a.AsFloat() < b.AsFloat(); });
-      return Value::L(list);
+        [](const Value& a, const Value& b) { return std::get<double>(a.v) < std::get<double>(b.v); });
+      return Value::List(list);
     }},
     {"reverse", [](std::vector<Value>& args) -> Value {
       if (args[0].t == Type::List) {
-        std::vector<Value> list = args[0].AsList();
+        std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
         std::reverse(list.begin(), list.end());
-        return Value::L(list);
+        return Value::List(list);
       } else if (args[0].t == Type::Str) {
-        const char* str = args[0].AsStr();
-        std::string reversed(str);
+        std::string reversed = std::get<std::string>(args[0].v);
         std::reverse(reversed.begin(), reversed.end());
-        return Value::S(std::string(reversed.c_str()));
+        return Value::Str(std::move(reversed));
       }
     }},
     {"sum", [](std::vector<Value>& args) {
-      const auto& list = args[0].AsList();
-      Value sum = Value::I(0);
+      const auto& list = std::get<std::vector<Value>>(args[0].v);
+      Value sum = Value::Int(0);
       for (const auto& v : list) {
-        if (v.t == Type::Float) sum = Value::F(sum.AsFloat() + v.AsFloat());
-        else sum = Value::I(sum.AsInt() + v.AsInt());
+        if (v.t == Type::Float) sum = Value::Float(std::get<double>(sum.v) + std::get<double>(v.v));
+        else sum = Value::Int(std::get<int32>(sum.v) + std::get<int32>(v.v));
       }
       return sum;
     }},
+    // Print like print, using all values
     {"input", [](std::vector<Value>& args) {
+      std::string input;
       if (!args.empty()) {
-        // FIXME: Should use buffer.hpp instea of cout
-        std::cout << args[0].AsStr();
+        print(std::get<std::string>(args[0].v).c_str());
+        scan(input);
+        return Value::Str(std::move(input));
       }
-      char input[1024];
-      if (fgets(input, sizeof(input), stdin)) {
-        // Remove trailing newline
-        size_t len = strlen(input);
-        if (len > 0 && input[len-1] == '\n') input[len-1] = '\0';
-        return Value::S(input);
-      }
-      return Value::S("");
+      return Value::Str("");
     }},
     {"len", [](std::vector<Value>& args) -> Value {
       const auto& arg = args[0];
       if (arg.t == Type::List) {
-        return Value::I(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
+        return Value::Int(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
       } else if (arg.t == Type::Str) {
-        return Value::I(static_cast<long long>(std::strlen(arg.AsStr())));
+        return Value::Int(static_cast<long long>(std::get<std::string>(arg.v).length()));
       }
-      return Value::N();
+      return Value::Null();
     }},
     {"split", [](std::vector<Value>& args) -> Value {
-      const char* str = args[0].AsStr();
-      const char* delim = args[1].AsStr();
+      const std::string& str = std::get<std::string>(args[0].v);
+      const std::string& delim = std::get<std::string>(args[1].v);
 
       std::vector<Value> result;
       std::string s(str);
@@ -164,40 +168,38 @@ namespace minis {
 
       size_t pos = 0;
       while ((pos = s.find(delimiter)) != std::string::npos) {
-        result.push_back(Value::S(s.substr(0, pos).c_str()));
+        result.push_back(Value::Str(s.substr(0, pos).c_str()));
         s.erase(0, pos + delimiter.length());
       }
-      result.push_back(Value::S(s.c_str()));
+      result.push_back(Value::Str(s.c_str()));
 
-      return Value::L(result);
+      return Value::List(result);
     }},
     {"upper", [](std::vector<Value>& args) -> Value {
-      const char* str = args[0].AsStr();
-      std::string result(str);
+      std::string result = std::get<std::string>(args[0].v);
       std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-      return Value::S(result.c_str());
+      return Value::Str(std::move(result));
     }},
     {"lower", [](std::vector<Value>& args) -> Value {
-      const char* str = args[0].AsStr();
-      std::string result(str);
+      std::string result = std::get<std::string>(args[0].v);
       std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-      return Value::S(result.c_str());
+      return Value::Str(std::move(result));
     }},
     {"round", [](std::vector<Value>& args) -> Value {
-      return Value::I((long long)std::round(args[0].AsFloat()));
+      return Value::Int((long long)std::round(std::get<double>(args[0].v)));
     }},
     {"random", [](std::vector<Value>& args) -> Value {
       if (args.empty()) {
-        return Value::F((double)rand() / RAND_MAX);
+        return Value::Float((double)rand() / RAND_MAX);
       } else {
-        long long max_val = args[0].AsInt();
-        return Value::I(rand() % max_val);
+        long long max_val = std::get<int32>(args[0].v);
+        return Value::Int(rand() % max_val);
       }
     }},
 
     {"open", [](std::vector<Value>& args) -> Value {
-      const char* filename = args[0].AsStr();
-      const char* mode_str = args[1].AsStr();
+      const char* filename = std::get<std::string>(args[0].v).c_str();
+      const char* mode_str = std::get<std::string>(args[1].v).c_str();
       // FIXME: This should be a switch instead
       // Translate Minis modes to C modes
       const char* c_mode = "r";
@@ -218,109 +220,107 @@ namespace minis {
 
       FILE* file = fopen(filename, c_mode);
       if (!file) {
-        return Value::I(-1); // Error code
+        return Value::Int(-1); // Error code
       }
 
       // Store file pointer as integer (simple approach)
-      return Value::I((long long)(uintptr_t)file);
+      return Value::Int((long long)(uintptr_t)file);
     }},
 
     {"close", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
+      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
       if (file && file != stdin && file != stdout && file != stderr) {
         fclose(file);
       }
-      return Value::I(0);
+      return Value::Int(0);
     }},
 
     {"write", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
-      const char* data = args[1].AsStr();
+      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
+      const char* data = std::get<std::string>(args[1].v).c_str();
 
-      // We should use exit(1), not abort()
       if (!file) std::exit(1);
 
       size_t written = fwrite(data, 1, strlen(data), file);
-      return Value::I((long long)written);
+      return Value::Int((long long)written);
     }},
 
     {"read", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
-      long long size = args[1].AsInt();
+      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
+      long long size = std::get<int32>(args[1].v);
 
       if (!file) std::exit(1);
-      if (size <= 0) return Value::S("");
+      if (size <= 0) return Value::Str("");
 
       char* buffer = (char*)malloc(size + 1);
       size_t bytes_read = fread(buffer, 1, size, file);
       buffer[bytes_read] = '\0';
 
-      Value result = Value::S(buffer);
+      Value result = Value::Str(buffer);
       free(buffer);
       return result;
     }},
 
     // FIXME: We don't need to take any arguments
     {"flush", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)args[0].AsInt();
+      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
       if (file) {
         fflush(file);
       }
-      return Value::I(0);
+      return Value::Int(0);
     }},
 
     // FIXME: We need better type checking
     // FIXME: Add returning multiple values
     {"typeof", [](std::vector<Value>& args) -> Value {
       switch (args[0].t) {
-        case Type::Int:   return Value::I(0);
-        case Type::Float: return Value::I(1);
-        case Type::Str:   return Value::I(2);
-        case Type::Bool:  return Value::I(3);
-        case Type::List:  return Value::I(4);
-        case Type::Null:  return Value::I(5);
-        default: std::abort();
+        case Type::Int:    return Value::Str("int");
+        case Type::Float:  return Value::Str("float");
+        case Type::Str:    return Value::Str("str");
+        case Type::Bool:   return Value::Str("bool");
+        case Type::List:   return Value::Str("list");
+        case Type::Null:   return Value::Str("null");
+        case Type::Dict:   return Value::Str("dict");
+        case Type::i8:     return Value::Str("i8");
+        case Type::i16:    return Value::Str("i16");
+        case Type::i32:    return Value::Str("i32");
+        case Type::i64:    return Value::Str("i64");
+        case Type::ui8:    return Value::Str("ui8");
+        case Type::ui16:   return Value::Str("ui16");
+        case Type::ui32:   return Value::Str("ui32");
+        case Type::ui64:   return Value::Str("ui64");
+        case Type::Range:  return Value::Str("range");
+        case Type::Void:   return Value::Str("void"); // Safety
+        case Type::TriBool:return Value::Str("tribool");
+        default: std::exit(1);
       }
     }},
 
     // FIXME: type checks should join into one
     {"isInt", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::Int);
+      return Value::Bool(args[0].t == Type::Int);
     }},
 
     {"isFloat", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::Float);
+      return Value::Bool(args[0].t == Type::Float);
     }},
 
     {"isString", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::Str);
+      return Value::Bool(args[0].t == Type::Str);
     }},
 
     {"isList", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::List);
+      return Value::Bool(args[0].t == Type::List);
     }},
 
     {"isBool", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::Bool);
+      return Value::Bool(args[0].t == Type::Bool);
     }},
 
     {"isNull", [](std::vector<Value>& args) -> Value {
-      return Value::B(args[0].t == Type::Null);
+      return Value::Bool(args[0].t == Type::Null);
     }}
   };
-
-  void Coerce(Type t, Value& v) {
-    if (v.t == t) return;
-    switch (t) {
-      case Type::Int:   v = Value::I(v.AsInt()); break;
-      case Type::Float: v = Value::F(v.AsFloat()); break;
-      case Type::Bool:  v = Value::B(v.AsBool()); break;
-      case Type::List:  v = Value::L(v.AsList()); break;
-      case Type::Str:   v = Value::S(v.AsStr()); break;
-      case Type::Null:  v = Value::N(); break;
-      default: break;
-    }
-  }
 
   struct Env {
     struct Var {
@@ -345,17 +345,16 @@ namespace minis {
       auto it = m.find(n);
       if (it != m.end()) return it->second;
       if (parent) return parent->Get(n);
-      std::abort();
+      std::exit(1);
     }
 
     void Declare(const std::string& n, Type t, Value v) {
-      Coerce(t, v); m.emplace(n, Var{t, v});
+      m.emplace(n, Var{t, v});
     }
 
     void Set(const std::string& n, Value v) {
       auto it = m.find(n);
       if (it != m.end()) {
-        Coerce(it->second.declared, v);
         it->second.val = v;
         return;
       }
@@ -363,7 +362,7 @@ namespace minis {
         parent->Set(n, v);
         return;
       }
-      std::abort();
+      std::exit(1);
     }
 
     void SetOrDeclare(const std::string& n, Value v) {
@@ -442,29 +441,29 @@ namespace minis {
     inline Value pop() {
       try {
         if (stack.empty()) {
-          fprintf(stderr, "FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
+          print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
           std::exit(1);
         }
         // FIXME: This should use err.hpp (vm_err.hpp)
         if (stack.back().t == Type::Null) {
-          fprintf(stderr, "FATAL ERROR: Stack had null top value.");
+          print("FATAL ERROR: Stack had null top value.");
           std::exit(1);
         }
         Value v = std::move(stack.back());
         stack.pop_back();
         return v;
       } catch (const std::exception& e) {
-        fprintf(stderr, "FATAL ERROR: Stack operation failed:", e.what());
+        print("FATAL ERROR: Stack operation failed:", e.what());
         std::exit(1);
       }
-      return Value::N();
+      return Value::Null();
     }
 
     inline void push(Value v) { stack.push_back(std::move(v)); }
 
     inline void discard() {
       if (stack.empty()) {
-        fprintf(stderr, "stack underflow; tried to empty an already empty stack");
+        print("FATAL ERROR: stack underflow; tried to empty an already empty stack");
         std::exit(1);
       }
       stack.pop_back();
@@ -516,14 +515,15 @@ namespace minis {
 
         // Now read plugin table
         uint64 plugin_count = GETu64();
-        for (uint64 i = 0; i < plugin_count; ++i) {
+        for (uint64 i = 0; i < plugin_count; i++) {
           std::string module_name = GETstr();
           std::string library_path = GETstr();
 
           // Load plugin
           // FIXME: We should use the custom Minis buffer instead
           if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
-            std::cerr << "Warning: Failed to load plugin " << module_name.c_str() << std::endl;
+            print("FATAL ERROR: Failed to load plugin ", module_name, "\n");
+            std::exit(1);
           }
         }
       }
@@ -555,35 +555,35 @@ namespace minis {
                     result.reserve(L.size() + R.size());
                     result.insert(result.end(), L.begin(), L.end());
                     result.insert(result.end(), R.begin(), R.end());
-                    push(Value::L(std::move(result)));
+                    push(Value::List(std::move(result)));
                   } else {
                     std::vector<Value> result = std::get<std::vector<Value>>(a.v);
                     result.push_back(b);
-                    push(Value::L(std::move(result)));
+                    push(Value::List(std::move(result)));
                   }
                 } else if (a.t == Type::Str || b.t == Type::Str) {
-                  std::string result = std::string(a.AsStr()) + b.AsStr();
-                  push(Value::S(std::move(result)));
+                  std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
+                  push(Value::Str(std::move(result)));
                 } else if (a.t == Type::Float || b.t == Type::Float) {
-                  push(Value::F(a.AsFloat() + b.AsFloat()));
+                  push(Value::Float(std::get<double>(a.v) + std::get<double>(b.v)));
                 } else if (a.t == Type::Int || b.t == Type::Int) {
-                  push(Value::I(a.AsInt() + b.AsInt()));
+                  push(Value::Int(std::get<int32>(a.v) + std::get<int32>(b.v)));
                 }
               } break;
               case static_cast<int>(Logic::EQUAL): {
                 Value b = pop(), a = pop();
                 bool eq = (a.t == b.t) ? (a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                              ? (a.AsFloat() == b.AsFloat()) : false);
-                push(Value::B(eq));
+                              ? (std::get<double>(a.v) == std::get<double>(b.v)) : false);
+                push(Value::Bool(eq));
               } break;
               case static_cast<int>(Logic::SUBTRACT): {
                 Value b = pop(), a = pop();
                 if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
                   if (a.t == Type::Float || b.t == Type::Float) {
-                    push(Value::F(a.AsFloat() - b.AsFloat()));
+                    push(Value::Float(std::get<double>(a.v) - std::get<double>(b.v)));
                   } else {
-                    push(Value::I(a.AsInt() - b.AsInt()));
+                    push(Value::Int(std::get<int32>(a.v) - std::get<int32>(b.v)));
                   }
                 }
               } break;
@@ -591,40 +591,40 @@ namespace minis {
               case static_cast<int>(Logic::MULTIPLY): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Float || b.t == Type::Float)
-                  push(Value::F(a.AsFloat() * b.AsFloat()));
+                  push(Value::Float(std::get<double>(a.v) * std::get<double>(b.v)));
                 else
-                  push(Value::I(a.AsInt() * b.AsInt()));
+                  push(Value::Int(std::get<int32>(a.v) * std::get<int32>(b.v)));
               } break;
               case static_cast<int>(Logic::DIVIDE): {
                 Value b = pop(), a = pop();
-                push(Value::F(a.AsFloat() / b.AsFloat()));
+                push(Value::Float(std::get<double>(a.v) / std::get<double>(b.v)));
               } break;
 
               case static_cast<int>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
-              case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!v.AsBool()) jump(tgt); } break; // Jump if false
-              case static_cast<int>(Logic::AND): { Value b = pop(), a = pop(); push(Value::B(a.AsBool() && b.AsBool())); } break;
-              case static_cast<int>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::B(a.AsBool() || b.AsBool())); } break;
+              case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break; // Jump if false
+              case static_cast<int>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
+              case static_cast<int>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
               case static_cast<int>(Logic::LESS_OR_EQUAL): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
-                  push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) <= 0));
+                  push(Value::Bool(std::get<std::string>(a.v) <= std::get<std::string>(b.v)));
                 else
-                  push(Value::B(a.AsFloat() <= b.AsFloat()));
+                  push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
               } break;
 
               case static_cast<int>(Logic::LESS_THAN): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
-                  push(Value::B(std::strcmp(a.AsStr(), b.AsStr()) < 0));
+                  push(Value::Bool(std::get<std::string>(a.v) < std::get<std::string>(b.v)));
                 else
-                  push(Value::B(a.AsFloat() < b.AsFloat()));
+                  push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
               } break;
               case static_cast<int>(Logic::NOT_EQUAL): {
                 Value b = pop(), a = pop();
                 bool ne = (a.t == b.t) ? !(a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
-                              ? (a.AsFloat() != b.AsFloat()) : true);
-                push(Value::B(ne));
+                              ? (std::get<double>(a.v) != std::get<double>(b.v)) : true);
+                push(Value::Bool(ne));
               } break;
             }
           } break;
@@ -647,21 +647,22 @@ namespace minis {
                     case 0x05: push(Value::UI16(GETu16())); break;
                     case 0x06: push(Value::UI32(GETu32())); break;
                     case 0x07: push(Value::UI64(GETu64())); break;
-                    case 0x08: push(Value::F(GETd64())); break;
+                    case 0x08: push(Value::Float(GETd64())); break;
                     case 0x09: {
-                      unsigned char bool_val = meta;
-                      bool_val & 0b00000100;
+                      unsigned char bool_val = meta & 0b00000100;
                       if (!(meta && 0b00000000)) {
-                        push(Value::B(false));
+                        push(Value::Bool(false));
                       } else {
-                        push(Value::B(true));
+                        push(Value::Bool(true));
                       }
                     } break;
                     default: {
-                      fprintf(stderr, "FATAL ERROR: Unknown meta tag");
-                      std::abort();
+                      print("FATAL ERROR: Unknown meta tag");
+                      std::exit(1);
                     }
                   }
+                  // FIXME: Add tagged signedness, so every int in the lang has the ability to be
+                  // 64-bit unsigned, even if signed
                   /*type = meta;
                   type |= 0b00001000;
                   switch(type) {
@@ -670,16 +671,16 @@ namespace minis {
                   }*/
                 } break;
 
-                case 3: push(Value::S(GETstr())); break;
+                case 3: push(Value::Str(GETstr())); break;
                 case 4: {
                   uint64 n = GETu64();
                   std::vector<Value> xs; xs.resize(n);
                   for (uint64 i = 0; i < n; ++i) xs[n-1-i] = pop();
-                  push(Value::L(std::move(xs)));
+                  push(Value::List(std::move(xs)));
                 } break;
                 default: {
-                  fprintf(stderr, "unknown literal type tag");
-                  std::abort();
+                  print("unknown literal type tag");
+                  std::exit(1);
                 }
               }
             } break;
@@ -720,20 +721,18 @@ namespace minis {
               case static_cast<int>(General::INDEX): {
                 Value idxV = pop();
                 Value base = pop();
-                long long i = idxV.AsInt();
+                long long i = std::get<int32>(idxV.v);
                 if (base.t == Type::List) {
                   // FIXME: Prefer explicit over auto
                   auto& xs = std::get<std::vector<Value>>(base.v);
                   push(xs[(size_t)i]);
                 } else if (base.t == Type::Str) {
-                  const char* s = base.AsStr();
-                  size_t len = std::strlen(s);
+                  const std::string& s = std::get<std::string>(base.v);
+                  size_t len = s.length();
                   if (i < 0 || (size_t)i >= len) {
-                    screen.flush();
-                    screen.write("[FATAL ERROR]: Index too large. Attempt to get item in list or string that doesn't exist.");
+                    print("[FATAL ERROR]: Index too large. Attempt to get item in list or string that doesn't exist.");
                   }
-                  char single[2] = {s[i], '\0'};
-                  push(Value::S(single));
+                  push(Value::Str(std::string(1, s[i])));
                 }
               } break;
             }
@@ -834,7 +833,8 @@ namespace minis {
 
           } break;
           default: {
-            std::cerr<< "FATAL ERROR: Bad or unknown opcode.";
+            print("FATAL ERROR: Bad or unknown opcode.");
+            std::exit(1);
           }
         }
       }
@@ -858,7 +858,7 @@ namespace minis {
   // Global run function
   void run(const std::string& path) {
     VMEngine vm;
-    vm.load(path);
+    vm`load(path);
     vm.run();
   }
 }
