@@ -38,6 +38,12 @@ Remove unnecesarry bloat from io_fast
 
 Remove int, in place of Rust-style integers
 
+Change to Rust:
+  Stack operations
+  Built-ins
+  Plugin manager
+  Logic register
+
 Maybe:
 Use deque over vector (Or seperate types)
 Add compiler grouping
