@@ -33,7 +33,8 @@ namespace minis {
   /*=============================
   =          Values/Env         =
   =============================*/
-  using namespace fast_io::io;
+  using fast_io::io::print;
+  using fast_io::io::scan;
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
@@ -46,7 +47,26 @@ namespace minis {
     {"print", [](std::vector<Value>& args) {
       size_t arg_amnt = sizeof(args);
       for (size_t i = 0; i < arg_amnt; i++) {
-        print(args[i]);
+        Value& val = args[i];
+        switch (val.t) {
+          case Type::Int:    print(std::get<int32>(val.v)); break;
+          case Type::Float:  print(std::get<double>(val.v)); break;
+          case Type::Str:    print(std::get<std::string>(val.v)); break;
+          case Type::Bool:   print(std::get<bool>(val.v)); break;
+          case Type::Null:   print(""); break;
+          case Type::i8:     print(std::get<int8>(val.v)); break;
+          case Type::i16:    print(std::get<int16>(val.v)); break;
+          case Type::i32:    print(std::get<int32>(val.v)); break;
+          case Type::i64:    print(std::get<int64>(val.v)); break;
+          case Type::ui8:    print(std::get<uint8>(val.v)); break;
+          case Type::ui16:   print(std::get<uint16>(val.v)); break;
+          case Type::ui32:   print(std::get<uint32>(val.v)); break;
+          case Type::ui64:   print(std::get<uint64>(val.v)); break;
+          default:{
+            print("FARAL EROR: Unknown type");
+            exit(1);
+          }
+        }
         if (i < arg_amnt) {
           print(" ");
         }
@@ -143,7 +163,7 @@ namespace minis {
     {"input", [](std::vector<Value>& args) {
       std::string input;
       if (!args.empty()) {
-        print(std::get<std::string>(args[0].v).c_str());
+        print(std::get<std::string>(args[0].v));
         scan(input);
         return Value::Str(std::move(input));
       }
@@ -451,8 +471,8 @@ namespace minis {
         Value v = std::move(stack.back());
         stack.pop_back();
         return v;
-      } catch (const std::exception& e) {
-        print("FATAL ERROR: Stack operation failed:", e.what());
+      } catch (...) {
+        print("FATAL ERROR: Stack operation failed.");
         std::exit(1);
       }
       return Value::Null();
@@ -519,7 +539,7 @@ namespace minis {
           std::string library_path = GETstr();
 
           // Load plugin
-          if (!PluginManager::load_plugin(module_name.c_str(), library_path.c_str())) {
+          if (!PluginManager::load_plugin(module_name, library_path)) {
             print("FATAL ERROR: Failed to load plugin ", module_name, "\n");
             std::exit(1);
           }
@@ -728,7 +748,7 @@ namespace minis {
                   const std::string& s = std::get<std::string>(base.v);
                   size_t len = s.length();
                   if (i < 0 || (size_t)i >= len) {
-                    print("[FATAL ERROR]: Index too large. Attempt to get item in list or string that doesn't exist.");
+                    print("FATAL ERROR: Index out of range. Attempt to get item in list or string that doesn't exist.");
                   }
                   push(Value::Str(std::string(1, s[i])));
                 }
@@ -802,7 +822,7 @@ namespace minis {
                   auto bit = builtins.find(name);
                   if (bit == builtins.end()) {
                     // Check plugin functions
-                    auto pfn = PluginManager::get_function(name.c_str());
+                    auto pfn = PluginManager::get_functions(name);
                     if (pfn) {
                       auto rv = pfn(args);
                       push(std::move(rv));
@@ -836,6 +856,7 @@ namespace minis {
           }
         }
       }
+    }
     }
   };
 

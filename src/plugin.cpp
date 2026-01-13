@@ -1,4 +1,3 @@
-#pragma once
 #ifdef _WIN32
   #include <windows.h>
 #else
@@ -6,8 +5,8 @@
 #endif
 #include <unordered_map>
 #include <vector>
-#include "value.hpp"
-#include "sso.hpp"
+#include <string>
+#include "../include/value.hpp"
 
 namespace minis {
   using PluginFn = Value (*)(const std::vector<Value>&);
@@ -32,24 +31,24 @@ namespace minis {
     PluginInterface iface;
   };
 
-  static std::unordered_map<CString, LoadedPlugin> loaded;
-  static std::unordered_map<CString, PluginFn> funcs;
-  static std::unordered_map<CString, PluginVar> vars;
+  static std::unordered_map<std::string, LoadedPlugin> loaded;
+  static std::unordered_map<std::string, PluginFn> funcs;
+  static std::unordered_map<std::string, PluginVar> vars;
 
   class PluginManager {
   public:
-    static bool load_plugin(const char* plugin_name, const char* library_path) {
+    static bool load_plugin(const std::string& plugin_name, const std::string& library_path) {
       if (loaded.find(plugin_name) != loaded.end()) return true;
 
 #ifdef _WIN32
-      HMODULE handle = LoadLibraryA(library_path);
+      HMODULE handle = LoadLibraryA(library_path.c_str());
       if (!handle) return false;
 
       using GetIface = PluginInterface* (*)();
       GetIface get = (GetIface)GetProcAddress(handle, "get_plugin_interface");
       if (!get) { FreeLibrary(handle); return false; }
 #else
-      void* handle = dlopen(library_path, RTLD_LAZY);
+      void* handle = dlopen(library_path.c_str(), RTLD_LAZY);
       if (!handle) return false;
 
       using GetIface = PluginInterface* (*)();
@@ -58,7 +57,14 @@ namespace minis {
 #endif
 
       PluginInterface* iface = get();
-      if (!iface) { dlclose(handle); return false; }
+      if (!iface) {
+#ifdef _WIN32
+        FreeLibrary((HMODULE)handle);
+#else
+        dlclose(handle);
+#endif
+        return false;
+      }
 
       if (iface->init && !iface->init()) {
 #ifdef _WIN32
@@ -76,7 +82,7 @@ namespace minis {
       if (iface->get_functions) {
         const PluginFunctionEntry* f = iface->get_functions();
         for (; f->name; ++f) {
-          CString full = CString(plugin_name) + "_" + f->name;
+          std::string full = plugin_name + "_" + f->name;
           if (f->function) funcs[full] = f->function;
           if (f->variable) vars[full] = f->variable;
         }
@@ -86,21 +92,21 @@ namespace minis {
       return true;
     }
 
-    static PluginFn get_function(const char* name) {
+    static PluginFn get_functions(const std::string& name) {
       auto it = funcs.find(name);
       return (it == funcs.end()) ? nullptr : it->second;
     }
 
-    static PluginVar get_variable(const char* name) {
+    static PluginVar get_variable(const std::string& name) {
       auto it = vars.find(name);
       return (it == vars.end()) ? nullptr : it->second;
     }
 
-    static bool has_function(const char* name) {
+    static bool has_function(const std::string& name) {
       return funcs.find(name) != funcs.end();
     }
 
-    static bool has_variable(const char* name) {
+    static bool has_variable(const std::string& name) {
       return vars.find(name) != vars.end();
     }
 

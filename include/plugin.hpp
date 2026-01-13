@@ -1,17 +1,20 @@
 #pragma once
-
-#include "value.hpp"
 #include <vector>
 #include <string>
+#include "value.hpp"
 
 namespace minis {
   // Plugin function signature - same as built-in functions
   using PluginFn = Value(*)(const std::vector<Value>&);
 
+  // Plugin variable signature - pointer to constant Value
+  using PluginVar = const Value*;
+
   // Plugin function registration entry
   struct PluginFunctionEntry {
       const char* name;
       PluginFn function;
+      PluginVar variable;
   };
 
   // Plugin interface - must be implemented by plugins
@@ -34,13 +37,19 @@ namespace minis {
   class PluginManager {
   public:
       // Load a plugin from a shared library
-      static bool load_plugin(const char* plugin_name, const char* library_path);
+      static bool load_plugin(const std::string& plugin_name, const std::string& library_path);
 
       // Get a plugin function by name
-      static PluginFn get_function(const char* name);
+      static PluginFn get_functions(const std::string& name);
+
+      // Get a plugin variable by name
+      static PluginVar get_variable(const std::string& name);
 
       // Check if a function is provided by a plugin
-      static bool has_function(const char* name);
+      static bool has_function(const std::string& name);
+
+      // Check if a variable is provided by a plugin
+      static bool has_variable(const std::string& name);
 
       // Unload all plugins
       static void cleanup();
