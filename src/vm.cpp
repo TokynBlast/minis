@@ -18,6 +18,7 @@
 #include "../include/plugin.hpp"
 #include "../include/macros.hpp"
 #include "../include/io.hpp"
+// #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
 // using std::print;
@@ -28,12 +29,11 @@
 // fast_io is depreceated
 // something better is found
 
-using namespace fast_io::io;
-
 namespace minis {
   /*=============================
   =          Values/Env         =
   =============================*/
+  using namespace fast_io::io;
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
@@ -128,6 +128,7 @@ namespace minis {
         std::reverse(reversed.begin(), reversed.end());
         return Value::Str(std::move(reversed));
       }
+      exit(1);
     }},
     {"sum", [](std::vector<Value>& args) {
       const auto& list = std::get<std::vector<Value>>(args[0].v);
@@ -855,7 +856,7 @@ namespace minis {
   // Global run function
   void run(const std::string& path) {
     VMEngine vm;
-    vm`load(path);
+    vm.load(path);
     vm.run();
   }
 }
