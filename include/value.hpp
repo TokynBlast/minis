@@ -5,15 +5,19 @@
 #include <sstream>
 #include <string>
 #include <stdint.h>
-#include <tr2/bool_set>
 #include "types.hpp"
 #include "macros.hpp"
 
 
 using namespace minis;
 
-// Helper structs to avoid type ambiguity in std::variant
+enum class TriBool : uint8 {
+  True = 0,
+  False = 1,
+  Unknown = 2
+};
 
+// Helper structs to avoid type ambiguity in std::variant
 struct Value
 {
   Value() = default;
@@ -29,15 +33,15 @@ struct Value
       std::map<int, int>,     // range
       double,                 // float
       std::monostate,         // null
-      int8,                 // 8-bit int
-      int16,                // 16-bit int
-      int32,                // 32-bit int (also covers 'int' on most platforms)
-      int64,                // 64-bit int
-      uint8,                // unsigned 8-bit int
-      uint16,               // unsigned 16-bit int
-      uint32,               // unsigned 32-bit
-      uint64,               // unsigned 64-bit int
-      std::tr2::bool_set      // TriBool
+      int8,                   // 8-bit int
+      int16,                  // 16-bit int
+      int32,                  // 32-bit int (also covers 'int' on most platforms)
+      int64,                  // 64-bit int
+      uint8,                  // unsigned 8-bit int
+      uint16,                 // unsigned 16-bit int
+      uint32,                 // unsigned 32-bit
+      uint64,                 // unsigned 64-bit int
+      TriBool                 // TriBool
       >
       v;
 
@@ -56,7 +60,7 @@ struct Value
   Value(Type type, uint16 ui16) : t(type), v(ui16) {}
   Value(Type type, uint32 ui32) : t(type), v(ui32) {}
   Value(Type type, uint64 ui64) : t(type), v(ui64) {}
-  Value(Type type, std::tr2::bool_set tb) : t(type), v(tb) {}
+  Value(Type type, TriBool tb) : t(type), v(tb) {}
 
 
   static Value Null() { return Value(Type::Null); }
@@ -75,7 +79,7 @@ struct Value
   static Value UI64(uint64 i) { Value v(Type::ui64); v.v = static_cast<uint64>(i); return v; }
   static Value Range(const std::map<int, int> &range) { Value v(Type::Range); v.v = range; return v; }
   static Value Void() {return Value(Type::Void); }
-  static Value TriBool(std::tr2::bool_set tb) { return Value(Type::TriBool, tb);  }
+  static Value TriBool(TriBool tb) { return Value(Type::TriBool, tb);  }
   // FIXME: Need a standard dict input style
   // std::unordered_map<Value::v, Value::v> may work
   // static Value Dict()
@@ -86,8 +90,6 @@ struct Value
       return false;
     switch (t)
     {
-    case Type::Int:
-      return std::get<int>(v) == std::get<int>(other.v);
     case Type::Float:
       return std::get<double>(v) == std::get<double>(other.v);
     case Type::Bool:
@@ -111,8 +113,7 @@ struct Value
     case Type::Str:
       return std::get<std::string>(v) == std::get<std::string>(other.v);
     case Type::List:
-      return std::get<std::vector<Value>>(v) ==
-             std::get<std::vector<Value>>(other.v);
+      return std::get<std::vector<Value>>(v) == std::get<std::vector<Value>>(other.v);
     case Type::Null:
       return true;
     default:
