@@ -20,12 +20,12 @@
   #error "Use Windows, Linux, or Apple."
 #endif
 
-#if defined(__gnu__)
+#if defined(__GNUC__) || defined(__clang__)
   #define hot __attribute__((hot))
   #define cold __attribute__((cold))
   #define impossible __builtin_unreachable()
   #define noreturn __attribute__((noreturn))
-  #define nouse __attribute__((unusued))
-# else
+  #define nouse __attribute__((unused))
+#else
   #error "Use g++ or Clang to compile."
 #endif
