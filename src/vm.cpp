@@ -822,7 +822,7 @@ namespace minis {
                   auto bit = builtins.find(name);
                   if (bit == builtins.end()) {
                     // Check plugin functions
-                    auto pfn = PluginManager::get_functions(name);
+                    auto pfn = PluginManager::get_function(name);
                     if (pfn) {
                       auto rv = pfn(args);
                       push(std::move(rv));
