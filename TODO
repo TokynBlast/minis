@@ -44,7 +44,8 @@ Change to Rust:
   Stack operations
   Built-ins
   Plugin manager
-  Logic register
+
+Implement entire logical register in Fortran
 
 Maybe:
 Use deque over vector (Or seperate types)
