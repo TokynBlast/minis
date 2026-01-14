@@ -1,1 +1,1 @@
-// implement the functions into
+// implement the functions into plugin manager
