@@ -1,4 +1,0 @@
-# Manifest for math plugin
-name = "math"
-version = "0.0.2"
-lib = "math.so"
