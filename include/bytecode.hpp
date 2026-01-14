@@ -8,7 +8,8 @@ enum class Register : uint8 {
   VARIABLE,   // Operations on variables
   LOGIC,      // Math and boolean logics
   FUNCTION,   // Function support
-  GENERAL     // Operations that don't fit into the others
+  GENERAL,    // Operations that don't fit into the others
+  MATH        // Math operations (Powered by Fortran)
 };
 
 enum class Import : uint8 {
@@ -37,13 +38,6 @@ enum class Logic : uint8 {
   JUMP,          // Jump to location
   JUMP_IF,       // Jump if true
   JUMP_IF_FALSE, // Jump if false
-
-  // Math
-  ADD,           // Add to variable
-  SUBTRACT,      // Subtract from variable
-  MULTIPLY,      // Multiply a variable
-  DIVIDE,        // Divide a variable
-  NEGATE         // Flip a variable's signedness
 };
 
 // FIXME: We should use return, and make it optional :)
@@ -51,6 +45,18 @@ enum class Func : uint8 {
   CALL = 0,   // Call a function
   TAIL,       // Clear and reuse stack
   RETURN,     // Return any amount of values
+};
+
+enum class Math : uint8_t {
+  ADD,       // Add to variable
+  SUB,       // Subtract from variable
+  MULT,      // Multiply a variable
+  DIV,       // Divide a variable
+  NEGATE,    // Flip a variable's signedness
+  ADD_MULT,  // Add multiple values
+  DIV_MULT,  // Divide multiple values
+  MULT_MULT, // Multiply multiple values
+  SUB_MULT   // Subtract multiple values
 };
 
 enum class General : uint8 {
