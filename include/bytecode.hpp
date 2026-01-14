@@ -4,7 +4,7 @@
 
 // NOTE: We may do 3-bit register and 5-bit opcode
 enum class Register : uint8 {
-  IMPORT = 0, // Importing libraries and other files
+  IMPORT,     // Importing libraries and other files
   VARIABLE,   // Operations on variables
   LOGIC,      // Math and boolean logics
   FUNCTION,   // Function support
@@ -13,13 +13,13 @@ enum class Register : uint8 {
 };
 
 enum class Import : uint8 {
-  FUNC = 0, // Load in and run a function
+  FUNC,     // Load in and run a function
   LOAD,     // ???
   STORE     // ???
 };
 
 enum class Variable : uint8 {
-  GET = 0,  // Get a varable
+  GET,      // Get a varable
   SET,      // Set a variable
   DECLARE,  // Declare a variable with no value
   UNSET,    // Delete a variable
@@ -28,7 +28,7 @@ enum class Variable : uint8 {
 };
 
 enum class Logic : uint8 {
-  EQUAL = 0,     // True if values are equal
+  EQUAL,         // True if values are equal
   NOT_EQUAL,     // True if values are not equal
                  // NOTE: the following replace greater than and greater than or equal to
   LESS_OR_EQUAL, // True if left is less than or equal to right
@@ -40,14 +40,13 @@ enum class Logic : uint8 {
   JUMP_IF_FALSE, // Jump if false
 };
 
-// FIXME: We should use return, and make it optional :)
 enum class Func : uint8 {
   CALL = 0,   // Call a function
   TAIL,       // Clear and reuse stack
-  RETURN,     // Return any amount of values
+  RETURN,     // Return value(s)
 };
 
-enum class Math : uint8_t {
+enum class Math : uint8 {
   ADD,       // Add to variable
   SUB,       // Subtract from variable
   MULT,      // Multiply a variable
@@ -60,7 +59,7 @@ enum class Math : uint8_t {
 };
 
 enum class General : uint8 {
-  HALT = 0,  // Stop program
+  HALT,      // Stop program
   SLICE,     // ???
   SET_INDEX, // ???
   NOP,       // Do nothing
