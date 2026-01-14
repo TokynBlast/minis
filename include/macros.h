@@ -16,8 +16,6 @@
 #define int32 int32_t
 #define int64 int64_t
 
-#define int DONT_USE_INT___USE_FIXED_SIZES
-
 #if !defined(_WIN32) && !defined(__linux__) && !defined(__APPLE__)
   #error "Use Windows, Linux, or Apple."
 #endif
