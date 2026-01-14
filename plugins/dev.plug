@@ -1,4 +1,0 @@
-# Manifest for dev plugin
-name = "dev"
-version = "0.0.4"
-lib = "dev.so"
