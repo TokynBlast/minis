@@ -64,7 +64,7 @@ extern "C" {
   uint32_t div_ui32(uint32_t a, uint32_t b);
   uint64_t div_ui64(uint64_t a, uint64_t b);
   double div_double(double a, double b);
-
+}
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
 // iostream gets replaced or improved
@@ -118,12 +118,12 @@ namespace minis {
     {"abs", [](std::vector<Value>& args) {
       auto val = args[0];
       if (val.t == Type::Float) return Value::Float(std::abs(std::get<double>(val.v)));
-      return Value::Int(std::abs(std::get<int32>(val.v)));
+      return Value::I64(std::abs(std::get<int64>(val.v)));
     }},
     {"neg", [](std::vector<Value>& args) {
       auto& arg = args[0];
       if (arg.t == Type::Float) return Value::Float(-std::get<double>(arg.v));
-      return Value::Int(-std::get<int32>(arg.v));
+      return Value::I64(-std::get<int64>(arg.v));
     }},
 
     // FIXME: [comment expansion]
@@ -146,15 +146,15 @@ namespace minis {
     // Memory-efficient range: stores only start and end values, not the entire list
     // Usage: range(5) -> Range(0,5) or range(2,5) -> Range(2,5)
     {"range", [](std::vector<Value>& args) {
-      int start = 0, end;
+      uint64 start = 0, end;
       if (args.size() == 1) {
-        end = std::get<int32>(args[0].v);
+        end = std::get<uint64>(args[0].v);
       } else {
-        start = std::get<int32>(args[0].v);
-        end = std::get<int32>(args[1].v);
+        start = std::get<uint64>(args[0].v);
+        end = std::get<uint64>(args[1].v);
       }
 
-      std::map<int, int> range_map;
+      std::map<uint64, uint64> range_map;
       range_map[0] = start;  // Store start at key 0
       range_map[1] = end;    // Store end at key 1
       return Value::Range(range_map);
@@ -191,12 +191,13 @@ namespace minis {
       }
       exit(1);
     }},
+    // FIXME:Use Fortran backend instead of C++s
     {"sum", [](std::vector<Value>& args) {
       const auto& list = std::get<std::vector<Value>>(args[0].v);
-      Value sum = Value::Int(0);
+      Value sum = Value::I32(0);
       for (const auto& v : list) {
         if (v.t == Type::Float) sum = Value::Float(std::get<double>(sum.v) + std::get<double>(v.v));
-        else sum = Value::Int(std::get<int32>(sum.v) + std::get<int32>(v.v));
+        else sum = Value::I32(std::get<int32>(sum.v) + std::get<int32>(v.v));
       }
       return sum;
     }},
@@ -213,9 +214,9 @@ namespace minis {
     {"len", [](std::vector<Value>& args) -> Value {
       const auto& arg = args[0];
       if (arg.t == Type::List) {
-        return Value::Int(static_cast<long long>(std::get<std::vector<Value>>(arg.v).size()));
+        return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
       } else if (arg.t == Type::Str) {
-        return Value::Int(static_cast<long long>(std::get<std::string>(arg.v).length()));
+        return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
       }
       return Value::Null();
     }},
@@ -247,17 +248,19 @@ namespace minis {
       return Value::Str(std::move(result));
     }},
     {"round", [](std::vector<Value>& args) -> Value {
-      return Value::Int((long long)std::round(std::get<double>(args[0].v)));
+      return Value::I64((int64)std::round(std::get<double>(args[0].v)));
     }},
+    // Implement via Fortran and C++
     {"random", [](std::vector<Value>& args) -> Value {
       if (args.empty()) {
         return Value::Float((double)rand() / RAND_MAX);
       } else {
-        long long max_val = std::get<int32>(args[0].v);
-        return Value::Int(rand() % max_val);
+        uint64 max_val = std::get<uint64>(args[0].v);
+        return Value::UI64(rand() % max_val);
       }
     }},
 
+    // FIXME: Use fast_io :)
     {"open", [](std::vector<Value>& args) -> Value {
       const char* filename = std::get<std::string>(args[0].v).c_str();
       const char* mode_str = std::get<std::string>(args[1].v).c_str();
@@ -281,11 +284,11 @@ namespace minis {
 
       FILE* file = fopen(filename, c_mode);
       if (!file) {
-        return Value::Int(-1); // Error code
+        return Value::Bool(1); // Error code
       }
 
       // Store file pointer as integer (simple approach)
-      return Value::Int((long long)(uintptr_t)file);
+      return Value::UI64((uint64)(uintptr_t)file);
     }},
 
     {"close", [](std::vector<Value>& args) -> Value {
@@ -293,7 +296,7 @@ namespace minis {
       if (file && file != stdin && file != stdout && file != stderr) {
         fclose(file);
       }
-      return Value::Int(0);
+      return Value::Bool(false);
     }},
 
     {"write", [](std::vector<Value>& args) -> Value {
@@ -303,7 +306,7 @@ namespace minis {
       if (!file) std::exit(1);
 
       size_t written = fwrite(data, 1, strlen(data), file);
-      return Value::Int((long long)written);
+      return Value::Bool((bool)written);
     }},
 
     {"read", [](std::vector<Value>& args) -> Value {
@@ -328,14 +331,13 @@ namespace minis {
       if (file) {
         fflush(file);
       }
-      return Value::Int(0);
+      return Value::UI8(0);
     }},
 
     // FIXME: We need better type checking
     // FIXME: Add returning multiple values
     {"typeof", [](std::vector<Value>& args) -> Value {
       switch (args[0].t) {
-        case Type::Int:    return Value::Str("int");
         case Type::Float:  return Value::Str("float");
         case Type::Str:    return Value::Str("str");
         case Type::Bool:   return Value::Str("bool");
@@ -598,7 +600,6 @@ namespace minis {
       for (;;) {
         if (ip >= code_end) return;
         unsigned char op = GETu8();
-        // FIXME: This needs to possibly lead to another switch, or have switches in the switches.
         switch (op >> 5) {
           case static_cast<uint8>(Register::LOGIC): {
             switch (op & 0x0f) {
@@ -610,11 +611,11 @@ namespace minis {
                 push(Value::Bool(eq));
               } break;
 
-              case static_cast<int>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
-              case static_cast<int>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break; // Jump if false
-              case static_cast<int>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
-              case static_cast<int>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
-              case static_cast<int>(Logic::LESS_OR_EQUAL): {
+              case static_cast<uint8>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
+              case static_cast<uint8>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break; // Jump if false
+              case static_cast<uint8>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
+              case static_cast<uint8>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
+              case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) <= std::get<std::string>(b.v)));
@@ -622,7 +623,7 @@ namespace minis {
                   push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
               } break;
 
-              case static_cast<int>(Logic::LESS_THAN): {
+              case static_cast<uint8>(Logic::LESS_THAN): {
                 Value b = pop(), a = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) < std::get<std::string>(b.v)));
@@ -638,173 +639,173 @@ namespace minis {
               } break;
             }
           } break;
-          case static_cast<uint8>(Register::Math) {
-            case static_cast<uint8>(Math::SUBTRACT): {
-              Value b = pop(), a = pop();
-              if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
-                if (a.t == Type::Float || b.t == Type::Float) {
-                  push(Value::Float(std::get<double>(a.v) - std::get<double>(b.v)));
-                } else {
-                  push(Value::Int(std::get<int32>(a.v) - std::get<int32>(b.v)));
+          case static_cast<uint8>(Register::MATH): {
+            switch (op & 0x0f) {
+              // FIXME: Use Fortran functions
+              case static_cast<uint8>(Math::SUB): {
+                Value b = pop(), a = pop();
+                if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
+                  if (a.t == Type::Float || b.t == Type::Float) {
+                    push(Value::Float(std::get<double>(a.v) - std::get<double>(b.v)));
+                  } else {
+                    push(Value::I64(std::get<int64>(a.v) - std::get<int64>(b.v)));
+                  }
                 }
-              }
-            } break;
-
-            case static_cast<uint8>(Math::MULTIPLY): {
-              Value b = pop(), a = pop();
-              if (a.t == Type::Float || b.t == Type::Float)
-                push(Value::Float(std::get<double>(a.v) * std::get<double>(b.v)));
-              else
-                push(Value::Int(std::get<int32>(a.v) * std::get<int32>(b.v)));
-            } break;
-            case static_cast<uint8>(Math::DIVIDE): {
-              Value b = pop(), a = pop();
-              push(Value::Float(std::get<double>(a.v) / std::get<double>(b.v)));
-            } break;
-            case static_cast<uint8>(Math::ADD): {
-              Value b = pop();
-              Value a = pop();
-              // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
-              //        I found the first if as an else if.
-              if (a.t == Type::List) {
-                if (b.t == Type::List) {
-                  std::vector<Value> result;
-                  // FIXME: Prefer specific type over auto
-                  const auto& L = std::get<std::vector<Value>>(a.v);
-                  const auto& R = std::get<std::vector<Value>>(b.v);
-                  result.reserve(L.size() + R.size());
-                  result.insert(result.end(), L.begin(), L.end());
-                  result.insert(result.end(), R.begin(), R.end());
-                  push(Value::List(std::move(result)));
-                } else {
-                  std::vector<Value> result = std::get<std::vector<Value>>(a.v);
-                  result.push_back(b);
-                  push(Value::List(std::move(result)));
+              } break;
+              case static_cast<uint8>(Math::MULT): {
+                Value b = pop(), a = pop();
+                if (a.t == Type::Float || b.t == Type::Float)
+                  push(Value::Float(std::get<double>(a.v) * std::get<double>(b.v)));
+                else
+                  push(Value::I64(std::get<int64>(a.v) * std::get<int64>(b.v)));
+              } break;
+              case static_cast<uint8>(Math::DIV): {
+                Value b = pop(), a = pop();
+                push(Value::Float(std::get<double>(a.v) / std::get<double>(b.v)));
+              } break;
+              case static_cast<uint8>(Math::ADD): {
+                Value b = pop();
+                Value a = pop();
+                // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
+                //        I found the first if as an else if.
+                if (a.t == Type::List) {
+                  if (b.t == Type::List) {
+                    std::vector<Value> result;
+                    // FIXME: Prefer specific type over auto
+                    const auto& L = std::get<std::vector<Value>>(a.v);
+                    const auto& R = std::get<std::vector<Value>>(b.v);
+                    result.reserve(L.size() + R.size());
+                    result.insert(result.end(), L.begin(), L.end());
+                    result.insert(result.end(), R.begin(), R.end());
+                    push(Value::List(std::move(result)));
+                  } else {
+                    std::vector<Value> result = std::get<std::vector<Value>>(a.v);
+                    result.push_back(b);
+                    push(Value::List(std::move(result)));
+                  }
+                // FIXME: Should be more flexible :)
+                } else if (a.t == Type::Str || b.t == Type::Str) {
+                  std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
+                  push(Value::Str(std::move(result)));
+                } else if (a.t == Type::Float || b.t == Type::Float) {
+                  // fortran!! :D
+                  push(Value::Float(std::get<double>(a.v) + std::get<double>(b.v)));
+                } else if (a.t == Type::i8 || b.t == Type::i8) {
+                  // fortran!! :D
                 }
-              // FIXME: Should be more flexible :)
-              } else if (a.t == Type::Str || b.t == Type::Str) {
-                std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
-                push(Value::Str(std::move(result)));
-              } else if (a.t == Type::Float || b.t == Type::Float) {
-                // fortran!! :D
-                push(Value::Float(std::get<double>(a.v) + std::get<double>(b.v)));
-              } else if (a.t == Type::i8 || b.t == Type::i8) {
-                // fortran!! :D
-              }
-            } break;
-            case static_cast<uint8>(Math::ADD_MULTI): {
-              uint16 n = GETu16();
+              } break;
+              case static_cast<uint8>(Math::ADD_MULT): {
+                uint16 n = GETu16();
 
-              if (n == 0) {
-                push(Value::I32(0));
-                break;
-              }
+                if (n == 0) {
+                  push(Value::I32(0));
+                  break;
+                }
 
-              // Collect operands from stack
-              std::vector<Value> operands;
-              operands.reserve(n);
-              for (uint16 i = 0; i < n; ++i) {
-                operands.push_back(pop());
-              }
+                // Collect operands from stack
+                std::vector<Value> operands;
+                operands.reserve(n);
+                for (uint16 i = 0; i < n; ++i) {
+                  operands.push_back(pop());
+                }
 
-              // Determine result type (use first operand's type)
-              Type result_type = operands[0].t;
-              Value result;
+                // Determine result type (use first operand's type)
+                Type result_type = operands[0].t;
+                Value result;
 
-              switch (result_type) {
-                case Type::i8: {
-                  std::vector<int8> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<int8>(op.v));
-                  }
-                  result = Value::I8(add_multi_i8(vals.data(), n));
-                } break;
+                switch (result_type) {
+                  case Type::i8: {
+                    std::vector<int8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int8>(op.v));
+                    }
+                    result = Value::I8(add_multi_i8(vals.data(), n));
+                  } break;
 
-                case Type::i16: {
-                  std::vector<int16> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<int16>(op.v));
-                  }
-                  result = Value::I16(add_multi_i16(vals.data(), n));
-                } break;
+                  case Type::i16: {
+                    std::vector<int16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int16>(op.v));
+                    }
+                    result = Value::I16(add_multi_i16(vals.data(), n));
+                  } break;
 
-                case Type::i32: {
-                  std::vector<int32> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<int32>(op.v));
-                  }
-                  result = Value::I32(add_multi_i32(vals.data(), n));
-                } break;
+                  case Type::i32: {
+                    std::vector<int32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int32>(op.v));
+                    }
+                    result = Value::I32(add_multi_i32(vals.data(), n));
+                  } break;
 
-                case Type::i64: {
-                  std::vector<int64> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<int64>(op.v));
-                  }
-                  result = Value::I64(add_multi_i64(vals.data(), n));
-                } break;
+                  case Type::i64: {
+                    std::vector<int64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int64>(op.v));
+                    }
+                    result = Value::I64(add_multi_i64(vals.data(), n));
+                  } break;
 
-                case Type::ui8: {
-                  std::vector<uint8> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<uint8>(op.v));
-                  }
-                  result = Value::UI8(add_multi_ui8(vals.data(), n));
-                } break;
+                  case Type::ui8: {
+                    std::vector<uint8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint8>(op.v));
+                    }
+                    result = Value::UI8(add_multi_ui8(vals.data(), n));
+                  } break;
 
-                case Type::ui16: {
-                  std::vector<uint16> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<uint16>(op.v));
-                  }
-                  result = Value::UI16(add_multi_ui16(vals.data(), n));
-                } break;
+                  case Type::ui16: {
+                    std::vector<uint16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint16>(op.v));
+                    }
+                    result = Value::UI16(add_multi_ui16(vals.data(), n));
+                  } break;
 
-                case Type::ui32: {
-                  std::vector<uint32> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<uint32>(op.v));
-                  }
-                  result = Value::UI32(add_multi_ui32(vals.data(), n));
-                } break;
+                  case Type::ui32: {
+                    std::vector<uint32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint32>(op.v));
+                    }
+                    result = Value::UI32(add_multi_ui32(vals.data(), n));
+                  } break;
 
-                case Type::ui64: {
-                  std::vector<uint64> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<uint64>(op.v));
-                  }
-                  result = Value::UI64(add_multi_ui64(vals.data(), n));
-                } break;
+                  case Type::ui64: {
+                    std::vector<uint64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint64>(op.v));
+                    }
+                    result = Value::UI64(add_multi_ui64(vals.data(), n));
+                  } break;
 
-                case Type::Float: {
-                  std::vector<double> vals;
-                  vals.reserve(n);
-                  for (const auto& op : operands) {
-                    vals.push_back(std::get<double>(op.v));
-                  }
-                  result = Value::Float(add_multi_f64(vals.data(), n));
-                } break;
+                  case Type::Float: {
+                    std::vector<double> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<double>(op.v));
+                    }
+                    result = Value::Float(add_multi_f64(vals.data(), n));
+                  } break;
 
-                default:
-                  print("ERROR: ADD_MULTI called with non-numeric type\n");
-                  std::exit(1);
-              }
+                  default:
+                    print("ERROR: ADD_MULTI called with non-numeric type\n");
+                    std::exit(1);
+                }
 
-              push(result);
+                push(result);
+              } break;
             } break;
           } break;
-          case static_cast<uint8>(Register::VARIABLE):
-            {
-              switch (op & 0x1F)
-              {
+          case static_cast<uint8>(Register::VARIABLE): {
+            switch (op & 0x1F) {
               case static_cast<uint8>(Variable::PUSH): {
                 switch (op & 0xF0) {
                   case 0: {
@@ -859,8 +860,8 @@ namespace minis {
                 }
               }
             } break;
-            case static_cast<int>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
-            case static_cast<int>(Variable::DECLARE): {
+            case static_cast<uint8>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
+            case static_cast<uint8>(Variable::DECLARE): {
               std::string id = GETstr();
               // FIXME:
               uint64 tt = GETu64();
@@ -868,32 +869,32 @@ namespace minis {
               if (tt == 0xECull) frames.back().env->Declare(id, v.t, v);
               else               frames.back().env->Declare(id, (Type)tt, v);
             } break;
-            case static_cast<int>(Variable::GET): {
+            case static_cast<uint8>(Variable::GET): {
               std::string id = GETstr();
               push(frames.back().env->Get(id).val);
             } break;
 
             // FIXME: This is possibly incomplete
-            case static_cast<int>(Variable::UNSET): {
+            case static_cast<uint8>(Variable::UNSET): {
               std::string id = GETstr();
               if (!frames.back().env->Unset(id)) {}
             } break;
           } break;
 
 
-          case static_cast<int>(Register::GENERAL): {
+          case static_cast<uint8>(Register::GENERAL): {
             switch (op & 0x1F) {
-              case static_cast<int>(General::HALT): return;
-              case static_cast<int>(General::NOP): break;
-              case static_cast<int>(General::POP): discard(); break;
-              case static_cast<int>(General::YIELD): {
+              case static_cast<uint8>(General::HALT): return;
+              case static_cast<uint8>(General::NOP): break;
+              case static_cast<uint8>(General::POP): discard(); break;
+              case static_cast<uint8>(General::YIELD): {
                 #ifdef _WIN32
                   _getch();
                 #else
                   system("read -n 1");
                 #endif
               } break;
-              case static_cast<int>(General::INDEX): {
+              case static_cast<uint8>(General::INDEX): {
                 Value idxV = pop();
                 Value base = pop();
                 long long i = std::get<int32>(idxV.v);
@@ -912,10 +913,10 @@ namespace minis {
               } break;
             }
           } break;
-          case static_cast<int>(Register::FUNCTION): {
+          case static_cast<uint8>(Register::FUNCTION): {
             switch (op & 0x1F) {
               // FIXME: Could be simpler to implement via other MVME opcodes
-              case static_cast<int>(Func::TAIL): {
+              case static_cast<uint8>(Func::TAIL): {
               std::string name = GETstr();
               uint64 argc = GETu64();
               std::vector<Value> args(argc);
@@ -948,7 +949,7 @@ namespace minis {
               jump(meta.entry);
               } break;
 
-              case static_cast<int>(Func::RETURN): {
+              case static_cast<uint8>(Func::RETURN): {
                 Value rv;
                 if (stack.size() > frames.back().stack_base) {
                   rv = pop();
@@ -968,7 +969,7 @@ namespace minis {
                 push(rv);
               } break;
 
-              case static_cast<int>(Func::CALL): {
+              case static_cast<uint8>(Func::CALL): {
                 std::string name = GETstr();
                 uint64 argc = GETu64();
                 std::vector<Value> args(argc);
@@ -1004,14 +1005,14 @@ namespace minis {
               } break;
             }
           } break;
-          case static_cast<int>(Register::IMPORT): {
+          case static_cast<uint8>(Register::IMPORT): {
 
           } break;
           default: {
             print("FATAL ERROR: Bad or unknown opcode.");
             std::exit(1);
           }
-          }
+        }
       }
     }
     }
