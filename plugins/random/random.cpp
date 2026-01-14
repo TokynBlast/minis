@@ -1,24 +1,47 @@
-#include "../include/plugin.hpp"
-#include "../include/value.hpp"
-#include <random>
 #include <chrono>
+#include <vector>
+#if defined(_WIN32) || defined(_WIN64)
+  #include <windows.h>
+  #include <wincrypt.h>
+  #include <bcrypt.h>
+#endif
+
+#include "../../include/plugin.hpp"
+#include "../../include/value.hpp"
+#include "../../fast_io/include/fast_io.h"
 
 using namespace minis;
 
-static std::mt19937_64& rng() {
-    static std::mt19937_64 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-    return gen;
+extern "C" {
+  static uint64 mersene_twister(uint64 seed);
 }
+static Value true_rand(const std::vector<Value>& args) {
+#if defined(_WIN32) || defined(_WIN64)
+  #pragma comment(lib, "bcrypt.lib")
 
-static Value random_int(const std::vector<Value>& args) {
-    if (args.size() == 2 && args[0].t == Type::Int && args[1].t == Type::Int) {
-        long long a = std::get<long long>(args[0].v);
-        long long b = std::get<long long>(args[1].v);
-        if (a > b) std::swap(a, b);
-        std::uniform_int_distribution<long long> dist(a, b);
-        return Value::I(dist(rng()));
-    }
-    return Value::N();
+    unsigned char random_bytes[8];   // Buffer to store random data (8 bytes for uint64)
+  NTSTATUS status = BCryptGenRandom(
+      NULL,                           // hAlgorithm (NULL for default provider)
+      random_bytes,                   // pbBuffer
+      sizeof(random_bytes),           // cbBuffer
+      BCRYPT_USE_SYSTEM_PREFERRED_RNG // dwFlags
+  );
+  uint64 result = 0;
+  for (int i = 0; i < 8; ++i) {
+    result |= static_cast<uint64>(random_bytes[i]) << (i * 8);
+  }
+  return Value::UI64(result);
+#elif defined(__linux__) || defined(__unix__) || defined(__APPLE__) || defined(__MACH__)
+  // FIXME: Will consume all of urandom, consuming all entropy
+  fast_io::iobuf_io_file file("/dev/urandom");
+  unsigned char random_bytes[8];
+  read(file, random_bytes, 8);
+  uint64 result = 0;
+  for (int i = 0; i < 8; ++i) {
+    result |= static_cast<uint64>(random_bytes[i]) << (i * 8);
+  }
+  return Value::UI64(result);
+#endif
 }
 
 static Value random_choice(const std::vector<Value>& args) {
@@ -54,7 +77,7 @@ static void random_cleanup() {}
 
 static PluginInterface random_interface = {
     "random",
-    "1.0.0",
+    "0.2.0",
     random_init,
     []() -> const PluginFunctionEntry* { return plugin_functions; },
     random_cleanup
