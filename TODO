@@ -11,7 +11,7 @@ Make a dev file for making Mini libraries
 
 Add a zip library made with [this](https://github.com/PlutoLang/pluto-zip)
 
-Add inline short-ciruct variables
+Add ciruct variables
 ```
 int x = 358;
 int z = 232;
@@ -32,8 +32,6 @@ Add hive variant of list (Use std::hive)
 
 Use explicit wrappers instead of a variant, to get full compile-time converions.
 
-Make typed, void, etc. compile-time
-
 Remove unnecesarry bloat from io_fast
 
 Remove int, in place of Rust-style integers
@@ -46,6 +44,11 @@ Change to Rust:
   Plugin manager
 
 Implement entire logical register in Fortran
+
+Make Var only take Value
+   Value holds Type and the actual value
+   variables currently hold a Value AND a Type
+
 
 Maybe:
 Use deque over vector (Or seperate types)
