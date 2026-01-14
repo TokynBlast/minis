@@ -4,6 +4,7 @@
 
 using namespace minis;
 
+// FIXME: We either need to remove ones not supported, or add support for them
 static Value os(const std::vector<Value>& args) {
   #if defined(_WIN32) || defined(_WIN64)
     return Value::Str("win");
@@ -24,7 +25,7 @@ static Value os(const std::vector<Value>& args) {
   #endif
 }
 
-static Value cpu(std::vector<Value>& args) {
+static Value cpu(const std::vector<Value>& args) {
   #if defined(__i386__) || defined(i386)
     return Value::Str("x86");
   #elif defined(__x86_64__) || defined(M_X64)
