@@ -71,12 +71,13 @@ extern "C" {
 // fast_io is depreceated
 // something better is found
 
+using fast_io::io::print;
+using fast_io::io::scan;
+
 namespace minis {
   /*=============================
   =          Values/Env         =
   =============================*/
-  using fast_io::io::print;
-  using fast_io::io::scan;
 
   // Built-in function handler signature
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
