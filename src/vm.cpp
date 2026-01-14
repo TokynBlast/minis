@@ -1,7 +1,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-// #include <iostream>
 #include <functional>
 #include <algorithm>
 #include <cstdio>
@@ -9,7 +8,6 @@
 #include <cstring>
 #include <cmath>
 #include <array>
-// #include <print>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
@@ -23,23 +21,49 @@
 
 // Fortran math functions from src/maths.f08
 extern "C" {
-  // Signed integer multi-add with overflow detection
-  int8_t add_multi_i8(const int8_t* values, int32_t n, int32_t* overflowed);
-  int16_t add_multi_i16(const int16_t* values, int32_t n, int32_t* overflowed);
-  int32_t add_multi_i32(const int32_t* values, int32_t n, int32_t* overflowed);
-  int64_t add_multi_i64(const int64_t* values, int32_t n, int32_t* overflowed);
-
-  // Unsigned integer multi-add with overflow detection
-  uint8_t add_multi_ui8(const uint8_t* values, int32_t n, int32_t* overflowed);
-  uint16_t add_multi_ui16(const uint16_t* values, int32_t n, int32_t* overflowed);
-  uint32_t add_multi_ui32(const uint32_t* values, int32_t n, int32_t* overflowed);
-  uint64_t add_multi_ui64(const uint64_t* values, int32_t n, int32_t* overflowed);
-
-  // Float multi-add (no overflow)
+  // Multi-add functions
+  int8_t add_multi_i8(const int8_t* values, int32_t n);
+  int16_t add_multi_i16(const int16_t* values, int32_t n);
+  int32_t add_multi_i32(const int32_t* values, int32_t n);
+  int64_t add_multi_i64(const int64_t* values, int32_t n);
+  uint8_t add_multi_ui8(const uint8_t* values, int32_t n);
+  uint16_t add_multi_ui16(const uint16_t* values, int32_t n);
+  uint32_t add_multi_ui32(const uint32_t* values, int32_t n);
+  uint64_t add_multi_ui64(const uint64_t* values, int32_t n);
   double add_multi_f64(const double* values, int32_t n);
-}
 
-// using std::print;
+  // Single add functions
+  int8_t add_i8(int8_t a, int8_t b);
+  int16_t add_i16(int16_t a, int16_t b);
+  int32_t add_i32(int32_t a, int32_t b);
+  int64_t add_i64(int64_t a, int64_t b);
+  uint8_t add_ui8(uint8_t a, uint8_t b);
+  uint16_t add_ui16(uint16_t a, uint16_t b);
+  uint32_t add_ui32(uint32_t a, uint32_t b);
+  uint64_t add_ui64(uint64_t a, uint64_t b);
+  double add_double(double a, double b);
+
+  // Multiply functions
+  int8_t mult_i8(int8_t a, int8_t b);
+  int16_t mult_i16(int16_t a, int16_t b);
+  int32_t mult_i32(int32_t a, int32_t b);
+  int64_t mult_i64(int64_t a, int64_t b);
+  uint8_t mult_ui8(uint8_t a, uint8_t b);
+  uint16_t mult_ui16(uint16_t a, uint16_t b);
+  uint32_t mult_ui32(uint32_t a, uint32_t b);
+  uint64_t mult_ui64(uint64_t a, uint64_t b);
+  double mult_double(double a, double b);
+
+  // Divide functions
+  int8_t div_i8(int8_t a, int8_t b);
+  int16_t div_i16(int16_t a, int16_t b);
+  int32_t div_i32(int32_t a, int32_t b);
+  int64_t div_i64(int64_t a, int64_t b);
+  uint8_t div_ui8(uint8_t a, uint8_t b);
+  uint16_t div_ui16(uint16_t a, uint16_t b);
+  uint32_t div_ui32(uint32_t a, uint32_t b);
+  uint64_t div_ui64(uint64_t a, uint64_t b);
+  double div_double(double a, double b);
 
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
@@ -683,167 +707,95 @@ namespace minis {
                 operands.push_back(pop());
               }
 
-              // Determine result type (use first operand's type as base)
+              // Determine result type (use first operand's type)
               Type result_type = operands[0].t;
-
-              // Helper lambda for type promotion on overflow
-              auto promote_type = [](Type current) -> Type {
-                switch (current) {
-                  case Type::i8: return Type::i16;
-                  case Type::i16: return Type::i32;
-                  case Type::i32: return Type::i64;
-                  case Type::i64: return Type::Float;
-                  case Type::ui8: return Type::ui16;
-                  case Type::ui16: return Type::ui32;
-                  case Type::ui32: return Type::ui64;
-                  case Type::ui64: return Type::Float;
-                  default: return current;
-                }
-              };
-
-              // Perform addition with overflow handling
-              bool retry = true;
               Value result;
 
-              while (retry) {
-                retry = false;
-                int32_t overflowed = 0;
+              switch (result_type) {
+                case Type::i8: {
+                  std::vector<int8> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<int8>(op.v));
+                  }
+                  result = Value::I8(add_multi_i8(vals.data(), n));
+                } break;
 
-                switch (result_type) {
-                  case Type::i8: {
-                    std::vector<int8> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<int8>(op.v));
-                    }
-                    int8 sum = add_multi_i8(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::I8(sum);
-                    }
-                  } break;
+                case Type::i16: {
+                  std::vector<int16> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<int16>(op.v));
+                  }
+                  result = Value::I16(add_multi_i16(vals.data(), n));
+                } break;
 
-                  case Type::i16: {
-                    std::vector<int16> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<int16>(op.v));
-                    }
-                    int16 sum = add_multi_i16(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::I16(sum);
-                    }
-                  } break;
+                case Type::i32: {
+                  std::vector<int32> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<int32>(op.v));
+                  }
+                  result = Value::I32(add_multi_i32(vals.data(), n));
+                } break;
 
-                  case Type::i32: {
-                    std::vector<int32> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<int32>(op.v));
-                    }
-                    int32 sum = add_multi_i32(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::I32(sum);
-                    }
-                  } break;
+                case Type::i64: {
+                  std::vector<int64> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<int64>(op.v));
+                  }
+                  result = Value::I64(add_multi_i64(vals.data(), n));
+                } break;
 
-                  case Type::i64: {
-                    std::vector<int64> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<int64>(op.v));
-                    }
-                    int64 sum = add_multi_i64(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::I64(sum);
-                    }
-                  } break;
+                case Type::ui8: {
+                  std::vector<uint8> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<uint8>(op.v));
+                  }
+                  result = Value::UI8(add_multi_ui8(vals.data(), n));
+                } break;
 
-                  case Type::ui8: {
-                    std::vector<uint8> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<uint8>(op.v));
-                    }
-                    uint8 sum = add_multi_ui8(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::UI8(sum);
-                    }
-                  } break;
+                case Type::ui16: {
+                  std::vector<uint16> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<uint16>(op.v));
+                  }
+                  result = Value::UI16(add_multi_ui16(vals.data(), n));
+                } break;
 
-                  case Type::ui16: {
-                    std::vector<uint16> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<uint16>(op.v));
-                    }
-                    uint16 sum = add_multi_ui16(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::UI16(sum);
-                    }
-                  } break;
+                case Type::ui32: {
+                  std::vector<uint32> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<uint32>(op.v));
+                  }
+                  result = Value::UI32(add_multi_ui32(vals.data(), n));
+                } break;
 
-                  case Type::ui32: {
-                    std::vector<uint32> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<uint32>(op.v));
-                    }
-                    uint32 sum = add_multi_ui32(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::UI32(sum);
-                    }
-                  } break;
+                case Type::ui64: {
+                  std::vector<uint64> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<uint64>(op.v));
+                  }
+                  result = Value::UI64(add_multi_ui64(vals.data(), n));
+                } break;
 
-                  case Type::ui64: {
-                    std::vector<uint64> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<uint64>(op.v));
-                    }
-                    uint64 sum = add_multi_ui64(vals.data(), n, &overflowed);
-                    if (overflowed) {
-                      result_type = promote_type(result_type);
-                      retry = true;
-                    } else {
-                      result = Value::UI64(sum);
-                    }
-                  } break;
+                case Type::Float: {
+                  std::vector<double> vals;
+                  vals.reserve(n);
+                  for (const auto& op : operands) {
+                    vals.push_back(std::get<double>(op.v));
+                  }
+                  result = Value::Float(add_multi_f64(vals.data(), n));
+                } break;
 
-                  case Type::Float: {
-                    std::vector<double> vals;
-                    vals.reserve(n);
-                    for (const auto& op : operands) {
-                      vals.push_back(std::get<double>(op.v));
-                    }
-                    double sum = add_multi_f64(vals.data(), n);
-                    result = Value::Float(sum);
-                  } break;
-
-                  default:
-                    print("ERROR: ADD_MULTI called with non-numeric type\n");
-                    std::exit(1);
-                }
+                default:
+                  print("ERROR: ADD_MULTI called with non-numeric type\n");
+                  std::exit(1);
               }
 
               push(result);
