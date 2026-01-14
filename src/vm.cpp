@@ -414,8 +414,8 @@ namespace minis {
       std::exit(1);
     }
 
-    void Declare(const std::string& n, Type t, Value v) {
-      m.emplace(n, Var{t, v});
+    void Declare(const std::string& n, Value v) {
+      m.emplace(n, Var{v.t, v});
     }
 
     void Set(const std::string& n, Value v) {
@@ -437,7 +437,7 @@ namespace minis {
       else if (parent && parent->Exists(n))
         parent->Set(n, v);
       else
-        Declare(n, v.t, v);
+        Declare(n, v);
     }
 
     bool Erase(const std::string& n) { return m.erase(n) != 0; }
@@ -509,7 +509,6 @@ namespace minis {
           print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
           std::exit(1);
         }
-        // FIXME: This should use err.hpp (vm_err.hpp)
         if (stack.back().t == Type::Null) {
           print("FATAL ERROR: Stack had null top value.");
           std::exit(1);
@@ -863,11 +862,10 @@ namespace minis {
             case static_cast<uint8>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
             case static_cast<uint8>(Variable::DECLARE): {
               std::string id = GETstr();
-              // FIXME:
               uint64 tt = GETu64();
               Value v  = pop();
-              if (tt == 0xECull) frames.back().env->Declare(id, v.t, v);
-              else               frames.back().env->Declare(id, (Type)tt, v);
+              if (tt == 0xECull) frames.back().env->Declare(id, v);
+              else               frames.back().env->Declare(id, v);
             } break;
             case static_cast<uint8>(Variable::GET): {
               std::string id = GETstr();
@@ -917,36 +915,34 @@ namespace minis {
             switch (op & 0x1F) {
               // FIXME: Could be simpler to implement via other MVME opcodes
               case static_cast<uint8>(Func::TAIL): {
-              std::string name = GETstr();
-              uint64 argc = GETu64();
-              std::vector<Value> args(argc);
-              for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
+                std::string name = GETstr();
+                uint64 argc = GETu64();
+                std::vector<Value> args(argc);
+                for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
 
-              auto it = fnEntry.find(name);
-              if (it == fnEntry.end()) {
-                auto bit = builtins.find(name);
-                if (bit == builtins.end()) {
-                  // FIXME: Should have an error message
-                  // FIXMENOTE: We can remove this, if it's completely preventable by the compiler :)
-                  std::exit(1);
+                auto it = fnEntry.find(name);
+                if (it == fnEntry.end()) {
+                  auto bit = builtins.find(name);
+                  if (bit == builtins.end()) {
+                    // FIXME: Should have an error message
+                    std::exit(1);
+                  }
+                  auto rv = bit->second(args);
+                  push(std::move(rv));
+                  break;
                 }
-                auto rv = bit->second(args);
-                push(std::move(rv));
-                break;
-              }
-              const auto& meta = it->second;
+                const auto& meta = it->second;
 
-              Frame& currentFrame = frames.back();
+                Frame& currentFrame = frames.back();
 
-              Env* callerEnv = frames[frames.size()-2].env.get();
-              currentFrame.env = std::make_unique<Env>(callerEnv);
+                Env* callerEnv = frames[frames.size()-2].env.get();
+                currentFrame.env = std::make_unique<Env>(callerEnv);
 
-              for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-                // FIXME: We might be able to use just args[i] then do .t in the function
-                currentFrame.env->Declare(meta.params[i], args[i].t, args[i]);
-              }
+                for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
+                  currentFrame.env->Declare(meta.params[i], args[i]);
+                }
 
-              jump(meta.entry);
+                jump(meta.entry);
               } break;
 
               case static_cast<uint8>(Func::RETURN): {
@@ -998,7 +994,7 @@ namespace minis {
                 frames.back().env = std::make_unique<Env>(callerEnv);
 
                 for (size_t i = 0; i < meta.params.size() && i < args.size(); ++i) {
-                  frames.back().env->Declare(meta.params[i], args[i].t, args[i]);
+                  frames.back().env->Declare(meta.params[i], args[i]);
                 }
 
                 jump(meta.entry);
