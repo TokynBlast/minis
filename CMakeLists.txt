@@ -41,6 +41,9 @@ set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FVERSION}")
 # ----------------------------------------
 set(PLUGINS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
 
+# FIXME: Use -fotp-info-vec for Fortran
+# This would prove the functions are properly vectorizing :)
+
 if(EXISTS "${PLUGINS_DIR}")
     file(GLOB PLUGIN_DIRS RELATIVE "${PLUGINS_DIR}" "${PLUGINS_DIR}/*")
 
@@ -48,9 +51,7 @@ if(EXISTS "${PLUGINS_DIR}")
         if(IS_DIRECTORY "${PLUGINS_DIR}/${PLUGIN_NAME}")
             # Collect all source files in this plugin folder
             file(GLOB PLUGIN_SOURCES
-                "${PLUGINS_DIR}/${PLUGIN_NAME}/*.f90"
-                "${PLUGINS_DIR}/${PLUGIN_NAME}/*.F90"
-                "${PLUGINS_DIR}/${PLUGIN_NAME}/*.f"
+                "${PLUGINS_DIR}/${PLUGIN_NAME}/*.f08"
                 "${PLUGINS_DIR}/${PLUGIN_NAME}/*.c"
                 "${PLUGINS_DIR}/${PLUGIN_NAME}/*.cpp"
                 "${PLUGINS_DIR}/${PLUGIN_NAME}/*.cxx"
