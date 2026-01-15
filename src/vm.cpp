@@ -32,7 +32,6 @@ extern "C" {
   uint16 add_multi_ui16(const uint16* values, uint64 n);
   uint32 add_multi_ui32(const uint32* values, uint64 n);
   uint64 add_multi_ui64(const uint64* values, uint64 n);
-  double add_multi_f64(const double* values, uint64 n);
 
   // Multi-multiply functions
   int8 multiply_multi_i8(const int8 *values, uint64 n);
@@ -43,6 +42,32 @@ extern "C" {
   uint16 multiply_multi_ui16(const uint16 *values, uint64 n);
   uint32 multiply_multi_ui32(const uint32 *values, uint64 n);
   uint64 multiply_multi_ui64(const uint64 *values, uint64 n);
+
+  // Multi-divide functions
+  int8 divide_multi_i8(const int8 *values, uint64 n);
+  int16 divide_multi_i16(const int16 *values, uint64 n);
+  int32 divide_multi_i32(const int32 *values, uint64 n);
+  int64 divide_multi_i64(const int64 *values, uint64 n);
+  uint8 divide_multi_ui8(const uint8 *values, uint64 n);
+  uint16 divide_multi_ui16(const uint16 *values, uint64 n);
+  uint32 divide_multi_ui32(const uint32 *values, uint64 n);
+  uint64 divide_multi_ui64(const uint64 *values, uint64 n);
+
+  // Multi-subtract functions
+  int8 subtract_multi_i8(const int8 *values, uint64 n);
+  int16 subtract_multi_i16(const int16 *values, uint64 n);
+  int32 subtract_multi_i32(const int32 *values, uint64 n);
+  int64 subtract_multi_i64(const int64 *values, uint64 n);
+  uint8 subtract_multi_ui8(const uint8 *values, uint64 n);
+  uint16 subtract_multi_ui16(const uint16 *values, uint64 n);
+  uint32 subtract_multi_ui32(const uint32 *values, uint64 n);
+  uint64 subtract_multi_ui64(const uint64 *values, uint64 n);
+
+  // Multi-double-related functions
+  double add_multi_f64(const double *values, uint64 n);
+  double multiply_multi_f64(const double *values, uint64 n)
+  double divide_multi_f64(const double *values, uint64 n)
+  double subtract_multi_f64(const double *values, uint64 n)
 }
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
@@ -62,7 +87,8 @@ namespace minis {
   using BuiltinFn = std::function<Value(std::vector<Value>&)>;
 
   // Registry of built-in functions
-  // FIXME: Instead of storing every function as a string, we should store it some other way, like an enum or computed goto, to improve speed.
+  // FIXME: Instead of storing every function as a string, we should store it some other way,
+  // like an enum or computed goto, to improve speed.
   inline static std::unordered_map<std::string, BuiltinFn> builtins = {
     // FIXME: We need to add the ability to add the end line manually.
     // FIXME: We need to make print more customizable
@@ -139,6 +165,7 @@ namespace minis {
       range_map[1] = end;    // Store end at key 1
       return Value::Range(range_map);
     }},
+    // FIXME: Should return Value types
     {"max", [](std::vector<Value>& args) {
       Value max = args[0];
       for (size_t i = 1; i < args.size(); i++) {
