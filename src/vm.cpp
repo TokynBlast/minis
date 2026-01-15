@@ -1202,16 +1202,15 @@ namespace minis {
 
           case static_cast<uint8>(Register::GENERAL): {
             switch (op & 0x1F) {
-              case static_cast<uint8>(General::HALT): return;
-              case static_cast<uint8>(General::NOP): break;
-              case static_cast<uint8>(General::POP): discard(); break;
-              case static_cast<uint8>(General::YIELD): {
+              case static_cast<uint8>(General::HALT):{
                 #ifdef _WIN32
                   _getch();
                 #else
                   system("read -n 1");
                 #endif
-              } break;
+              }; break;
+              case static_cast<uint8>(General::NOP): break;
+              case static_cast<uint8>(General::POP): discard(); break;
               case static_cast<uint8>(General::INDEX): {
                 Value idxV = pop();
                 Value base = pop();
