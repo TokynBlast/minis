@@ -1016,7 +1016,23 @@ namespace minis {
             }
           } break;
           case static_cast<uint8>(Register::IMPORT): {
-
+            // FIXME: We need to find a better way of storage,
+            // for the niche case where somehting matches the pieces we have
+            // IDEA: We could use a second file?
+            /*
+            get file with fast_io
+            open file
+            Read start till "0x193 FEND 0x223" is found
+              Formatting is:
+              [function name]
+              [0x183] [0x212]
+              [64-bit location]
+              [0x232] [0x139]
+              [variable name]
+              [0x132] [0x14]
+              [64-bit variable location]
+            Using this table, we dispatch and run() the found function
+            */
           } break;
           default: {
             print("FATAL ERROR: Bad or unknown opcode.");
