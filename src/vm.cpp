@@ -21,16 +21,28 @@
 
 // Fortran math functions from src/maths.f08
 extern "C" {
+  // The following functions server the purpose of using Fortran for vectorization
+
   // Multi-add functions
-  int8_t add_multi_i8(const int8_t* values, int32_t n);
-  int16_t add_multi_i16(const int16_t* values, int32_t n);
-  int32_t add_multi_i32(const int32_t* values, int32_t n);
-  int64_t add_multi_i64(const int64_t* values, int32_t n);
-  uint8_t add_multi_ui8(const uint8_t* values, int32_t n);
-  uint16_t add_multi_ui16(const uint16_t* values, int32_t n);
-  uint32_t add_multi_ui32(const uint32_t* values, int32_t n);
-  uint64_t add_multi_ui64(const uint64_t* values, int32_t n);
-  double add_multi_f64(const double* values, int32_t n);
+  int8 add_multi_i8(const int8* values, uint64 n);
+  int16 add_multi_i16(const int16* values, uint64 n);
+  int32 add_multi_i32(const int32* values, uint64 n);
+  int64 add_multi_i64(const int64* values, uint64 n);
+  uint8 add_multi_ui8(const uint8* values, uint64 n);
+  uint16 add_multi_ui16(const uint16* values, uint64 n);
+  uint32 add_multi_ui32(const uint32* values, uint64 n);
+  uint64 add_multi_ui64(const uint64* values, uint64 n);
+  double add_multi_f64(const double* values, uint64 n);
+
+  // Multi-multiply functions
+  int8 multiply_multi_i8(const int8 *values, uint64 n);
+  int16 multiply_multi_i16(const int16 *values, uint64 n);
+  int32 multiply_multi_i32(const int32 *values, uint64 n);
+  int64 multiply_multi_i64(const int64 *values, uint64 n);
+  uint8 multiply_multi_ui8(const uint8 *values, uint64 n);
+  uint16 multiply_multi_ui16(const uint16 *values, uint64 n);
+  uint32 multiply_multi_ui32(const uint32 *values, uint64 n);
+  uint64 multiply_multi_ui64(const uint64 *values, uint64 n);
 }
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
