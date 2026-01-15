@@ -1,11 +1,11 @@
 #pragma once
+// FIXME: Use fast_io instead
 #include <cstdio>
 #include <cstdint>
 #include "macros.h"
 
 // NOTE: Using specific compile arguments, we can make it so unused data & functions aren't included
 
-// FIXME: instead of write_u16, etc. We should do OUTu8
 inline static void OUTu8 (FILE*f, uint8  v){ fwrite(&v,1,1,f); }
 inline static void OUTu16(FILE*f, uint16 v){ fwrite(&v,2,1,f); }
 inline static void OUTu32(FILE*f, uint32 v){ fwrite(&v,4,1,f); }
