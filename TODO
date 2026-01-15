@@ -1,0 +1,77 @@
+Garunteed:
+Add int++ along side ++int
+Add file opening
+     + read/write/binary flags
+inline functions
+Make a dev file for making Mini libraries
+  Provide low-level functions such as:
+    The ability to emit bytecode directly
+    Low level keywords
+      Is this even possible?
+
+Add a zip library made with [this](https://github.com/PlutoLang/pluto-zip)
+
+Add ciruct variables
+```
+int x = 358;
+int z = 232;
+int y = ( z < 103 ) ? z >>> ( x > 800 ) ? x >>> 900;
+int y = {
+  z < 103: z;
+  x > 800: x;
+  _: {
+    print("FATAl");
+    exit();
+  };
+}
+```
+
+Add hive variant of list (Use std::hive)
+
+"for" keyword
+
+Use explicit wrappers instead of a variant, to get full compile-time converions.
+
+Remove unnecesarry bloat from io_fast
+
+Remove int, in place of Rust-style integers
+
+Implement 256-bit integers using C?
+
+Change to Rust:
+  Stack operations
+  Built-ins
+  Plugin manager
+
+Implement entire logical register in Fortran
+
+Make Var only take Value
+   Value holds Type and the actual value
+   variables currently hold a Value AND a Type
+
+Julia & Fortran for Physics plugin
+
+Maybe:
+Use deque over vector (Or seperate types)
+Add compiler grouping
+Add personal scopes
+Folding
+  var never used; no declare
+  var declared -> instantly delted; no declare
+  var never changes; pass to where used
+  math operation, known variables; do math
+  function never used; no include
+
+AOT pre-linking for imports (cache held in ~/.minis/cache/)
+64KB sized packets for custom TCP (delete after use)
+
+More keywords
+class
+as
+in
+case
+struct
+enum
+async
+
+let file = open("test.txt") ? throw NameError("File missing!") : print(file);
