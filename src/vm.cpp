@@ -785,7 +785,118 @@ namespace minis {
                   } break;
 
                   default:
+                    // FIXME: Need better error message
                     print("ERROR: ADD_MULTI called with non-numeric type\n");
+                    std::exit(1);
+                }
+
+                push(result);
+              } break;
+
+              case static_cast<uint8>(Math::MULT_MULT): {
+                uint16 n = GETu16();
+
+                if (n == 0) {
+                  push(Value::I32(0));
+                  break;
+                }
+
+                // Collect operands from stack
+                std::vector<Value> operands;
+                operands.reserve(n);
+                for (uint16 i = 0; i < n; ++i) {
+                  operands.push_back(pop());
+                }
+                // FIXME: Should use largest type given :)
+                // Determine result type (use first operand's type)
+                Type result_type = operands[0].t;
+                Value result;
+
+                switch (result_type) {
+                  case Type::i8: {
+                    std::vector<int8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int8>(op.v));
+                    }
+                    result = Value::I8(multiply_multi_i8(vals.data(), n));
+                  } break;
+
+                  case Type::i16: {
+                    std::vector<int16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int16>(op.v));
+                    }
+                    result = Value::I16(multiply_multi_i16(vals.data(), n));
+                  } break;
+
+                  case Type::i32: {
+                    std::vector<int32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int32>(op.v));
+                    }
+                    result = Value::I32(multiply_multi_i32(vals.data(), n));
+                  } break;
+
+                  case Type::i64: {
+                    std::vector<int64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int64>(op.v));
+                    }
+                    result = Value::I64(multiply_multi_i64(vals.data(), n));
+                  } break;
+
+                  case Type::ui8: {
+                    std::vector<uint8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint8>(op.v));
+                    }
+                    result = Value::UI8(multiply_multi_ui8(vals.data(), n));
+                  } break;
+
+                  case Type::ui16: {
+                    std::vector<uint16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint16>(op.v));
+                    }
+                    result = Value::UI16(multiply_multi_ui16(vals.data(), n));
+                  } break;
+
+                  case Type::ui32: {
+                    std::vector<uint32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint32>(op.v));
+                    }
+                    result = Value::UI32(multiply_multi_ui32(vals.data(), n));
+                  } break;
+
+                  case Type::ui64: {
+                    std::vector<uint64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint64>(op.v));
+                    }
+                    result = Value::UI64(multiply_multi_ui64(vals.data(), n));
+                  } break;
+
+                  case Type::Float: {
+                    std::vector<double> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<double>(op.v));
+                    }
+                    result = Value::Float(multiply_multi_f64(vals.data(), n));
+                  } break;
+
+                  default:
+                    // FIXME: Need better error
+                    print("ERROR: Unknown type\n");
                     std::exit(1);
                 }
 
