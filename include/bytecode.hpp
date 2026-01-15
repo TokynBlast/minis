@@ -13,8 +13,8 @@ enum class Register : uint8 {
 };
 
 enum class Import : uint8 {
-  FUNC,     // Load in and run a function
-  LOAD,     // ???
+  FUNC,     // Run
+  LOAD,     // Load file
   STORE     // ???
 };
 
@@ -24,7 +24,6 @@ enum class Variable : uint8 {
   DECLARE,  // Declare a variable with no value
   UNSET,    // Delete a variable
   PUSH,     // Push a variable to the current stack
-  UNSET_ALL // Delete all variables
 };
 
 enum class Logic : uint8 {
@@ -41,7 +40,7 @@ enum class Logic : uint8 {
 };
 
 enum class Func : uint8 {
-  CALL = 0,   // Call a function
+  CALL,       // Call a function
   TAIL,       // Clear and reuse stack
   RETURN,     // Return value(s)
 };
