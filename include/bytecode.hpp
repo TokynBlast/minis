@@ -39,8 +39,8 @@ enum class Logic : uint8 {
 
 enum class Func : uint8 {
   CALL,       // Call a function
-  TAIL,       // Clear and reuse stack
-  RETURN,     // Return value(s)
+  TAIL,       // Clear and reuse stack // FIXME: TAJL may be able to be combined with RETURN
+  RETURN,     // Return value(s)       //        and other ops to remove the use of TAIL
 };
 
 enum class Math : uint8 {
