@@ -31,39 +31,6 @@ extern "C" {
   uint32_t add_multi_ui32(const uint32_t* values, int32_t n);
   uint64_t add_multi_ui64(const uint64_t* values, int32_t n);
   double add_multi_f64(const double* values, int32_t n);
-
-  // Single add functions
-  int8_t add_i8(int8_t a, int8_t b);
-  int16_t add_i16(int16_t a, int16_t b);
-  int32_t add_i32(int32_t a, int32_t b);
-  int64_t add_i64(int64_t a, int64_t b);
-  uint8_t add_ui8(uint8_t a, uint8_t b);
-  uint16_t add_ui16(uint16_t a, uint16_t b);
-  uint32_t add_ui32(uint32_t a, uint32_t b);
-  uint64_t add_ui64(uint64_t a, uint64_t b);
-  double add_double(double a, double b);
-
-  // Multiply functions
-  int8_t mult_i8(int8_t a, int8_t b);
-  int16_t mult_i16(int16_t a, int16_t b);
-  int32_t mult_i32(int32_t a, int32_t b);
-  int64_t mult_i64(int64_t a, int64_t b);
-  uint8_t mult_ui8(uint8_t a, uint8_t b);
-  uint16_t mult_ui16(uint16_t a, uint16_t b);
-  uint32_t mult_ui32(uint32_t a, uint32_t b);
-  uint64_t mult_ui64(uint64_t a, uint64_t b);
-  double mult_double(double a, double b);
-
-  // Divide functions
-  int8_t div_i8(int8_t a, int8_t b);
-  int16_t div_i16(int16_t a, int16_t b);
-  int32_t div_i32(int32_t a, int32_t b);
-  int64_t div_i64(int64_t a, int64_t b);
-  uint8_t div_ui8(uint8_t a, uint8_t b);
-  uint16_t div_ui16(uint16_t a, uint16_t b);
-  uint32_t div_ui32(uint32_t a, uint32_t b);
-  uint64_t div_ui64(uint64_t a, uint64_t b);
-  double div_double(double a, double b);
 }
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
@@ -688,10 +655,16 @@ namespace minis {
                   std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
                   push(Value::Str(std::move(result)));
                 } else if (a.t == Type::Float || b.t == Type::Float) {
-                  // fortran!! :D
+                    a.v += b.v;
                   push(Value::Float(std::get<double>(a.v) + std::get<double>(b.v)));
-                } else if (a.t == Type::i8 || b.t == Type::i8) {
-                  // fortran!! :D
+                  // Check for being an int :)
+                }
+                else if (a.t == Type::i8 || a.t == Type::i16 || a.t == Type::i32 ||
+                         a.t == Type::i64 || a.t == Type::ui8 || a.t == Type::ui16 ||
+                         a.t == Type::ui32 ||  a.t == Type::ui64 )
+                {
+                  // FIXME: Should use largest size
+                  push(Value::UI64(std::move(a.v + b.v)))
                 }
               } break;
               case static_cast<uint8>(Math::ADD_MULT): {
