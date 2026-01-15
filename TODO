@@ -26,6 +26,11 @@ int y = {
 }
 ```
 
+Seperate multiplication, division, and addition in maths.f08
+Move Fortran version down as much as safely possible for compatability
+
+Remove unneded/unsupported parts of fast_io
+
 Add hive variant of list (Use std::hive)
 
 "for" keyword
