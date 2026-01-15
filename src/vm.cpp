@@ -368,31 +368,6 @@ namespace minis {
         }
       }
     }},
-
-    // FIXME: type checks should join into one
-    {"isInt", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::Int);
-    }},
-
-    {"isFloat", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::Float);
-    }},
-
-    {"isString", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::Str);
-    }},
-
-    {"isList", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::List);
-    }},
-
-    {"isBool", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::Bool);
-    }},
-
-    {"isNull", [](std::vector<Value>& args) -> Value {
-      return Value::Bool(args[0].t == Type::Null);
-    }}
   };
 
   struct Env {
