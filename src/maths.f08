@@ -6,9 +6,9 @@ module math
   implicit none
 contains
 
-  !========================================
-  ! SIGNED INTEGER MULTI-ADD FUNCTIONS
-  !========================================
+  !=========================
+  ! SIGNED INTEGER MULTI-ADD
+  !=========================
   function add_multi_i8(values, n) bind(C, name="add_multi_i8") result(r)
     integer(c_int64_t), value :: n
     integer(c_int8_t), dimension(n), intent(in) :: values
@@ -57,12 +57,12 @@ contains
     end do
   end function
 
-  !========================================
-  ! UNSIGNED INTEGER MULTI-ADD FUNCTIONS
-  !========================================
+  !===========================
+  ! UNSIGNED INTEGER MULTI-ADD
+  !===========================
 
   function add_multi_ui8(values, n) bind(C, name="add_multi_ui8") result(r)
-    integer(c_int32_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int8_t), dimension(n), intent(in) :: values
     integer(c_int8_t) :: r
     integer :: i
@@ -74,7 +74,7 @@ contains
   end function
 
   function add_multi_ui16(values, n) bind(C, name="add_multi_ui16") result(r)
-    integer(c_int32_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int16_t), dimension(n), intent(in) :: values
     integer(c_int16_t) :: r
     integer :: i
@@ -86,7 +86,7 @@ contains
   end function
 
   function add_multi_ui32(values, n) bind(C, name="add_multi_ui32") result(r)
-    integer(c_int32_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int32_t), dimension(n), intent(in) :: values
     integer(c_int32_t) :: r
     integer :: i
@@ -98,7 +98,7 @@ contains
   end function
 
   function add_multi_ui64(values, n) bind(C, name="add_multi_ui64") result(r)
-    integer(c_int32_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int64_t), dimension(n), intent(in) :: values
     integer(c_int64_t) :: r
     integer :: i
@@ -114,7 +114,7 @@ contains
   ! ========================
 
   function add_multi_f64(values, n) bind(C, name="add_multi_f64") result(r)
-    integer(c_int32_t), value :: n
+    integer(c_int64_t), value :: n
     real(c_double), dimension(n), intent(in) :: values
     real(c_double) :: r
     integer :: i
