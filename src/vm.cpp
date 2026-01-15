@@ -477,7 +477,8 @@ namespace minis {
     // FIXME: We don't need to know void or typed at runtime
     struct FnMeta {
       uint64 entry;
-      Type ret; // Return values :)
+      // FIXME: Return types can be 100% compile-time
+      Type ret;
       std::vector<std::string> params;
     };
     std::unordered_map<std::string, FnMeta> fnEntry;
