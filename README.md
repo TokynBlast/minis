@@ -28,7 +28,7 @@ Another example of where math is better, is:
 u32 x = 1 + 1 + 42432 + 422 + 13 + 8420 + 492 - 492 + 20492 + 9204 + 2492 + 4920 + 2902 + 24902;
 ```
 Fortran takes over, and starts adding them together, multiple at a time!
-> ![note] Due to current structure and limitations, it gets split at the subtraction.
+> [!NOTE] Due to current structure and limitations, it gets split at the subtraction.
 <br><br>
 Minis is built on multiple languages, where each gets to shine where they shine best!<br>
 While still being fast AND memory safe!
