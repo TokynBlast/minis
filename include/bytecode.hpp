@@ -56,11 +56,8 @@ enum class Math : uint8 {
 
 enum class General : uint8 {
   HALT,      // Stop program
-  SLICE,     // ???
-  SET_INDEX, // ???
   NOP,       // Do nothing
   POP,       // Pop current value on top of stack
   INDEX,     // Split a list or string
-  EMIT,      // ???
   YIELD      // Wait for enter key
 };
