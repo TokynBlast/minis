@@ -48,7 +48,6 @@ enum class Math : uint8 {
   SUB,       // Subtract from variable
   MULT,      // Multiply a variable
   DIV,       // Divide a variable
-  NEGATE,    // Flip a variable's signedness
   ADD_MULT,  // Add multiple values
   DIV_MULT,  // Divide multiple values
   MULT_MULT, // Multiply multiple values
