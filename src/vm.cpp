@@ -129,6 +129,7 @@ namespace minis {
     {"neg", [](std::vector<Value>& args) {
       auto& arg = args[0];
       if (arg.t == Type::Float) return Value::Float(-std::get<double>(arg.v));
+      // FIXME: Should return same size
       return Value::I64(-std::get<int64>(arg.v));
     }},
 
@@ -594,7 +595,6 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
-              case static_cast<uint8>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break; // Jump if false
               case static_cast<uint8>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
               case static_cast<uint8>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
               case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
@@ -697,6 +697,7 @@ namespace minis {
                   operands.push_back(pop());
                 }
 
+                // FIXME: Should use largest type given :)
                 // Determine result type (use first operand's type)
                 Type result_type = operands[0].t;
                 Value result;
