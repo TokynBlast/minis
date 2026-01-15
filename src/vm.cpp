@@ -24,14 +24,14 @@ extern "C" {
   // The following functions server the purpose of using Fortran for vectorization
 
   // Multi-add functions
-  int8 add_multi_i8(const int8* values, uint64 n);
-  int16 add_multi_i16(const int16* values, uint64 n);
-  int32 add_multi_i32(const int32* values, uint64 n);
-  int64 add_multi_i64(const int64* values, uint64 n);
-  uint8 add_multi_ui8(const uint8* values, uint64 n);
-  uint16 add_multi_ui16(const uint16* values, uint64 n);
-  uint32 add_multi_ui32(const uint32* values, uint64 n);
-  uint64 add_multi_ui64(const uint64* values, uint64 n);
+  int8 addivide_multi_i8(const int8* values, uint64 n);
+  int16 addivide_multi_i16(const int16* values, uint64 n);
+  int32 addivide_multi_i32(const int32* values, uint64 n);
+  int64 addivide_multi_i64(const int64* values, uint64 n);
+  uint8 addivide_multi_ui8(const uint8* values, uint64 n);
+  uint16 addivide_multi_ui16(const uint16* values, uint64 n);
+  uint32 addivide_multi_ui32(const uint32* values, uint64 n);
+  uint64 addivide_multi_ui64(const uint64* values, uint64 n);
 
   // Multi-multiply functions
   int8 multiply_multi_i8(const int8 *values, uint64 n);
@@ -64,7 +64,7 @@ extern "C" {
   uint64 subtract_multi_ui64(const uint64 *values, uint64 n);
 
   // Multi-double-related functions
-  double add_multi_f64(const double *values, uint64 n);
+  double addivide_multi_f64(const double *values, uint64 n);
   double multiply_multi_f64(const double *values, uint64 n)
   double divide_multi_f64(const double *values, uint64 n)
   double subtract_multi_f64(const double *values, uint64 n)
@@ -683,7 +683,7 @@ namespace minis {
                 }
               } break;
               case static_cast<uint8>(Math::ADD_MULT): {
-                uint16 n = GETu16();
+                uint32 n = GETu32();
 
                 if (n == 0) {
                   push(Value::I32(0));
@@ -693,7 +693,7 @@ namespace minis {
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint16 i = 0; i < n; ++i) {
+                for (uint32 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
 
@@ -709,7 +709,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int8>(op.v));
                     }
-                    result = Value::I8(add_multi_i8(vals.data(), n));
+                    result = Value::I8(addivide_multi_i8(vals.data(), n));
                   } break;
 
                   case Type::i16: {
@@ -718,7 +718,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int16>(op.v));
                     }
-                    result = Value::I16(add_multi_i16(vals.data(), n));
+                    result = Value::I16(addivide_multi_i16(vals.data(), n));
                   } break;
 
                   case Type::i32: {
@@ -727,7 +727,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int32>(op.v));
                     }
-                    result = Value::I32(add_multi_i32(vals.data(), n));
+                    result = Value::I32(addivide_multi_i32(vals.data(), n));
                   } break;
 
                   case Type::i64: {
@@ -736,7 +736,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int64>(op.v));
                     }
-                    result = Value::I64(add_multi_i64(vals.data(), n));
+                    result = Value::I64(addivide_multi_i64(vals.data(), n));
                   } break;
 
                   case Type::ui8: {
@@ -745,7 +745,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint8>(op.v));
                     }
-                    result = Value::UI8(add_multi_ui8(vals.data(), n));
+                    result = Value::UI8(addivide_multi_ui8(vals.data(), n));
                   } break;
 
                   case Type::ui16: {
@@ -754,7 +754,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint16>(op.v));
                     }
-                    result = Value::UI16(add_multi_ui16(vals.data(), n));
+                    result = Value::UI16(addivide_multi_ui16(vals.data(), n));
                   } break;
 
                   case Type::ui32: {
@@ -763,7 +763,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint32>(op.v));
                     }
-                    result = Value::UI32(add_multi_ui32(vals.data(), n));
+                    result = Value::UI32(addivide_multi_ui32(vals.data(), n));
                   } break;
 
                   case Type::ui64: {
@@ -772,7 +772,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint64>(op.v));
                     }
-                    result = Value::UI64(add_multi_ui64(vals.data(), n));
+                    result = Value::UI64(addivide_multi_ui64(vals.data(), n));
                   } break;
 
                   case Type::Float: {
@@ -781,7 +781,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<double>(op.v));
                     }
-                    result = Value::Float(add_multi_f64(vals.data(), n));
+                    result = Value::Float(addivide_multi_f64(vals.data(), n));
                   } break;
 
                   default:
@@ -793,8 +793,8 @@ namespace minis {
                 push(result);
               } break;
 
-              case static_cast<uint8>(Math::MULT_MULT): {
-                uint16 n = GETu16();
+              case static_cast<uint8>(Math::DIV_MULT): {
+                uint32 n = GETu32();
 
                 if (n == 0) {
                   push(Value::I32(0));
@@ -804,7 +804,117 @@ namespace minis {
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint16 i = 0; i < n; ++i) {
+                for (uint32 i = 0; i < n; ++i) {
+                  operands.push_back(pop());
+                }
+                // FIXME: Should use largest type given :)
+                // Determine result type (use first operand's type)
+                Type result_type = operands[0].t;
+                Value result;
+
+                switch (result_type) {
+                  case Type::i8: {
+                    std::vector<int8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int8>(op.v));
+                    }
+                    result = Value::I8(divide_multi_i8(vals.data(), n));
+                  } break;
+
+                  case Type::i16: {
+                    std::vector<int16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int16>(op.v));
+                    }
+                    result = Value::I16(div_multi_i16(vals.data(), n));
+                  } break;
+
+                  case Type::i32: {
+                    std::vector<int32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int32>(op.v));
+                    }
+                    result = Value::I32(divide_multi_i32(vals.data(), n));
+                  } break;
+
+                  case Type::i64: {
+                    std::vector<int64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<int64>(op.v));
+                    }
+                    result = Value::I64(divide_multi_i64(vals.data(), n));
+                  } break;
+
+                  case Type::ui8: {
+                    std::vector<uint8> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint8>(op.v));
+                    }
+                    result = Value::UI8(divide_multi_ui8(vals.data(), n));
+                  } break;
+
+                  case Type::ui16: {
+                    std::vector<uint16> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint16>(op.v));
+                    }
+                    result = Value::UI16(divide_multi_ui16(vals.data(), n));
+                  } break;
+
+                  case Type::ui32: {
+                    std::vector<uint32> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint32>(op.v));
+                    }
+                    result = Value::UI32(divide_multi_ui32(vals.data(), n));
+                  } break;
+
+                  case Type::ui64: {
+                    std::vector<uint64> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<uint64>(op.v));
+                    }
+                    result = Value::UI64(divide_multi_ui64(vals.data(), n));
+                  } break;
+
+                  case Type::Float: {
+                    std::vector<double> vals;
+                    vals.reserve(n);
+                    for (const auto& op : operands) {
+                      vals.push_back(std::get<double>(op.v));
+                    }
+                    result = Value::Float(divide_multi_f64(vals.data(), n));
+                  } break;
+
+                  default:
+                    // FIXME: Need better error
+                    print("ERROR: Unknown type\n");
+                    std::exit(1);
+                }
+
+                push(result);
+              } break;
+
+              case static_cast<uint8>(Math::MULT_MULT): {
+                uint32 n = GETu32();
+
+                if (n == 0) {
+                  push(Value::I32(0));
+                  break;
+                }
+
+                // Collect operands from stack
+                std::vector<Value> operands;
+                operands.reserve(n);
+                for (uint32 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
                 // FIXME: Should use largest type given :)
