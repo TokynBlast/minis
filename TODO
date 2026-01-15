@@ -49,6 +49,7 @@ Make Var only take Value
    Value holds Type and the actual value
    variables currently hold a Value AND a Type
 
+Julia & Fortran for Physics plugin
 
 Maybe:
 Use deque over vector (Or seperate types)
