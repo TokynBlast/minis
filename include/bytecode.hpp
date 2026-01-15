@@ -35,8 +35,6 @@ enum class Logic : uint8 {
   AND,           // True if left and right are true
   OR,            // True if left or right are true
   JUMP,          // Jump to location
-  JUMP_IF,       // Jump if true
-  JUMP_IF_FALSE, // Jump if false
 };
 
 enum class Func : uint8 {
