@@ -65,9 +65,9 @@ extern "C" {
 
   // Multi-double-related functions
   double addivide_multi_f64(const double *values, uint64 n);
-  double multiply_multi_f64(const double *values, uint64 n)
-  double divide_multi_f64(const double *values, uint64 n)
-  double subtract_multi_f64(const double *values, uint64 n)
+  double multiply_multi_f64(const double *values, uint64 n);
+  double divide_multi_f64(const double *values, uint64 n);
+  double subtract_multi_f64(const double *values, uint64 n);
 }
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
@@ -828,7 +828,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int16>(op.v));
                     }
-                    result = Value::I16(div_multi_i16(vals.data(), n));
+                    result = Value::I16(divide_multi_i16(vals.data(), n));
                   } break;
 
                   case Type::i32: {
