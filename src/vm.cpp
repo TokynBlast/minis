@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <string_view>
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -77,6 +78,7 @@ extern "C" {
 
 using fast_io::io::print;
 using fast_io::io::scan;
+using fast_io::io::perr;
 
 namespace minis {
   /*=============================
@@ -90,284 +92,293 @@ namespace minis {
   // FIXME: Instead of storing every function as a string, we should store it some other way,
   // like an enum or computed goto, to improve speed.
   inline static std::unordered_map<std::string, BuiltinFn> builtins = {
-    // FIXME: We need to add the ability to add the end line manually.
-    // FIXME: We need to make print more customizable
-    {"print", [](std::vector<Value>& args) {
-      size_t arg_amnt = sizeof(args);
-      for (size_t i = 0; i < arg_amnt; i++) {
-        Value& val = args[i];
-        switch (val.t) {
-          case Type::Float:  print(std::get<double>(val.v)); break;
-          case Type::Str:    print(std::get<std::string>(val.v)); break;
-          case Type::Bool:   print(std::get<bool>(val.v)); break;
-          case Type::Null:   print(""); break;
-          case Type::i8:     print(std::get<int8>(val.v)); break;
-          case Type::i16:    print(std::get<int16>(val.v)); break;
-          case Type::i32:    print(std::get<int32>(val.v)); break;
-          case Type::i64:    print(std::get<int64>(val.v)); break;
-          case Type::ui8:    print(std::get<uint8>(val.v)); break;
-          case Type::ui16:   print(std::get<uint16>(val.v)); break;
-          case Type::ui32:   print(std::get<uint32>(val.v)); break;
-          case Type::ui64:   print(std::get<uint64>(val.v)); break;
-          default:{
+      // FIXME: We need to add the ability to add the end line manually.
+      // FIXME: We need to make print more customizable
+      {"print", [](std::vector<Value> &args) {
+         size_t arg_amnt = sizeof(args);
+         for (size_t i = 0; i < arg_amnt; i++)
+         {
+         Value &val = args[i];
+         switch (val.t) {
+          case Type::Float: print(std::get<double>(val.v)); break;
+          case Type::Str: print(std::get<std::string>(val.v)); break;
+          case Type::Bool: print(std::get<bool>(val.v)); break;
+          case Type::Null: print(""); break;
+          case Type::i8:   print(std::get<int8>(val.v)); break;
+          case Type::i16:  print(std::get<int16>(val.v)); break;
+          case Type::i32:  print(std::get<int32>(val.v)); break;
+          case Type::i64:  print(std::get<int64>(val.v)); break;
+          case Type::ui8:  print(std::get<uint8>(val.v)); break;
+          case Type::ui16: print(std::get<uint16>(val.v)); break;
+          case Type::ui32: print(std::get<uint32>(val.v)); break;
+          case Type::ui64: print(std::get<uint64>(val.v)); break;
+          default: {
             print("FARAL EROR: Unknown type");
             exit(1);
           }
+         }
+          if (i < arg_amnt) print(" ");
+         }
+         // FIXME: print should return nothing
+         return Value::Null();
+       }},
+      {"abs", [](std::vector<Value> &args) {
+         auto val = args[0];
+         if (val.t == Type::Float)
+           return Value::Float(std::abs(std::get<double>(val.v)));
+         return Value::I64(std::abs(std::get<int64>(val.v)));
+       }},
+      {"neg", [](std::vector<Value> &args) {
+         auto &arg = args[0];
+         if (arg.t == Type::Float)
+           return Value::Float(-std::get<double>(arg.v));
+         // FIXME: Should return same size
+         return Value::I64(-std::get<int64>(arg.v));
+       }},
+
+      // FIXME: [comment expansion]
+      /* Range Becoming A Type
+       *
+       * Rather than range be a function, we can bake it into the opcodes and make it a type
+       * This gives us greater control
+       * We can store just the two values.
+       * For something like:
+       * int x = 34;
+       * if (x in range(1,50)) {
+       *   print("It's in!! :D");
+       * }
+       * It would come out like this:
+       * int x is 34
+       * if x is between one (1) and 50, print "It's in!! :D"
+       * This would give us greater control, as our current version is held as a function baked into the VM.
+       * This is also a HUGE load off of RAM, since we not store two integers, rather than every number, one (1) through 50.
+       */
+      // Memory-efficient range: stores only start and end values, not the entire list
+      // Usage: range(5) -> Range(0,5) or range(2,5) -> Range(2,5)
+      {"range", [](std::vector<Value> &args) {
+         uint64 start = 0, end;
+         if (args.size() == 1) {
+           end = std::get<uint64>(args[0].v);
+         } else {
+           start = std::get<uint64>(args[0].v);
+           end = std::get<uint64>(args[1].v);
+         }
+
+         std::map<uint64, uint64> range_map;
+         range_map[0] = start; // Store start at key 0
+         range_map[1] = end;   // Store end at key 1
+         return Value::Range(range_map);
+       }},
+      // FIXME: Should return Value types
+      {"max", [](std::vector<Value> &args) {
+         Value max = args[0];
+         for (size_t i = 1; i < args.size(); i++)
+         {
+           if (args[i] > max)
+             max = args[i];
+         }
+         return max;
+       }},
+      {"min", [](std::vector<Value> &args) {
+         Value min = args[0];
+         for (size_t i = 1; i < args.size(); i++) {
+           if (args[i] < min)
+             min = args[i];
+         }
+         return min;
+       }},
+      {"sort", [](std::vector<Value> &args) {
+         std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
+         std::sort(list.begin(), list.end(),
+                   [](const Value &a, const Value &b)
+                   { return std::get<double>(a.v) < std::get<double>(b.v); });
+         return Value::List(list);
+       }},
+      {"reverse", [](std::vector<Value> &args) -> Value
+       {
+         if (args[0].t == Type::List) {
+           std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
+           std::reverse(list.begin(), list.end());
+           return Value::List(list);
+         } else if (args[0].t == Type::Str) {
+           std::string reversed = std::get<std::string>(args[0].v);
+           std::reverse(reversed.begin(), reversed.end());
+           return Value::Str(std::move(reversed));
+         }
+         exit(1);
+       }},
+      // FIXME:Use Fortran backend instead of C++s
+      {"sum", [](std::vector<Value> &args) {
+         const auto &list = std::get<std::vector<Value>>(args[0].v);
+         Value sum = Value::I32(0);
+         for (const auto &v : list)
+         {
+           if (v.t == Type::Float)
+             sum = Value::Float(std::get<double>(sum.v) + std::get<double>(v.v));
+           else sum = Value::I32(std::get<int32>(sum.v) + std::get<int32>(v.v));
+         }
+         return sum;
+       }},
+      // Print like print, using all values
+      {"input", [](std::vector<Value> &args) {
+         std::string input;
+         if (!args.empty())
+         {
+           scan(input);
+           return Value::Str(std::move(input));
+         }
+         return Value::Str("");
+       }},
+      {"len", [](std::vector<Value> &args) -> Value {
+         const auto &arg = args[0];
+         if (arg.t == Type::List)
+         {
+           return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
+         }
+         else if (arg.t == Type::Str)
+         {
+           return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
+         }
+         return Value::Null();
+       }},
+      {"split", [](std::vector<Value> &args) -> Value {
+         const std::string &str = std::get<std::string>(args[0].v);
+         const std::string &delim = std::get<std::string>(args[1].v);
+
+         std::vector<Value> result;
+         std::string s(str);
+         std::string delimiter(delim);
+
+         size_t pos = 0;
+         while ((pos = s.find(delimiter)) != std::string::npos) {
+           result.push_back(Value::Str(s.substr(0, pos).c_str()));
+           s.erase(0, pos + delimiter.length());
+         }
+         result.push_back(Value::Str(s.c_str()));
+
+         return Value::List(result);
+       }},
+      {"upper", [](std::vector<Value> &args) -> Value {
+         std::string result = std::get<std::string>(args[0].v);
+         std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+         return Value::Str(std::move(result));
+       }},
+      {"lower", [](std::vector<Value> &args) -> Value {
+         std::string result = std::get<std::string>(args[0].v);
+         std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+         return Value::Str(std::move(result));
+       }},
+      {"round", [](std::vector<Value> &args) -> Value {
+         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
+       }},
+      // Implement via Fortran and C++
+      {"random", [](std::vector<Value> &args) -> Value {
+        if (args.empty()) {
+          return Value::Float((double)rand() / RAND_MAX);
+        } else {
+          uint64 max_val = std::get<uint64>(args[0].v);
+          return Value::UI64(rand() % max_val);
         }
-        if (i < arg_amnt) {
-          print(" ");
+       }},
+
+      // FIXME: Use fast_io :)
+      {"open", [](std::vector<Value> &args) -> Value
+       {
+         const char *filename = std::get<std::string>(args[0].v).c_str();
+         const char *mode_str = std::get<std::string>(args[1].v).c_str();
+         // FIXME: This should be a switch instead
+         // Translate Minis modes to C modes
+         const char *c_mode = "r";
+         // FIXME: Simplify to normality
+         if (strcmp(mode_str, "r") == 0) c_mode = "r";
+         else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
+         else if (strcmp(mode_str, "rs") == 0) c_mode = "r"; // read specific = read but read only a section, rather than put the whole file into mem
+         else if (strcmp(mode_str, "w") == 0) c_mode = "w";
+         else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
+         else if (strcmp(mode_str, "ws") == 0) c_mode = "w"; // write specific = write but write to a specific area rather than rewrite the whole thing
+         /*write targeted = append but write anywhere, not just the end, shifting alldata after up
+          * For example:
+          * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
+          */
+         else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
+         else if (strcmp(mode_str, "a") == 0) c_mode = "a"; // also support append directly
+
+         FILE *file = fopen(filename, c_mode);
+         if (!file) return Value::Bool(1); // Error code
+
+         // Store file pointer as integer (simple approach)
+         return Value::UI64((uint64)(uintptr_t)file);
+       }},
+
+      {"close", [](std::vector<Value> &args) -> Value {
+        FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+        if (file && file != stdin && file != stdout && file != stderr)
+        {
+          fclose(file);
         }
-      }
-      // FIXME: print should return nothing
-      return Value::Null();
-    }},
-    {"abs", [](std::vector<Value>& args) {
-      auto val = args[0];
-      if (val.t == Type::Float) return Value::Float(std::abs(std::get<double>(val.v)));
-      return Value::I64(std::abs(std::get<int64>(val.v)));
-    }},
-    {"neg", [](std::vector<Value>& args) {
-      auto& arg = args[0];
-      if (arg.t == Type::Float) return Value::Float(-std::get<double>(arg.v));
-      // FIXME: Should return same size
-      return Value::I64(-std::get<int64>(arg.v));
-    }},
+         return Value::Bool(false);
+       }},
 
-    // FIXME: [comment expansion]
-    /* Range Becoming A Type
-    *
-    * Rather than range be a function, we can bake it into the opcodes and make it a type
-    * This gives us greater control
-    * We can store just the two values.
-    * For something like:
-    * int x = 34;
-    * if (x in range(1,50)) {
-    *   print("It's in!! :D");
-    * }
-    * It would come out like this:
-    * int x is 34
-    * if x is between one (1) and 50, print "It's in!! :D"
-    * This would give us greater control, as our current version is held as a function baked into the VM.
-    * This is also a HUGE load off of RAM, since we not store two integers, rather than every number, one (1) through 50.
-    */
-    // Memory-efficient range: stores only start and end values, not the entire list
-    // Usage: range(5) -> Range(0,5) or range(2,5) -> Range(2,5)
-    {"range", [](std::vector<Value>& args) {
-      uint64 start = 0, end;
-      if (args.size() == 1) {
-        end = std::get<uint64>(args[0].v);
-      } else {
-        start = std::get<uint64>(args[0].v);
-        end = std::get<uint64>(args[1].v);
-      }
+      {"write", [](std::vector<Value> &args) -> Value {
+         FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+         const char *data = std::get<std::string>(args[1].v).c_str();
 
-      std::map<uint64, uint64> range_map;
-      range_map[0] = start;  // Store start at key 0
-      range_map[1] = end;    // Store end at key 1
-      return Value::Range(range_map);
-    }},
-    // FIXME: Should return Value types
-    {"max", [](std::vector<Value>& args) {
-      Value max = args[0];
-      for (size_t i = 1; i < args.size(); i++) {
-        if (args[i] > max) max = args[i];
-      }
-      return max;
-    }},
-    {"min", [](std::vector<Value>& args) {
-      Value min = args[0];
-      for (size_t i = 1; i < args.size(); i++) {
-        if (args[i] < min) min = args[i];
-      }
-      return min;
-    }},
-    {"sort", [](std::vector<Value>& args) {
-      std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
-      std::sort(list.begin(), list.end(),
-        [](const Value& a, const Value& b) { return std::get<double>(a.v) < std::get<double>(b.v); });
-      return Value::List(list);
-    }},
-    {"reverse", [](std::vector<Value>& args) -> Value {
-      if (args[0].t == Type::List) {
-        std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
-        std::reverse(list.begin(), list.end());
-        return Value::List(list);
-      } else if (args[0].t == Type::Str) {
-        std::string reversed = std::get<std::string>(args[0].v);
-        std::reverse(reversed.begin(), reversed.end());
-        return Value::Str(std::move(reversed));
-      }
-      exit(1);
-    }},
-    // FIXME:Use Fortran backend instead of C++s
-    {"sum", [](std::vector<Value>& args) {
-      const auto& list = std::get<std::vector<Value>>(args[0].v);
-      Value sum = Value::I32(0);
-      for (const auto& v : list) {
-        if (v.t == Type::Float) sum = Value::Float(std::get<double>(sum.v) + std::get<double>(v.v));
-        else sum = Value::I32(std::get<int32>(sum.v) + std::get<int32>(v.v));
-      }
-      return sum;
-    }},
-    // Print like print, using all values
-    {"input", [](std::vector<Value>& args) {
-      std::string input;
-      if (!args.empty()) {
-        scan(input);
-        return Value::Str(std::move(input));
-      }
-      return Value::Str("");
-    }},
-    {"len", [](std::vector<Value>& args) -> Value {
-      const auto& arg = args[0];
-      if (arg.t == Type::List) {
-        return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
-      } else if (arg.t == Type::Str) {
-        return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
-      }
-      return Value::Null();
-    }},
-    {"split", [](std::vector<Value>& args) -> Value {
-      const std::string& str = std::get<std::string>(args[0].v);
-      const std::string& delim = std::get<std::string>(args[1].v);
+         if (!file) std::exit(1);
 
-      std::vector<Value> result;
-      std::string s(str);
-      std::string delimiter(delim);
+         size_t written = fwrite(data, 1, strlen(data), file);
+         return Value::Bool((bool)written);
+       }},
 
-      size_t pos = 0;
-      while ((pos = s.find(delimiter)) != std::string::npos) {
-        result.push_back(Value::Str(s.substr(0, pos).c_str()));
-        s.erase(0, pos + delimiter.length());
-      }
-      result.push_back(Value::Str(s.c_str()));
+      {"read", [](std::vector<Value> &args) -> Value {
+        try {
+          std::string filename = std::get<std::string>(args[0].v);
+          fast_io::native_file_loader loader(filename.c_str());
 
-      return Value::List(result);
-    }},
-    {"upper", [](std::vector<Value>& args) -> Value {
-      std::string result = std::get<std::string>(args[0].v);
-      std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-      return Value::Str(std::move(result));
-    }},
-    {"lower", [](std::vector<Value>& args) -> Value {
-      std::string result = std::get<std::string>(args[0].v);
-      std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-      return Value::Str(std::move(result));
-    }},
-    {"round", [](std::vector<Value>& args) -> Value {
-      return Value::I64((int64)std::round(std::get<double>(args[0].v)));
-    }},
-    // Implement via Fortran and C++
-    {"random", [](std::vector<Value>& args) -> Value {
-      if (args.empty()) {
-        return Value::Float((double)rand() / RAND_MAX);
-      } else {
-        uint64 max_val = std::get<uint64>(args[0].v);
-        return Value::UI64(rand() % max_val);
-      }
-    }},
-
-    // FIXME: Use fast_io :)
-    {"open", [](std::vector<Value>& args) -> Value {
-      const char* filename = std::get<std::string>(args[0].v).c_str();
-      const char* mode_str = std::get<std::string>(args[1].v).c_str();
-      // FIXME: This should be a switch instead
-      // Translate Minis modes to C modes
-      const char* c_mode = "r";
-      // FIXME: [Comment expanded]
-      // Possibly delegate to our VM instead of host?
-      if (strcmp(mode_str, "r") == 0) c_mode = "r";
-      else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
-      else if (strcmp(mode_str, "rs") == 0) c_mode = "r";  // read specific = read but read only a section, rather than put the whole file into mem
-      else if (strcmp(mode_str, "w") == 0) c_mode = "w";
-      else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
-      else if (strcmp(mode_str, "ws") == 0) c_mode = "w";  // write specific = write but write to a specific area rather than rewrite the whole thing
-      /*write targeted = append but write anywhere, not just the end, shifting alldata after up
-      * For example:
-      * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
-      */
-      else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
-      else if (strcmp(mode_str, "a") == 0) c_mode = "a";   // also support append directly
-
-      FILE* file = fopen(filename, c_mode);
-      if (!file) {
-        return Value::Bool(1); // Error code
-      }
-
-      // Store file pointer as integer (simple approach)
-      return Value::UI64((uint64)(uintptr_t)file);
-    }},
-
-    {"close", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
-      if (file && file != stdin && file != stdout && file != stderr) {
-        fclose(file);
-      }
-      return Value::Bool(false);
-    }},
-
-    {"write", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
-      const char* data = std::get<std::string>(args[1].v).c_str();
-
-      if (!file) std::exit(1);
-
-      size_t written = fwrite(data, 1, strlen(data), file);
-      return Value::Bool((bool)written);
-    }},
-
-    {"read", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
-      long long size = std::get<int32>(args[1].v);
-
-      if (!file) std::exit(1);
-      if (size <= 0) return Value::Str("");
-
-      char* buffer = (char*)malloc(size + 1);
-      size_t bytes_read = fread(buffer, 1, size, file);
-      buffer[bytes_read] = '\0';
-
-      Value result = Value::Str(buffer);
-      free(buffer);
-      return result;
-    }},
-
-    // FIXME: We don't need to take any arguments
-    {"flush", [](std::vector<Value>& args) -> Value {
-      FILE* file = (FILE*)(uintptr_t)std::get<int32>(args[0].v);
-      if (file) {
-        fflush(file);
-      }
-      return Value::UI8(0);
-    }},
-
-    // FIXME: We need better type checking
-    // FIXME: Add returning multiple values
-    {"typeof", [](std::vector<Value>& args) -> Value {
-      switch (args[0].t) {
-        case Type::Float:  return Value::Str("float");
-        case Type::Str:    return Value::Str("str");
-        case Type::Bool:   return Value::Str("bool");
-        case Type::List:   return Value::Str("list");
-        case Type::Null:   return Value::Str("null");
-        case Type::Dict:   return Value::Str("dict");
-        case Type::i8:     return Value::Str("i8");
-        case Type::i16:    return Value::Str("i16");
-        case Type::i32:    return Value::Str("i32");
-        case Type::i64:    return Value::Str("i64");
-        case Type::ui8:    return Value::Str("ui8");
-        case Type::ui16:   return Value::Str("ui16");
-        case Type::ui32:   return Value::Str("ui32");
-        case Type::ui64:   return Value::Str("ui64");
-        case Type::Range:  return Value::Str("range");
-        case Type::Void:   return Value::Str("void"); // Safety
-        case Type::TriBool:return Value::Str("tribool");
-        default:{
-          print("Unknown type");
-          std::exit(1);
+          Value result = Value::Str(std::string(loader.data(), loader.size()));
+          return result;
+        } catch (const std::exception& e) {
+          print("File I/O error: ", std::string(e.what()), "\n");
+          exit(1);
         }
-      }
-    }},
+       }},
+
+      // FIXME: We don't need to take any arguments
+      {"flush", [](std::vector<Value> &args) -> Value {
+         FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+         if (file)
+         {
+           fflush(file);
+         }
+         return Value::UI8(0);
+       }},
+
+      // FIXME: We need better type checking
+      // FIXME: Add returning multiple values
+      {"typeof", [](std::vector<Value> &args) -> Value {
+         switch (args[0].t) {
+         case Type::Float:   return Value::Str("float");
+         case Type::Str:     return Value::Str("str");
+         case Type::Bool:    return Value::Str("bool");
+         case Type::List:    return Value::Str("list");
+         case Type::Null:    return Value::Str("null");
+         case Type::Dict:    return Value::Str("dict");
+         case Type::i8:      return Value::Str("i8");
+         case Type::i16:     return Value::Str("i16");
+         case Type::i32:     return Value::Str("i32");
+         case Type::i64:     return Value::Str("i64");
+         case Type::ui8:     return Value::Str("ui8");
+         case Type::ui16:    return Value::Str("ui16");
+         case Type::ui32:    return Value::Str("ui32");
+         case Type::ui64:    return Value::Str("ui64");
+         case Type::Range:   return Value::Str("range");
+         case Type::Void:    return Value::Str("void"); // Safety
+         case Type::TriBool: return Value::Str("tribool");
+         default: {
+           print("Unknown type");
+           std::exit(1);
+         }
+         }
+       }},
   };
 
   struct Env {
