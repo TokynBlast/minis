@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
+#g++ -S -std=gnu++23 -flto -O3 -march=native -mtune=native src/vm.cpp src/plugin.cpp src/maths.f08 -lgfortran -fno-strict-aliasing -o HEYYYY -I/fast_io/include
+
 # ----------------------------------------
 # Project setup
 # ----------------------------------------
