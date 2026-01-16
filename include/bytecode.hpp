@@ -6,58 +6,83 @@
 enum class Register : uint8 {
   IMPORT,     // Importing libraries and other files
   VARIABLE,   // Operations on variables
-  LOGIC,      // Math and boolean logics
+  LOGIC,      // Boolean and comparison operations
   FUNCTION,   // Function support
   GENERAL,    // Operations that don't fit into the others
-  MATH        // Math operations (Powered by Fortran)
+  MATH,       // Math operations (Powered by Fortran)
+  STACK,      // Stack manipulation
+  BITWISE,    // Bitwise operations
 };
 
 enum class Import : uint8 {
-  FUNC,     // Run
-  LOAD,     // Load file
-  STORE     // ???
+  FUNC,     // Run external function
+  LOAD,     // Load file/module
+  PLUGIN    // Load plugin
 };
 
 enum class Variable : uint8 {
-  GET,      // Get a varable
-  SET,      // Set a variable
-  DECLARE,  // Declare a variable with no value
+  GET,      // Get variable -> push to stack
+  SET,      // Pop stack -> set variable
+  DECLARE,  // Declare variable with no value
   UNSET,    // Delete a variable
-  PUSH,     // Push a variable to the current stack
+  PUSH,     // Push literal to stack
 };
 
 enum class Logic : uint8 {
-  EQUAL,         // True if values are equal
-  NOT_EQUAL,     // True if values are not equal
-                 // NOTE: the following replace greater than and greater than or equal to
-  LESS_OR_EQUAL, // True if left is less than or equal to right
-  LESS_THAN,     // True if left is less but not equal to right
-  AND,           // True if left and right are true
-  OR,            // True if left or right are true
-  JUMP,          // Jump to location
+  EQUAL,         // Pop b,a -> push (a == b)
+  NOT_EQUAL,     // Pop b,a -> push (a != b)
+  LESS_OR_EQUAL, // Pop b,a -> push (a <= b)
+  LESS_THAN,     // Pop b,a -> push (a < b)
+  AND,           // Pop b,a -> push (a && b)
+  OR,            // Pop b,a -> push (a || b)
+  JUMP,          // Jump to address unconditionally
+  JUMP_IF,       // Pop cond, jump if true
+  JUMP_IF_NOT,   // Pop cond, jump if false
+  NOT,           // Pop a -> push (!a)
 };
 
 enum class Func : uint8 {
-  CALL,       // Call a function
-  TAIL,       // Clear and reuse stack // FIXME: TAJL may be able to be combined with RETURN
-  RETURN,     // Return value(s)       //        and other ops to remove the use of TAIL
+  CALL,       // Call a function by name
+  TAIL,       // Tail call optimization
+  RETURN,     // Return value(s) from function
+  BUILTIN,    // Call builtin function
+  LAMBDA      // Create anonymous function
 };
 
 enum class Math : uint8 {
-  ADD,       // Add to variable
-  SUB,       // Subtract from variable
-  MULT,      // Multiply a variable
-  DIV,       // Divide a variable
-  ADD_MULT,  // Add multiple values
-  DIV_MULT,  // Divide multiple values
-  MULT_MULT, // Multiply multiple values
-  SUB_MULT   // Subtract multiple values
+  ADD,        // Pop b,a -> push (a + b)
+  SUB,        // Pop b,a -> push (a - b)
+  MULT,       // Pop b,a -> push (a * b)
+  DIV,        // Pop b,a -> push (a / b)
+  ADD_MULT,   // Add N values (Fortran vectorized)
+  DIV_MULT,   // Divide N values (Fortran vectorized)
+  MULT_MULT,  // Multiply N values (Fortran vectorized)
+  SUB_MULT,   // Subtract N values (Fortran vectorized)
+  MOD,        // Pop b,a -> push (a % b)
+  POW,        // Pop b,a -> push (a^b)
 };
 
 enum class General : uint8 {
-  HALT,      // Stop program
-  NOP,       // Do nothing
-  POP,       // Pop current value on top of stack
-  INDEX,     // Split a list or string
-  YIELD      // Wait for enter key
+  HALT,       // Stop program
+  NOP,        // Do nothing
+  POP,        // Pop and discard top of stack
+  INDEX,      // Pop idx,list -> push list[idx]
+  YIELD,      // Wait for enter key
+  DUP,        // Duplicate top of stack
+  SWAP,       // Swap top two stack values
+  ROT,        // Rotate top 3 (a b c -> b c a)
+  OVER,       // Copy second item to top (a b -> a b a)
+  ASSERT      // Pop cond, halt if false
+};
+
+enum class Stack : uint8 {
+  PUSH_I8,    PUSH_I16,   PUSH_I32,   PUSH_I64,
+  PUSH_UI8,   PUSH_UI16,  PUSH_UI32,  PUSH_UI64,
+  PUSH_F32,   PUSH_F64,   PUSH_STR,   PUSH_BOOL,
+  PUSH_NULL,  PUSH_LIST,  PUSH_DICT
+};
+
+enum class Bitwise : uint8 {
+  AND,  OR,   XOR,  NOT,
+  SHL,  SHR,  ROL,  ROR
 };
