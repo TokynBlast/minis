@@ -2,7 +2,7 @@
 #include <cstdint>
 #include "macros.h"
 
-// NOTE: We may do 3-bit register and 5-bit opcode
+// NOTE: 3-bit register and 5-bit opcode
 enum class Register : uint8 {
   IMPORT,     // Importing libraries and other files
   VARIABLE,   // Operations on variables
