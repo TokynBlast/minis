@@ -37,6 +37,10 @@ Find a way to implement unsigned bits into Fortran...
 
 "for" keyword
 
+Add program-wide destructor
+
+Standardize fail and pass return
+
 Use explicit wrappers instead of a variant, to get full compile-time converions.
 
 Remove unnecesarry bloat from io_fast
