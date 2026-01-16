@@ -33,6 +33,8 @@ Remove unneded/unsupported parts of fast_io
 
 Add hive variant of list (Use std::hive)
 
+Find a way to implement unsigned bits into Fortran...
+
 "for" keyword
 
 Use explicit wrappers instead of a variant, to get full compile-time converions.
