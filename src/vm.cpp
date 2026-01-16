@@ -213,7 +213,6 @@ namespace minis {
     {"input", [](std::vector<Value>& args) {
       std::string input;
       if (!args.empty()) {
-        print(std::get<std::string>(args[0].v));
         scan(input);
         return Value::Str(std::move(input));
       }
@@ -595,6 +594,7 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
+              case static_cast<uint8>(Logic::JUMP_IF_FALSE):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break;
               case static_cast<uint8>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
               case static_cast<uint8>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
               case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
