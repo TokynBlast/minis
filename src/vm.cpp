@@ -670,16 +670,14 @@ namespace minis {
                   std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
                   push(Value::Str(std::move(result)));
                 } else if (a.t == Type::Float || b.t == Type::Float) {
-                    a.v += b.v;
                   push(Value::Float(std::get<double>(a.v) + std::get<double>(b.v)));
-                  // Check for being an int :)
                 }
                 else if (a.t == Type::i8 || a.t == Type::i16 || a.t == Type::i32 ||
                          a.t == Type::i64 || a.t == Type::ui8 || a.t == Type::ui16 ||
                          a.t == Type::ui32 ||  a.t == Type::ui64 )
                 {
                   // FIXME: Should use largest size
-                  push(Value::UI64(std::move(a.v + b.v)))
+                  push(Value::UI64(std::get<uint64>(a.v) + std::get<uint64>(b.v)));
                 }
               } break;
               case static_cast<uint8>(Math::ADD_MULT): {
