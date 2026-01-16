@@ -7,7 +7,7 @@
 ! FIXME: Possibly use a boilerplate generator, lowering maitmence cost.
 
 module math
-  use iso_c_binding
+  use, intrinsic :: iso_c_binding
   implicit none
 contains
 
@@ -15,7 +15,7 @@ contains
   ! SIGNED INTEGER MULTI-ADD
   !=========================
   function add_multi_i8(values, n) bind(C, name="add_multi_i8") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int8_t), dimension(n), intent(in) :: values
     integer(c_int8_t) :: r
     integer :: i
@@ -27,7 +27,7 @@ contains
   end function
 
   function add_multi_i16(values, n) bind(C, name="add_multi_i16") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int16_t), dimension(n), intent(in) :: values
     integer(c_int16_t) :: r
     integer :: i
@@ -39,7 +39,7 @@ contains
   end function
 
   function add_multi_i32(values, n) bind(C, name="add_multi_i32") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int32_t), dimension(n), intent(in) :: values
     integer(c_int32_t) :: r
     integer :: i
@@ -51,7 +51,7 @@ contains
   end function
 
   function add_multi_i64(values, n) bind(C, name="add_multi_i64") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     integer(c_int64_t), dimension(n), intent(in) :: values
     integer(c_int64_t) :: r
     integer :: i
@@ -67,9 +67,9 @@ contains
   !===========================
 
   function add_multi_ui8(values, n) bind(C, name="add_multi_ui8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint8_t), dimension(n), intent(in) :: values
-    integer(c_uint8_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
+    integer(c_int8_t) :: r
     integer :: i
 
     r = 0
@@ -79,9 +79,9 @@ contains
   end function
 
   function add_multi_ui16(values, n) bind(C, name="add_multi_ui16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint16_t), dimension(n), intent(in) :: values
-    integer(c_uint16_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
+    integer(c_int16_t) :: r
     integer :: i
 
     r = 0
@@ -91,9 +91,9 @@ contains
   end function
 
   function add_multi_ui32(values, n) bind(C, name="add_multi_ui32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint32_t), dimension(n), intent(in) :: values
-    integer(c_uint32_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
+    integer(c_int32_t) :: r
     integer :: i
 
     r = 0
@@ -103,9 +103,9 @@ contains
   end function
 
   function add_multi_ui64(values, n) bind(C, name="add_multi_ui64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint64_t), dimension(n), intent(in) :: values
-    integer(c_uint64_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
+    integer(c_int64_t) :: r
     integer :: i
 
     r = 0
@@ -119,98 +119,98 @@ contains
   ! ======================
 
   function multiply_multi_i8(values, n) bind(C, name="multiply_multi_i8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int8_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
     integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_i16(values, n) bind(C, name="multiply_multi_i16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int16_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
     integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_i32(values, n) bind(C, name="multiply_multi_i32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int32_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
     integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_i64(values, n) bind(C, name="multiply_multi_i64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int64_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
     integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_ui8(values, n) bind(C, name="multiply_multi_ui8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint8_t), dimension(n), intent(in) :: value
-    integer(c_uint8_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
+    integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_ui16(values, n) bind(C, name="multiply_multi_ui16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint16_t), dimension(n), intent(in) :: value
-    integer(c_uint16_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
+    integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_ui32(values, n) bind(C, name="multiply_multi_ui32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint32_t), dimension(n), intent(in) :: value
-    integer(c_uint32_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
+    integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
   function multiply_multi_ui64(values, n) bind(C, name="multiply_multi_ui64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint64_t), dimension(n), intent(in) :: value
-    integer(c_uint64_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
+    integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
+    r = 1
     do i = 1, n
-      r = r * vaues(i)
+      r = r * values(i)
     end do
   end function
 
@@ -219,98 +219,98 @@ contains
   ! ====================
 
   function divide_multi_i8(values, n) bind(C, name="divide_multi_i8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int8_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
     integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_i16(values, n) bind(C, name="divide_multi_i16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int16_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
     integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_i32(values, n) bind(C, name="divide_multi_i32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int32_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
     integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_i64(values, n) bind(C, name="divide_multi_i64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_int64_t), dimension(n), intent(in) :: value
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
     integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_ui8(values, n) bind(C, name="divide_multi_ui8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint8_t), dimension(n), intent(in) :: value
-    integer(c_uint8_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
+    integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_ui16(values, n) bind(C, name="divide_multi_ui16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint16_t), dimension(n), intent(in) :: value
-    integer(c_uint16_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
+    integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_ui32(values, n) bind(C, name="divide_multi_ui32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint32_t), dimension(n), intent(in) :: value
-    integer(c_uint32_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
+    integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
   function divide_multi_ui64(values, n) bind(C, name="divide_multi_ui64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint64_t), dimension(n), intent(in) :: value
-    integer(c_uint64_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
+    integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r / vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r / values(i)
     end do
   end function
 
@@ -319,97 +319,97 @@ contains
   ! ======================
 
   function subtract_multi_ui8(values, n) bind(C, name="subtract_multi_ui8") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint8_t), dimension(n), intent(in) :: value
-    integer(c_uint8_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
+    integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_ui16(values, n) bind(C, name="subtract_multi_ui16") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint16_t), dimension(n), intent(in) :: value
-    integer(c_uint16_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
+    integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_ui32(values, n) bind(C, name="subtract_multi_ui32") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint32_t), dimension(n), intent(in) :: value
-    integer(c_uint32_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
+    integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_ui64(values, n) bind(C, name="subtract_multi_ui64") result(r)
-    integer(c_uint64_t), value :: n
-    integer(c_uint64_t), dimension(n), intent(in) :: value
-    integer(c_uint64_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
+    integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
   function subtract_multi_i8(values, n) bind(C, name="subtract_multi_i8") result(r)
-    integer(c_uint_64_t), value :: n
-    integer(c_int_8_t), dimension(n), intent(in) :: value
-    integer(c_int_8_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int8_t), dimension(n), intent(in) :: values
+    integer(c_int8_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_i16(values, n) bind(C, name="subtract_multi_i16") result(r)
-    integer(c_uint_64_t), value :: n
-    integer(c_int_16_t), dimension(n), intent(in) :: value
-    integer(c_int_16_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int16_t), dimension(n), intent(in) :: values
+    integer(c_int16_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_i32(values, n) bind(C, name="subtract_multi_i32") result(r)
-    integer(c_uint_64_t), value :: n
-    integer(c_int_32_t), dimension(n), intent(in) :: value
-    integer(c_int_32_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int32_t), dimension(n), intent(in) :: values
+    integer(c_int32_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
   function subtract_multi_i64(values, n) bind(C, name="subtract_multi_i64") result(r)
-    integer(c_uint_64_t), value :: n
-    integer(c_int_64_t), dimension(n), intent(in) :: value
-    integer(c_int_64_t) :: r
+    integer(c_int64_t), value :: n
+    integer(c_int64_t), dimension(n), intent(in) :: values
+    integer(c_int64_t) :: r
     integer :: i
 
-    r = 0
-    do i = 1, n
-      r = r - vaues(i)
+    r = values(1)
+    do i = 2, n
+      r = r - values(i)
     end do
   end function
 
@@ -418,7 +418,7 @@ contains
   ! ========================
 
   function add_multi_f64(values, n) bind(C, name="add_multi_f64") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     real(c_double), dimension(n), intent(in) :: values
     real(c_double) :: r
     integer :: i
@@ -431,38 +431,38 @@ contains
   end function
 
   function subtract_multi_f64(values, n) bind(C, name="subtract_multi_f64") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     real(c_double), dimension(n), intent(in) :: values
     real(c_double) :: r
     integer :: i
 
-    r = 0.0_c_double
+    r = values(1)
 
-    do i = 1, n
+    do i = 2, n
       r = r - values(i)
     end do
   end function
 
   function divide_multi_f64(values, n) bind(C, name="divide_multi_f64") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     real(c_double), dimension(n), intent(in) :: values
     real(c_double) :: r
     integer :: i
 
-    r = 0.0_c_double
+    r = values(1)
 
-    do i = 1, n
+    do i = 2, n
       r = r / values(i)
     end do
   end function
 
   function multiply_multi_f64(values, n) bind(C, name="multiply_multi_f64") result(r)
-    integer(c_uint64_t), value :: n
+    integer(c_int64_t), value :: n
     real(c_double), dimension(n), intent(in) :: values
     real(c_double) :: r
     integer :: i
 
-    r = 0.0_c_double
+    r = 1.0_c_double
 
     do i = 1, n
       r = r * values(i)
