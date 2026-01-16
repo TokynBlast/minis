@@ -126,4 +126,38 @@ struct Value
 
   bool operator<(const Value &other) const { return !(*this < other); }
   bool operator>(const Value &other) const { return !(*this < other); }
+
+  Value& operator+=(const Value& other)
+  {
+    std::visit([this](auto&& a, auto&& b) {
+      using A = std::decay_t<decltype(a)>;
+      using B = std::decay_t<decltype(b)>;
+
+      if constexpr (std::is_same_v<A, std::monostate> || std::is_same_v<B, std::monostate>) {
+        // Cannot add to/from null
+        return;
+      }
+      else if constexpr (std::is_arithmetic_v<A> && std::is_arithmetic_v<B>) {
+        a += b;
+      }
+      else if constexpr (std::is_same_v<A, std::string> && std::is_same_v<B, std::string>) {
+        a += b;
+      }
+      else if constexpr (std::is_same_v<A, std::vector<Value>> && std::is_same_v<B, std::vector<Value>>) {
+        a.insert(a.end(), b.begin(), b.end());
+      }
+      else {
+        // Incompatible types - do nothing or throw
+      }
+    }, v, other.v);
+
+    return *this;
+  }
+
+  Value operator+(const Value& other) const
+  {
+    Value result = *this;
+    result += other;
+    return result;
+  }
 };
