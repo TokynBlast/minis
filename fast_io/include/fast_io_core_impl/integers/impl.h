@@ -618,6 +618,15 @@ inline constexpr auto pointervw(scalar_type t) noexcept
 }
 
 template <bool uppercase = false, typename scalar_type>
+	requires((::std::is_pointer_v<scalar_type> || ::std::contiguous_iterator<scalar_type>) &&
+			 (!::std::is_function_v<::std::remove_cvref_t<scalar_type>>))
+inline constexpr auto itervw(scalar_type t) noexcept
+{
+	return ::fast_io::details::scalar_flags_int_cache<
+		::fast_io::details::base_mani_flags_cache<16, uppercase, true, true, false>>(t);
+}
+
+template <bool uppercase = false, typename scalar_type>
 	requires(::std::is_function_v<scalar_type>)
 inline constexpr auto funcvw(scalar_type *t) noexcept
 {

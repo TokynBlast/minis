@@ -1011,7 +1011,7 @@ public:
 		}
 	}
 
-	inline constexpr void erase_index(size_type idx) noexcept
+	inline constexpr size_type erase_index(size_type idx) noexcept
 	{
 		auto beginptr{imp.begin_ptr};
 		auto currptr{imp.curr_ptr};
@@ -1021,6 +1021,7 @@ public:
 			::fast_io::fast_terminate();
 		}
 		this->erase_common(beginptr + idx);
+		return idx;
 	}
 
 	inline constexpr iterator erase(const_iterator first, const_iterator last) noexcept
@@ -1035,7 +1036,7 @@ public:
 		}
 	}
 
-	inline constexpr void erase_index(size_type firstidx, size_type lastidx) noexcept
+	inline constexpr size_type erase_index(size_type firstidx, size_type lastidx) noexcept
 	{
 		auto beginptr{imp.begin_ptr};
 		auto currptr{imp.curr_ptr};
@@ -1045,6 +1046,7 @@ public:
 			::fast_io::fast_terminate();
 		}
 		this->erase_iters_common(beginptr + firstidx, beginptr + lastidx);
+		return firstidx;
 	}
 
 	inline constexpr void resize(size_type n) noexcept(::std::is_nothrow_default_constructible_v<value_type>)
