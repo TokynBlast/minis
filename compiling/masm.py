@@ -151,7 +151,39 @@ def parse_typed_value(typ, raw):
     if typ == 'str':
         if raw.startswith('"') and raw.endswith('"'):
             raw = raw[1:-1]
-        s = raw.encode('utf-8')
+        # Decode escape sequences
+        def decode_escapes(s):
+            out = []
+            i = 0
+            while i < len(s):
+                if s[i] == '\\' and i + 1 < len(s):
+                    c = s[i+1]
+                    if c == 'n':
+                        out.append('\n')
+                        i += 2
+                    elif c == 't':
+                        out.append('\t')
+                        i += 2
+                    elif c == 'r':
+                        out.append('\r')
+                        i += 2
+                    elif c == '"':
+                        out.append('"')
+                        i += 2
+                    elif c == '*':
+                        out.append('*')
+                        i += 2
+                    elif c == '\\':
+                        out.append('\\')
+                        i += 2
+                    else:
+                        out.append(c)
+                        i += 2
+                else:
+                    out.append(s[i])
+                    i += 1
+            return ''.join(out)
+        s = decode_escapes(raw).encode('utf-8')
         return struct.pack('<Q', len(s)) + s  # 64-bit length prefix
 
     # List/Dict (just marker, no data)
