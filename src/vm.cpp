@@ -20,55 +20,57 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
+#define DEBUGGER false
+
 // Fortran math functions from src/maths.f08
 extern "C" {
   // The following functions server the purpose of using Fortran for vectorization
 
   // Multi-add functions
-  int8 addivide_multi_i8(const int8* values, uint64 n);
-  int16 addivide_multi_i16(const int16* values, uint64 n);
-  int32 addivide_multi_i32(const int32* values, uint64 n);
-  int64 addivide_multi_i64(const int64* values, uint64 n);
-  uint8 addivide_multi_ui8(const uint8* values, uint64 n);
-  uint16 addivide_multi_ui16(const uint16* values, uint64 n);
-  uint32 addivide_multi_ui32(const uint32* values, uint64 n);
-  uint64 addivide_multi_ui64(const uint64* values, uint64 n);
+  inline int8 divide_multi_i8(const int8* values, uint64 n);
+  inline int16 divide_multi_i16(const int16 *values, uint64 n);
+  inline int32 divide_multi_i32(const int32 *values, uint64 n);
+  inline int64 divide_multi_i64(const int64 *values, uint64 n);
+  inline uint8 divide_multi_ui8(const uint8 *values, uint64 n);
+  inline uint16 divide_multi_ui16(const uint16 *values, uint64 n);
+  inline uint32 divide_multi_ui32(const uint32 *values, uint64 n);
+  inline uint64 divide_multi_ui64(const uint64 *values, uint64 n);
 
   // Multi-multiply functions
-  int8 multiply_multi_i8(const int8 *values, uint64 n);
-  int16 multiply_multi_i16(const int16 *values, uint64 n);
-  int32 multiply_multi_i32(const int32 *values, uint64 n);
-  int64 multiply_multi_i64(const int64 *values, uint64 n);
-  uint8 multiply_multi_ui8(const uint8 *values, uint64 n);
-  uint16 multiply_multi_ui16(const uint16 *values, uint64 n);
-  uint32 multiply_multi_ui32(const uint32 *values, uint64 n);
-  uint64 multiply_multi_ui64(const uint64 *values, uint64 n);
+  inline int8 multiply_multi_i8(const int8 *values, uint64 n);
+  inline int16 multiply_multi_i16(const int16 *values, uint64 n);
+  inline int32 multiply_multi_i32(const int32 *values, uint64 n);
+  inline int64 multiply_multi_i64(const int64 *values, uint64 n);
+  inline uint8 multiply_multi_ui8(const uint8 *values, uint64 n);
+  inline uint16 multiply_multi_ui16(const uint16 *values, uint64 n);
+  inline uint32 multiply_multi_ui32(const uint32 *values, uint64 n);
+  inline uint64 multiply_multi_ui64(const uint64 *values, uint64 n);
 
   // Multi-divide functions
-  int8 divide_multi_i8(const int8 *values, uint64 n);
-  int16 divide_multi_i16(const int16 *values, uint64 n);
-  int32 divide_multi_i32(const int32 *values, uint64 n);
-  int64 divide_multi_i64(const int64 *values, uint64 n);
-  uint8 divide_multi_ui8(const uint8 *values, uint64 n);
-  uint16 divide_multi_ui16(const uint16 *values, uint64 n);
-  uint32 divide_multi_ui32(const uint32 *values, uint64 n);
-  uint64 divide_multi_ui64(const uint64 *values, uint64 n);
+  inline int8 divide_multi_i8(const int8 *values, uint64 n);
+  inline int16 divide_multi_i16(const int16 *values, uint64 n);
+  inline int32 divide_multi_i32(const int32 *values, uint64 n);
+  inline int64 divide_multi_i64(const int64 *values, uint64 n);
+  inline uint8 divide_multi_ui8(const uint8 *values, uint64 n);
+  inline uint16 divide_multi_ui16(const uint16 *values, uint64 n);
+  inline uint32 divide_multi_ui32(const uint32 *values, uint64 n);
+  inline uint64 divide_multi_ui64(const uint64 *values, uint64 n);
 
   // Multi-subtract functions
-  int8 subtract_multi_i8(const int8 *values, uint64 n);
-  int16 subtract_multi_i16(const int16 *values, uint64 n);
-  int32 subtract_multi_i32(const int32 *values, uint64 n);
-  int64 subtract_multi_i64(const int64 *values, uint64 n);
-  uint8 subtract_multi_ui8(const uint8 *values, uint64 n);
-  uint16 subtract_multi_ui16(const uint16 *values, uint64 n);
-  uint32 subtract_multi_ui32(const uint32 *values, uint64 n);
-  uint64 subtract_multi_ui64(const uint64 *values, uint64 n);
+  inline int8 subtract_multi_i8(const int8 *values, uint64 n);
+  inline int16 subtract_multi_i16(const int16 *values, uint64 n);
+  inline int32 subtract_multi_i32(const int32 *values, uint64 n);
+  inline int64 subtract_multi_i64(const int64 *values, uint64 n);
+  inline uint8 subtract_multi_ui8(const uint8 *values, uint64 n);
+  inline uint16 subtract_multi_ui16(const uint16 *values, uint64 n);
+  inline uint32 subtract_multi_ui32(const uint32 *values, uint64 n);
+  inline uint64 subtract_multi_ui64(const uint64 *values, uint64 n);
 
   // Multi-double-related functions
-  double addivide_multi_f64(const double *values, uint64 n);
-  double multiply_multi_f64(const double *values, uint64 n);
-  double divide_multi_f64(const double *values, uint64 n);
-  double subtract_multi_f64(const double *values, uint64 n);
+  inline double divide_multi_f64(const double *values, uint64 n);
+  inline double multiply_multi_f64(const double *values, uint64 n);
+  inline double divide_multi_f64(const double *values, uint64 n);
+  inline double subtract_multi_f64(const double *values, uint64 n);
 }
 // fast_io is here to replace standard iostream
 // until one of the following occurs:
@@ -95,46 +97,61 @@ namespace minis {
       // FIXME: We need to add the ability to add the end line manually.
       // FIXME: We need to make print more customizable
       {"print", [](std::vector<Value> &args) {
-         size_t arg_amnt = sizeof(args);
-         for (size_t i = 0; i < arg_amnt; i++)
-         {
-         Value &val = args[i];
-         switch (val.t) {
-          case Type::Float: print(std::get<double>(val.v)); break;
-          case Type::Str: print(std::get<std::string>(val.v)); break;
-          case Type::Bool: print(std::get<bool>(val.v)); break;
-          case Type::Null: print(""); break;
-          case Type::i8:   print(std::get<int8>(val.v)); break;
-          case Type::i16:  print(std::get<int16>(val.v)); break;
-          case Type::i32:  print(std::get<int32>(val.v)); break;
-          case Type::i64:  print(std::get<int64>(val.v)); break;
-          case Type::ui8:  print(std::get<uint8>(val.v)); break;
-          case Type::ui16: print(std::get<uint16>(val.v)); break;
-          case Type::ui32: print(std::get<uint32>(val.v)); break;
-          case Type::ui64: print(std::get<uint64>(val.v)); break;
-          default: {
-            print("FARAL EROR: Unknown type");
-            exit(1);
+        #ifdef DEBUGGER
+          print("Running print\n");
+        #endif
+        auto print_value = [&](const Value& val, auto&& print_value_ref) -> void {
+          switch (val.t) {
+            case Type::Float: print(std::get<double>(val.v)); break;
+            case Type::Str:   print(std::get<std::string>(val.v)); break;
+            case Type::Bool:  print(std::get<bool>(val.v)); break;
+            case Type::Null:  print(""); break;
+            case Type::i8:    print(std::get<int8>(val.v)); break;
+            case Type::i16:   print(std::get<int16>(val.v)); break;
+            case Type::i32:   print(std::get<int32>(val.v)); break;
+            case Type::i64:   print(std::get<int64>(val.v)); break;
+            case Type::ui8:   print(std::get<uint8>(val.v)); break;
+            case Type::ui16:  print(std::get<uint16>(val.v)); break;
+            case Type::ui32:  print(std::get<uint32>(val.v)); break;
+            case Type::ui64:  print(std::get<uint64>(val.v)); break;
+            case Type::List: {
+              const auto& list = std::get<std::vector<Value>>(val.v);
+              print("[");
+              for (size_t j = 0; j < list.size(); ++j) {
+                print_value_ref(list[j], print_value_ref);
+                if (j + 1 < list.size()) print(", ");
+              }
+              print("]");
+              break;
+            }
+            case Type::Dict: print("[Dict]"); break; // TODO: pretty print dicts
+            case Type::Void: print("Error :("); exit(1);
+            case Type::TriBool: /* TODO: handle tribool */ break;
+            default: print("FARAL EROR: Unknown type "); exit(1);
           }
-         }
-          if (i < arg_amnt) print(" ");
-         }
-         // FIXME: print should return nothing
-         return Value::Null();
-       }},
+        };
+
+        size_t arg_amnt = args.size();
+        for (size_t i = 0; i < arg_amnt; i++) {
+          print_value(args[i], print_value);
+          if (i + 1 < arg_amnt) print(" ");
+        }
+        // FIXME: print should return nothing
+        return Value::Null();
+      }},
       {"abs", [](std::vector<Value> &args) {
-         auto val = args[0];
-         if (val.t == Type::Float)
-           return Value::Float(std::abs(std::get<double>(val.v)));
-         return Value::I64(std::abs(std::get<int64>(val.v)));
-       }},
+        auto val = args[0];
+        if (val.t == Type::Float)
+          return Value::Float(std::abs(std::get<double>(val.v)));
+        return Value::I64(std::abs(std::get<int64>(val.v)));
+      }},
       {"neg", [](std::vector<Value> &args) {
-         auto &arg = args[0];
-         if (arg.t == Type::Float)
-           return Value::Float(-std::get<double>(arg.v));
-         // FIXME: Should return same size
-         return Value::I64(-std::get<int64>(arg.v));
-       }},
+        auto &arg = args[0];
+        if (arg.t == Type::Float)
+          return Value::Float(-std::get<double>(arg.v));
+        // FIXME: Should return same size
+        return Value::I64(-std::get<int64>(arg.v));
+      }},
 
       // FIXME: [comment expansion]
       /* Range Becoming A Type
@@ -221,6 +238,9 @@ namespace minis {
        }},
       // Print like print, using all values
       {"input", [](std::vector<Value> &args) {
+        #if DEBUGGER
+          print("Getting input\n");
+        #endif
          std::string input;
          if (!args.empty())
          {
@@ -282,32 +302,34 @@ namespace minis {
        }},
 
       // FIXME: Use fast_io :)
-      {"open", [](std::vector<Value> &args) -> Value
-       {
-         const char *filename = std::get<std::string>(args[0].v).c_str();
-         const char *mode_str = std::get<std::string>(args[1].v).c_str();
-         // FIXME: This should be a switch instead
-         // Translate Minis modes to C modes
-         const char *c_mode = "r";
-         // FIXME: Simplify to normality
-         if (strcmp(mode_str, "r") == 0) c_mode = "r";
-         else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
-         else if (strcmp(mode_str, "rs") == 0) c_mode = "r"; // read specific = read but read only a section, rather than put the whole file into mem
-         else if (strcmp(mode_str, "w") == 0) c_mode = "w";
-         else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
-         else if (strcmp(mode_str, "ws") == 0) c_mode = "w"; // write specific = write but write to a specific area rather than rewrite the whole thing
-         /*write targeted = append but write anywhere, not just the end, shifting alldata after up
-          * For example:
-          * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
-          */
-         else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
-         else if (strcmp(mode_str, "a") == 0) c_mode = "a"; // also support append directly
+      {"open", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER
+          print("Running open\n");
+        #endif
+        const char *filename = std::get<std::string>(args[0].v).c_str();
+        const char *mode_str = std::get<std::string>(args[1].v).c_str();
+        // FIXME: This should be a switch instead
+        // Translate Minis modes to C modes
+        const char *c_mode = "r";
+        // FIXME: Simplify to normality
+        if (strcmp(mode_str, "r") == 0) c_mode = "r";
+        else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
+        else if (strcmp(mode_str, "rs") == 0) c_mode = "r"; // read specific = read but read only a section, rather than put the whole file into mem
+        else if (strcmp(mode_str, "w") == 0) c_mode = "w";
+        else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
+        else if (strcmp(mode_str, "ws") == 0) c_mode = "w"; // write specific = write but write to a specific area rather than rewrite the whole thing
+        /*write targeted = append but write anywhere, not just the end, shifting alldata after up
+         * For example:
+         * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
+         */
+        else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
+        else if (strcmp(mode_str, "a") == 0) c_mode = "a"; // also support append directly
 
-         FILE *file = fopen(filename, c_mode);
-         if (!file) return Value::Bool(1); // Error code
+        FILE *file = fopen(filename, c_mode);
+        if (!file) return Value::Bool(1); // Error code
 
-         // Store file pointer as integer (simple approach)
-         return Value::UI64((uint64)(uintptr_t)file);
+        // Store file pointer as integer (simple approach)
+        return Value::UI64((uint64)(uintptr_t)file);
        }},
 
       {"close", [](std::vector<Value> &args) -> Value {
@@ -332,7 +354,7 @@ namespace minis {
       {"read", [](std::vector<Value> &args) -> Value {
         try {
           std::string filename = std::get<std::string>(args[0].v);
-          fast_io::native_file_loader loader(filename.c_str());
+          fast_io::native_file_loader loader(filename);
 
           Value result = Value::Str(std::string(loader.data(), loader.size()));
           return result;
@@ -472,32 +494,138 @@ namespace minis {
     explicit VMEngine() {}
     ~VMEngine() { if (f) fclose(f); }
 
-    inline void jump(uint64 target) { ip = target; fseek(f, (long)ip, SEEK_SET); }
+    inline void jump(uint64 target) {
+      #if DEBUGGER
+        print("Jumping to ", target, "\n");
+      #endif
+      ip = target; fseek(f, (long)ip, SEEK_SET);
+    }
 
     // unsigned ints
-    inline uint8 GETu8() { uint8 v; fread(&v, 1, 1, f); ip++; return v; }
-    inline uint16 GETu16() { uint16 v; fread(&v, 2, 1, f); ip+=2; return v; }
-    inline uint32 GETu32() { uint32 v; fread(&v, 4, 1, f); ip+=4; return v; }
-    inline uint64 GETu64() { uint64 v; fread(&v, 8, 1, f); ip+=8; return v; }
+    inline uint8 GETu8() {
+      #if DEBUGGER
+        print("Get ui8\n");
+      #endif
+      uint8 v;
+      fread(&v, 1, 1, f);
+      ip++;
+      return v;
+    }
+
+    inline uint16 GETu16() {
+      #if DEBUGGER
+        print("Get ui16\n");
+      #endif
+      uint16 v;
+      fread(&v, 2, 1, f);
+      ip+=2;
+      return v;
+    }
+    inline uint32 GETu32() {
+      #if DEBUGGER
+        print("Get ui32\n");
+      #endif
+      uint32 v;
+      fread(&v, 4, 1, f);
+      ip+=4;
+      return v;
+    }
+
+    inline uint64 GETu64(
+      #if DEBUGGER
+        bool from_GETstr = false
+      #endif
+    ) {
+      #if DEBUGGER
+        if (!from_GETstr) print("Get ui64\n");
+      #endif
+      uint64 v;
+      fread(&v, 8, 1, f);
+      ip+=8;
+      return v;
+    }
 
     // signed ints
-    inline int8 GETs8() { int8 v; fread(&v, 1, 1, f); ip++; return v; }
-    inline int8 GETs16() { int16 v; fread(&v, 2, 1, f); ip+=2; return v; }
-    inline int8 GETs32() { int32 v; fread(&v, 4, 1, f); ip+=4; return v; }
-    inline int64 GETs64() { int64 v; fread(&v, 8, 1, f); ip += 8; return v; }
+    inline int8 GETs8() {
+      #if DEBUGGER
+        print("Get i8\n");
+      #endif
+      int8 v;
+      fread(&v, 1, 1, f);
+      ip++;
+      return v;
+    }
 
-    inline double GETd64() { double v; fread(&v, 8, 1, f); ip += 8; return v; }
-    inline std::string GETstr(){
-      uint64 n=GETu64();
-      if(n == 0) return std::string();
+    inline int8 GETs16() {
+      #if DEBUGGER
+        print("Get i16\n");
+      #endif
+      int16 v;
+      fread(&v, 2, 1, f);
+      ip+=2;
+      return v;
+    }
+
+    inline int8 GETs32() {
+      #if DEBUGGER
+        print("Get i32\n");
+      #endif
+      int32 v;
+      fread(&v, 4, 1, f);
+      ip+=4;
+      return v;
+    }
+
+    inline int64 GETs64() {
+      #if DEBUGGER
+        print("Get i64\n");
+      #endif
+      int64 v;
+      fread(&v, 8, 1, f);
+      ip += 8;
+      return v;
+    }
+
+    inline double GETd64() {
+      #if DEBUGGER
+        print("get double\n");
+      #endif
+      double v;
+      fread(&v, 8, 1, f);
+      ip += 8;
+      return v;
+    }
+
+    inline std::string GETstr() {
+      // FIXME: simplify debugger version
+      uint64 n=GETu64(
+        #if DEBUGGER
+          true // Mark as coming from string, so don't print we got the ui64
+        #endif
+      );
+      #if DEBUGGER
+        print("Get ", n, " character string, \"\n");
+      #endif
+      if(n == 0) {
+        #if DEBUGGER
+          print("\"\n");
+        #endif
+        return std::string();
+      }
 
       std::string s(n, '\0');
       fread(&s[0], 1, n, f);
       ip += n;
+      #if DEBUGGER
+        print(s, "\"\n");
+      #endif
       return s;
     }
 
     inline Value pop() {
+      #ifdef DEBUGGER
+        print("Popping value\n");
+      #endif
       try {
         if (stack.empty()) {
           print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
@@ -533,13 +661,13 @@ namespace minis {
 
       char magic[9] = {0};
       fread(magic, 1, 8, f);
-      if (std::strcmp(magic, "RuGHoM16VSMINI") != 0)
+      if (std::memcmp(magic, "  \xc2\xbd" "6e" "\xc3\xa8", 8) != 0)  // "  ½6eè" = 8 bytes
         throw std::runtime_error("bad bytecode verification");
 
       table_off = GETu64();
       uint64 fnCount = GETu64();
       uint64 entry_main = GETu64();
-      uint64 line_map_off = GETu64(); // Skip line map offset (not used)
+      uint64 line_map_off = GETu64();
 
       // Header is now exactly 40 bytes (8 magic + 32 data), no padding
       ip = entry_main;
@@ -549,8 +677,6 @@ namespace minis {
       for (uint64 i = 0; i < fnCount; i++) {
         std::string name = GETstr();
         uint64 entry = GETu64();
-        bool isVoid = GETu8() != 0;
-        bool typed = GETu8() != 0;
         Type ret = (Type)GETu8();
         uint64 pcnt = GETu64();
         std::vector<std::string> params;
@@ -595,36 +721,109 @@ namespace minis {
         unsigned char op = GETu8();
         switch (op >> 5) {
           case static_cast<uint8>(Register::LOGIC): {
-            switch (op & 0x0f) {
+            switch (op & 0x1F) {
               case static_cast<uint8>(Logic::EQUAL): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 bool eq = (a.t == b.t) ? (a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                               ? (std::get<double>(a.v) == std::get<double>(b.v)) : false);
                 push(Value::Bool(eq));
               } break;
 
-              case static_cast<uint8>(Logic::JUMP): { uint64 tgt = GETu64(); jump(tgt); } break;
-              case static_cast<uint8>(Logic::JUMP_IF_NOT):  { uint64 tgt = GETu64(); Value v = pop(); if (!std::get<bool>(v.v)) jump(tgt); } break;
-              case static_cast<uint8>(Logic::AND): { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) && std::get<bool>(b.v))); } break;
-              case static_cast<uint8>(Logic::OR):  { Value b = pop(), a = pop(); push(Value::Bool(std::get<bool>(a.v) || std::get<bool>(b.v))); } break;
+              case static_cast<uint8>(Logic::JUMP): {
+                #if DEBUGGER
+                  uint64 tgt = GETu64();
+                  print("jumping to ", tgt, "\n");
+                  jump(tgt);
+                #else
+                  jump(GETu64());
+                #endif
+              } break;
+              case static_cast<uint8>(Logic::JUMP_IF): {
+                uint64 tgt = GETu64();
+                Value v = pop();
+                if (std::get<bool>(v.v)) {
+                  #if DEBUGGER
+                    print("jumping to ", tgt, "\n");
+                  #endif
+                  jump(tgt);
+                }
+              } break;
+              case static_cast<uint8>(Logic::JUMP_IF_NOT): {
+                uint64 tgt = GETu64();
+                Value v = pop();
+                if (!std::get<bool>(v.v)) {
+                  #if DEBUGGER
+                    print("jumping to ", tgt, "\n");
+                  #endif
+                  jump(tgt);
+                }
+                #if DEBUGGER
+                  print("did not jump to ", tgt, "\n");
+              } break;
+              case static_cast<uint8>(Logic::AND): {
+                #if DEBUGGER
+                  print("and op\n");
+                #endif
+                Value a = pop(), b = pop();
+                push(
+                  Value::Bool(
+                    std::get<bool>(a.v)
+                    &&
+                    std::get<bool>(b.v)
+                  )
+                );
+              } break;
+              case static_cast<uint8>(Logic::OR): {
+                #if DEBUGGER
+                    print("or op\n");
+                  #endif
+                Value a = pop(), b = pop();
+                push(
+                  Value::Bool(
+                    std::get<bool>(a.v)
+                    ||
+                    std::get<bool>(b.v)
+                  )
+                );
+              } break;
               case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) <= std::get<std::string>(b.v)));
+                else if (a.t == Type::Float || b.t == Type::Float)
+                  push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
+                else if (a.t == Type::ui64 || b.t == Type::ui64)
+                  push(Value::Bool(std::get<uint64>(a.v) <= std::get<uint64>(b.v)));
+                else if (a.t == Type::i64 || b.t == Type::i64)
+                  push(Value::Bool(std::get<int64>(a.v) <= std::get<int64>(b.v)));
+                else if (a.t == Type::ui32 || b.t == Type::ui32)
+                  push(Value::Bool(std::get<uint32>(a.v) <= std::get<uint32>(b.v)));
+                else if (a.t == Type::i32 || b.t == Type::i32)
+                  push(Value::Bool(std::get<int32>(a.v) <= std::get<int32>(b.v)));
                 else
                   push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
               } break;
 
               case static_cast<uint8>(Logic::LESS_THAN): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) < std::get<std::string>(b.v)));
+                else if (a.t == Type::Float || b.t == Type::Float)
+                  push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
+                else if (a.t == Type::ui64 || b.t == Type::ui64)
+                  push(Value::Bool(std::get<uint64>(a.v) < std::get<uint64>(b.v)));
+                else if (a.t == Type::i64 || b.t == Type::i64)
+                  push(Value::Bool(std::get<int64>(a.v) < std::get<int64>(b.v)));
+                else if (a.t == Type::ui32 || b.t == Type::ui32)
+                  push(Value::Bool(std::get<uint32>(a.v) < std::get<uint32>(b.v)));
+                else if (a.t == Type::i32 || b.t == Type::i32)
+                  push(Value::Bool(std::get<int32>(a.v) < std::get<int32>(b.v)));
                 else
                   push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
               } break;
               case static_cast<uint8>(Logic::NOT_EQUAL): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 bool ne = (a.t == b.t) ? !(a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                               ? (std::get<double>(a.v) != std::get<double>(b.v)) : true);
@@ -633,10 +832,10 @@ namespace minis {
             }
           } break;
           case static_cast<uint8>(Register::MATH): {
-            switch (op & 0x0f) {
+            switch (op & 0x1F) {
               // FIXME: Use Fortran functions
               case static_cast<uint8>(Math::SUB): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
                   if (a.t == Type::Float || b.t == Type::Float) {
                     push(Value::Float(std::get<double>(a.v) - std::get<double>(b.v)));
@@ -646,19 +845,22 @@ namespace minis {
                 }
               } break;
               case static_cast<uint8>(Math::MULT): {
-                Value b = pop(), a = pop();
+                #if DEBUGGER
+                  // FIXME: This should print out the values to be multiplied :)
+                  print("multiplying\n");
+                #endif
+                Value a = pop(), b = pop();
                 if (a.t == Type::Float || b.t == Type::Float)
                   push(Value::Float(std::get<double>(a.v) * std::get<double>(b.v)));
                 else
                   push(Value::I64(std::get<int64>(a.v) * std::get<int64>(b.v)));
               } break;
               case static_cast<uint8>(Math::DIV): {
-                Value b = pop(), a = pop();
+                Value a = pop(), b = pop();
                 push(Value::Float(std::get<double>(a.v) / std::get<double>(b.v)));
               } break;
               case static_cast<uint8>(Math::ADD): {
-                Value b = pop();
-                Value a = pop();
+                Value a = pop(), b = pop();
                 // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
                 //        I found the first if as an else if.
                 if (a.t == Type::List) {
@@ -718,7 +920,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int8>(op.v));
                     }
-                    result = Value::I8(addivide_multi_i8(vals.data(), n));
+                    result = Value::I8(divide_multi_i8(vals.data(), n));
                   } break;
 
                   case Type::i16: {
@@ -727,7 +929,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int16>(op.v));
                     }
-                    result = Value::I16(addivide_multi_i16(vals.data(), n));
+                    result = Value::I16(divide_multi_i16(vals.data(), n));
                   } break;
 
                   case Type::i32: {
@@ -736,7 +938,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int32>(op.v));
                     }
-                    result = Value::I32(addivide_multi_i32(vals.data(), n));
+                    result = Value::I32(divide_multi_i32(vals.data(), n));
                   } break;
 
                   case Type::i64: {
@@ -745,7 +947,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<int64>(op.v));
                     }
-                    result = Value::I64(addivide_multi_i64(vals.data(), n));
+                    result = Value::I64(divide_multi_i64(vals.data(), n));
                   } break;
 
                   case Type::ui8: {
@@ -754,7 +956,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint8>(op.v));
                     }
-                    result = Value::UI8(addivide_multi_ui8(vals.data(), n));
+                    result = Value::UI8(divide_multi_ui8(vals.data(), n));
                   } break;
 
                   case Type::ui16: {
@@ -763,7 +965,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint16>(op.v));
                     }
-                    result = Value::UI16(addivide_multi_ui16(vals.data(), n));
+                    result = Value::UI16(divide_multi_ui16(vals.data(), n));
                   } break;
 
                   case Type::ui32: {
@@ -772,7 +974,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint32>(op.v));
                     }
-                    result = Value::UI32(addivide_multi_ui32(vals.data(), n));
+                    result = Value::UI32(divide_multi_ui32(vals.data(), n));
                   } break;
 
                   case Type::ui64: {
@@ -781,7 +983,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint64>(op.v));
                     }
-                    result = Value::UI64(addivide_multi_ui64(vals.data(), n));
+                    result = Value::UI64(divide_multi_ui64(vals.data(), n));
                   } break;
 
                   case Type::Float: {
@@ -790,7 +992,7 @@ namespace minis {
                     for (const auto& op : operands) {
                       vals.push_back(std::get<double>(op.v));
                     }
-                    result = Value::Float(addivide_multi_f64(vals.data(), n));
+                    result = Value::Float(divide_multi_f64(vals.data(), n));
                   } break;
 
                   default:
@@ -804,6 +1006,10 @@ namespace minis {
 
               case static_cast<uint8>(Math::DIV_MULT): {
                 uint32 n = GETu32();
+
+                #if DEBUGGER
+                  print("div ", n, " values\n");
+                #endif
 
                 if (n == 0) {
                   push(Value::I32(0));
@@ -1022,6 +1228,8 @@ namespace minis {
                 push(result);
               } break;
               case static_cast<uint8>(Math::MULT_MULT): {
+                // FIXME: shorten this, do 64-bit and cast to variables size :)
+                // Do this for all others
                 uint32 n = GETu32();
 
                 if (n == 0) {
@@ -1135,33 +1343,81 @@ namespace minis {
           case static_cast<uint8>(Register::VARIABLE): {
             switch (op & 0x1F) {
               case static_cast<uint8>(Variable::PUSH): {
-                switch (op & 0xF0) {
-                  case 0: {
+                // Read type byte after opcode (not encoded in opcode due to bit conflicts)
+                uint8 typeByte = GETu8();
+                switch (typeByte) {
+                  case 0x00: {  // Numeric types - meta byte follows
                   unsigned char meta = GETu8();
                   uint8 type = meta >> 4;
-                  // uint8_t signedness = meta & 0b11110111; // Not currently implemented; Commented to reduce unused variable warning
-                  // NOTE: In this implementation, 0 is false, 1 is true
                   switch(type) {
-                    case 0x00: push(Value::I8(GETs8())); break;
-                    case 0x01: push(Value::I16(GETs16())); break;
-                    case 0x02: push(Value::I32(GETs32())); break;
-                    case 0x03: push(Value::I64(GETs64())); break;
-
-                    case 0x04: push(Value::UI8(GETu8())); break;
-                    case 0x05: push(Value::UI16(GETu16())); break;
-                    case 0x06: push(Value::UI32(GETu32())); break;
-                    case 0x07: push(Value::UI64(GETu64())); break;
-                    case 0x08: push(Value::Float(GETd64())); break;
-                    case 0x09: {
-                      unsigned char bool_val = meta & 0b00000100;
-                      if (!(meta && 0b00000000)) {
-                        push(Value::Bool(false));
-                      } else {
-                        push(Value::Bool(true));
-                      }
+                    case 0x00:{
+                      #ifdef DEBUGGER
+                        print("Push i8\n");
+                      #endif
+                      push(Value::I8(GETs8()));
+                    } break;
+                    case 0x01:{
+                      #ifdef DEBUGGER
+                        print("Push i16\n");
+                      #endif
+                      push(Value::I16(GETs16()));
+                    } break;
+                    case 0x02:{
+                      #ifdef DEBUGGER
+                        print("Push i32\n");
+                      #endif
+                      push(Value::I32(GETs32()));
+                    } break;
+                    case 0x03:{
+                      #ifdef DEBUGGER
+                        print("Push i64\n");
+                      #endif
+                      push(Value::I64(GETs64()));
+                    } break;
+                    case 0x04:{
+                      #ifdef DEBUGGER
+                        print("Push ui8\n");
+                      #endif
+                      push(Value::UI8(GETu8()));
+                    } break;
+                    case 0x05:{
+                      #ifdef DEBUGGER
+                        print("Push ui16\n");
+                      #endif
+                      push(Value::UI16(GETu16()));
+                    } break;
+                    case 0x06:{
+                      #ifdef DEBUGGER
+                        print("Push ui32\n");
+                      #endif
+                      push(Value::UI32(GETu32()));
+                    } break;
+                    case 0x07:{
+                      #ifdef DEBUGGER
+                        print("Push ui64\n");
+                      #endif
+                      push(Value::UI64(GETu64()));
+                    } break;
+                    case 0x08:{
+                      #ifdef DEBUGGER
+                        print("Push double\n");
+                      #endif
+                      push(Value::Float(GETd64()));
+                    } break;
+                    case 0x09:{
+                      #ifdef DEBUGGER
+                        print("Push bool\n");
+                      #endif
+                      push(Value::Bool(meta & 1));
+                    } break;  // Bool - last bit is 0/1
+                    case 0x0A:{
+                      #ifdef DEBUGGER
+                        print("Push null\n");
+                      #endif
+                      push(Value::Null());
                     } break;
                     default: {
-                      print("FATAL ERROR: Unknown meta tag");
+                      print("FATAL ERROR: Unknown meta tag: ", (int)type, "\n");
                       std::exit(1);
                     }
                   }
@@ -1175,20 +1431,49 @@ namespace minis {
                   }*/
                 } break;
 
-                case 3: push(Value::Str(GETstr())); break;
-                case 4: {
+                case 0x30: {
+                  #ifdef DEBUGGER
+                    std::string val = GETstr();
+                    print("Push string ", val, "\n");
+                    push(Value::Str(std::move(val)));
+                  #else
+                    push(Value::Str(std::move(GETstr())));
+                  #endif
+                } break;  // String
+                case 0x40: {  // List
                   uint64 n = GETu64();
                   std::vector<Value> xs; xs.resize(n);
                   for (uint64 i = 0; i < n; ++i) xs[n-1-i] = pop();
+                  #if DEBUGGER
+                    print("push ", n," item list: ", xs. "\n");
+                  #endif
                   push(Value::List(std::move(xs)));
                 } break;
+                /*case 0x50: {  // Dict
+                  uint64 n = GETu64();
+                  std::map<std::string, Value> dict;
+                  for (uint64 i = 0; i < n; ++i) {
+                    std::string key = GETstr();
+                    Value val = pop();
+                    dict[key] = val;
+                  }
+                  push(Value::Dict(std::move(dict)));
+                } break;*/
                 default: {
-                  print("unknown literal type tag");
+                  print("unknown literal type tag: ", (int)typeByte, "\n");
                   std::exit(1);
                 }
               }
             } break;
-            case static_cast<uint8>(Variable::SET): frames.back().env->SetOrDeclare(GETstr(), pop()); break;
+            case static_cast<uint8>(Variable::SET):{
+              #if DEBUGGER
+                std::string str = GETstr();
+                print("setting ", str, "\n");
+                frames.back().env->SetOrDeclare(std::move(str), pop());
+              #else
+                frames.back().env->SetOrDeclare(GETstr(), pop());
+              #endif
+            } break;
             case static_cast<uint8>(Variable::DECLARE): {
               std::string id = GETstr();
               uint64 tt = GETu64();
@@ -1198,6 +1483,9 @@ namespace minis {
             } break;
             case static_cast<uint8>(Variable::GET): {
               std::string id = GETstr();
+              #ifdef DEBUGGER
+                print("Getting ", id, "\n");
+              #endif
               push(frames.back().env->Get(id).val);
             } break;
 
@@ -1222,8 +1510,10 @@ namespace minis {
                 #endif
               } break;
               case static_cast<uint8>(General::INDEX): {
-                Value idxV = pop();
-                Value base = pop();
+                #if DEBUGGER
+                  print("indexing\n");
+                #endif
+                Value base = pop(), idxV = pop();
                 long long i = std::get<int32>(idxV.v);
                 if (base.t == Type::List) {
                   // FIXME: Prefer explicit over auto
@@ -1244,6 +1534,9 @@ namespace minis {
             switch (op & 0x1F) {
               // FIXME: Could be simpler to implement via other MVME opcodes
               case static_cast<uint8>(Func::TAIL): {
+                #if DEBUUGER
+                  print("Tail call return\n");
+                #endif
                 std::string name = GETstr();
                 uint64 argc = GETu64();
                 std::vector<Value> args(argc);
@@ -1275,6 +1568,9 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Func::RETURN): {
+                #if DEBUGGER
+                  print("Returning value\n");
+                #endif
                 Value rv;
                 if (stack.size() > frames.back().stack_base) {
                   rv = pop();
@@ -1297,6 +1593,9 @@ namespace minis {
               case static_cast<uint8>(Func::CALL): {
                 std::string name = GETstr();
                 uint64 argc = GETu64();
+                #if DEBUGGER
+                  print("calling ", name, " with ", argc, " arguments\n");
+                #endif
                 std::vector<Value> args(argc);
                 for (size_t i = 0; i < argc; ++i) args[argc-1-i] = pop();
 
@@ -1349,8 +1648,11 @@ namespace minis {
             Using this table, we dispatch and run() the found function
             */
           } break;
+          case static_cast<uint8>(Register::STACK): {
+
+          } break;
           default: {
-            print("FATAL ERROR: Bad or unknown opcode.");
+            print("FATAL ERROR: Bad or unknown opcode. ", op);
             std::exit(1);
           }
         }
@@ -1376,11 +1678,20 @@ namespace minis {
   // Global run function
   void run(const std::string& path) {
     VMEngine vm;
+    #if DEBUGGER
+      print("Loading VM\n");
+    #endif
     vm.load(path);
+    #if DEBUGGER
+      print("Running\n");
+    #endif
     vm.run();
+    #if DEBUGGER
+      print("done\n");
+    #endif
   }
 }
 
-int main() {
-  return 0;
+int main(int argc, char* argv[]){
+  run(argv[1]);
 }
