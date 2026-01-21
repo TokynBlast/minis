@@ -23,6 +23,7 @@ OPCODES = {
     'set':      g(1, 1),
     'dec':      g(1, 2),
     'unset':    g(1, 3),
+    'push':     g(1, 4),
 
     # Logic (2)
     'eq':       g(2, 0),
@@ -125,6 +126,10 @@ TYPE_FORMATS = {
 }
 
 
+# All types for typed set/get
+ALL_TYPES = set(TYPE_SIZES.keys()) | {'str', 'bool', 'null', 'list', 'dict'}
+
+
 def parse_typed_value(typ, raw):
     """Parse a value with explicit type. Returns bytes."""
     raw = raw.strip()
@@ -147,7 +152,7 @@ def parse_typed_value(typ, raw):
         if raw.startswith('"') and raw.endswith('"'):
             raw = raw[1:-1]
         s = raw.encode('utf-8')
-        return struct.pack('<I', len(s)) + s
+        return struct.pack('<Q', len(s)) + s  # 64-bit length prefix
 
     # List/Dict (just marker, no data)
     if typ in ('list', 'dict'):
@@ -169,28 +174,44 @@ def parse_typed_value(typ, raw):
 
 
 def encode_string(s):
-    """Encode a string with length prefix"""
+    """Encode a string with 64-bit length prefix"""
     data = s.encode('utf-8')
-    return struct.pack('<I', len(data)) + data
+    return struct.pack('<Q', len(data)) + data  # 64-bit length prefix
+
+
+def strip_comment(line):
+    """Strip comment from line, respecting quoted strings."""
+    in_quote = False
+    for i, c in enumerate(line):
+        if c == '"' and (i == 0 or line[i-1] != '\\'):
+            in_quote = not in_quote
+        elif c == ';' and not in_quote:
+            return line[:i].strip()
+    return line.strip()
 
 
 def assemble(source):
     """
     Assemble MASM source into bytecode.
-    Returns bytes.
+    Returns bytes with proper header.
     """
     output = bytearray()
     labels = {}
     fixups = []
     sections = {}
     current_section = None
+    functions = []  # Track function labels
 
     lines = source.splitlines()
 
     # First pass: collect labels and sections, calculate offsets
-    byte_offset = 0
+    # Reserve 40 bytes for header (8 magic + 8 table_off + 8 fnCount + 8 entry_main + 8 reserved)
+    HEADER_SIZE = 40
+    byte_offset = HEADER_SIZE
+    entry_point = HEADER_SIZE  # Default entry point is right after header
+
     for line in lines:
-        line = line.split(';', 1)[0].strip()
+        line = strip_comment(line)
         if not line:
             continue
 
@@ -204,9 +225,13 @@ def assemble(source):
         if line.endswith(':'):
             label = line[:-1].strip()
             labels[label] = byte_offset
+            functions.append(label)  # Track as function
+            if label == 'main':
+                entry_point = byte_offset
             continue
 
         # Parse instruction
+        print(line)
         tokens = shlex.split(line)
         if not tokens:
             continue
@@ -215,30 +240,98 @@ def assemble(source):
         args = tokens[1:]
 
         # Calculate size
-        # Typed push: i8, i16, i32, i64, ui8, etc.
-        if op in TYPE_SIZES:
-            byte_offset += 1 + TYPE_SIZES[op]
+        # Smart set: set i32 varname 42  (type + varname + value)
+        if op == 'set' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
+            typ = args[0].lower()
+            varname = args[1]
+            # size = push format + set opcode + varname
+            if typ in TYPE_SIZES:
+                byte_offset += 1 + 1 + 1 + TYPE_SIZES[typ]  # opcode + typeByte + meta + data
+            elif typ == 'str':
+                val = args[2] if len(args) > 2 else '""'
+                if val.startswith('"') and val.endswith('"'):
+                    val = val[1:-1]
+                byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))  # opcode + typeByte + 8-byte length prefix + data
+            elif typ == 'bool':
+                byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (bool value in lower nibble)
+            elif typ == 'list':
+                byte_offset += 1 + 1 + 8  # opcode + typeByte + count
+            elif typ == 'dict':
+                byte_offset += 1 + 1 + 8  # opcode + typeByte + count
+            else:  # null
+                byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (VM doesn't read data for null)
+            byte_offset += 1 + 8 + len(varname.encode('utf-8'))  # set opcode + 8-byte length prefix + varname
+
+        # Smart get: get i32 varname  (type hint for casting)
+        elif op == 'get' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
+            varname = args[1]
+            byte_offset += 1 + 8 + len(varname.encode('utf-8'))  # 8-byte length prefix
+
+        # Typed push matching VM format:
+        # Format: PUSH opcode(0x24) + typeByte + data
+        # Numeric/bool: 0x24 + 0x00 + meta(1) + data
+        # String: 0x24 + 0x30 + string(8+len)
+        # List: 0x24 + 0x40 + count(8)
+        elif op in TYPE_SIZES:
+            if args:
+                byte_offset += 1 + 1 + 1 + TYPE_SIZES[op]  # opcode + typeByte + meta + data
+            else:
+                byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (no data)
 
         elif op == 'str':
             val = args[0] if args else '""'
             if val.startswith('"') and val.endswith('"'):
                 val = val[1:-1]
-            byte_offset += 1 + 4 + len(val.encode('utf-8'))
+            byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))  # opcode + typeByte + 8-byte length prefix + data
 
-        elif op in ('bool', 'null', 'list', 'dict'):
-            byte_offset += 1 + (1 if op == 'bool' else 0)
+        elif op == 'bool':
+            byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (bool type 9 + value in lower nibble)
+
+        elif op in ('list', 'dict'):
+            byte_offset += 1 + 1 + 8  # opcode + typeByte + count
+
+        elif op == 'null':
+            byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (VM doesn't read data for null)
 
         elif op in ('get', 'set', 'unset', 'dec'):
-            byte_offset += 1 + 4 + len(args[0].encode('utf-8'))
+            byte_offset += 1 + 8 + len(args[0].encode('utf-8'))  # 8-byte length prefix
 
         elif op in ('jmp', 'jmpif', 'jmpifn'):
-            byte_offset += 1 + 4
+            byte_offset += 1 + 8  # opcode + 64-bit target
 
         elif op == 'call':
             name = args[0]
             if name.startswith('"') and name.endswith('"'):
                 name = name[1:-1]
-            byte_offset += 1 + 4 + len(name.encode('utf-8')) + 1
+            byte_offset += 1 + 8 + len(name.encode('utf-8')) + 8  # opcode + 8-byte length prefix + name + argc(8)
+
+        # Handle generic push with type inference
+        # Note: shlex.split strips quotes, so we check the raw line
+        # Format: PUSH opcode(0x24) + typeByte + data
+        elif op == 'push' and args:
+            val = args[0]
+            # Check if original line has a quoted string after 'push'
+            raw_after_push = line.split(None, 1)[1] if len(line.split(None, 1)) > 1 else ''
+            is_string = raw_after_push.strip().startswith('"')
+
+            if is_string:
+                # String: opcode + typeByte + 8-byte len + data
+                byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
+            elif val.lower() in ('true', 'false'):
+                # Bool: opcode + typeByte + meta (value in lower nibble)
+                byte_offset += 1 + 1 + 1
+            elif val == '[]':
+                # Empty list: opcode + typeByte + count
+                byte_offset += 1 + 1 + 8
+            elif '.' in val and val.replace('.', '', 1).replace('-', '', 1).isdigit():
+                # Float (f64): opcode + typeByte + meta + 8 bytes
+                byte_offset += 1 + 1 + 1 + 8
+            elif val.lstrip('-').replace('0x', '', 1).replace('0X', '', 1).isalnum() and (val.lstrip('-').isdigit() or val.lstrip('-').startswith('0x')):
+                # Integer (i64): opcode + typeByte + meta + 8 bytes
+                byte_offset += 1 + 1 + 1 + 8
+            else:
+                # Treat as unquoted string (convenience)
+                byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
 
         elif op in OPCODES:
             byte_offset += 1
@@ -248,9 +341,12 @@ def assemble(source):
             byte_offset += 1
 
     # Second pass: emit bytecode
+    # Start with header placeholder - we'll fill it in at the end
+    output.extend(b'\x00' * HEADER_SIZE)
+
     current_section = None
     for line in lines:
-        line = line.split(';', 1)[0].strip()
+        line = strip_comment(line)
         if not line:
             continue
 
@@ -261,7 +357,10 @@ def assemble(source):
         if line.endswith(':'):
             continue
 
-        tokens = shlex.split(line)
+        try:
+          tokens = shlex.split(line)
+        except:
+          print(line)
         if not tokens:
             continue
 
@@ -269,13 +368,136 @@ def assemble(source):
         args = tokens[1:]
 
         # Emit
+        # Smart set: set i32 varname 42
+        if op == 'set' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
+            typ = args[0].lower()
+            varname = args[1]
+            val = args[2] if len(args) > 2 else ('0' if typ in TYPE_SIZES else ('[]' if typ == 'list' else 'null'))
+            # Emit: push typed value using PUSH format, then set
+            META_TYPES = {'i8': 0, 'i16': 1, 'i32': 2, 'i64': 3, 'ui8': 4, 'ui16': 5, 'ui32': 6, 'ui64': 7, 'f32': 8, 'f64': 8, 'bool': 9}
+            if typ == 'list':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x40)  # List type byte
+                # Parse count from val like "[]" or a number
+                if val == '[]':
+                    count = 0
+                else:
+                    count = int(val)
+                output.extend(struct.pack('<Q', count))
+            elif typ == 'dict':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x50)  # Dict type byte
+                output.extend(struct.pack('<Q', 0))
+            elif typ == 'null':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append(0x0A << 4)  # null type in meta (10)
+            elif typ == 'str':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x30)  # String type byte
+                output.extend(parse_typed_value('str', val))
+            elif typ == 'bool':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                bool_val = 1 if val.lower() == 'true' else 0
+                output.append((0x09 << 4) | bool_val)  # bool type (9)
+            elif typ in META_TYPES:
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append(META_TYPES[typ] << 4)  # Type in upper 4 bits of meta
+                output.extend(parse_typed_value(typ, val))
+            output.append(OPCODES['set'])
+            output.extend(encode_string(varname))
+
+        # Smart get: get i32 varname (type hint ignored for now, just get)
+        elif op == 'get' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
+            varname = args[1]
+            output.append(OPCODES['get'])
+            output.extend(encode_string(varname))
+
         # Typed push: i8 42, i32 1000, str "hello", etc.
-        if op in TYPE_SIZES or op in ('str', 'bool', 'null', 'list', 'dict'):
-            output.append(OPCODES[op])
-            if args:
-                output.extend(parse_typed_value(op, args[0]))
-            elif op in ('null', 'list', 'dict'):
-                pass  # no data needed
+        # Format: PUSH opcode(0x24) + typeByte + data
+        elif op in TYPE_SIZES or op in ('str', 'bool', 'null', 'list', 'dict'):
+            META_TYPES = {'i8': 0, 'i16': 1, 'i32': 2, 'i64': 3, 'ui8': 4, 'ui16': 5, 'ui32': 6, 'ui64': 7, 'f32': 8, 'f64': 8, 'bool': 9}
+            if op == 'str':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x30)  # String type byte
+                output.extend(parse_typed_value('str', args[0] if args else '""'))
+            elif op == 'list':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x40)  # List type byte
+                count = int(args[0]) if args else 0
+                output.extend(struct.pack('<Q', count))
+            elif op == 'dict':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x50)  # Dict type byte
+                output.extend(struct.pack('<Q', 0))
+            elif op == 'null':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append(0x0A << 4)  # null type in meta (10)
+            elif op in META_TYPES:
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                if op == 'bool':
+                    # Compact: encode bool value in lower nibble of meta
+                    bool_val = 1 if (args and args[0].lower() == 'true') else 0
+                    output.append((0x09 << 4) | bool_val)  # bool type (9)
+                else:
+                    output.append(META_TYPES[op] << 4)  # Type in upper 4 bits of meta
+                    if args:
+                        output.extend(parse_typed_value(op, args[0]))
+
+        # Generic push with type inference
+        # Note: shlex.split strips quotes, so we check the raw line
+        # Format: PUSH opcode(0x24) + typeByte + data
+        elif op == 'push' and args:
+            val = args[0]
+            # Check if original line has a quoted string after 'push'
+            raw_after_push = line.split(None, 1)[1] if len(line.split(None, 1)) > 1 else ''
+            is_string = raw_after_push.strip().startswith('"')
+
+            if is_string:
+                # String: opcode + typeByte + string data
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x30)  # String type byte
+                data = val.encode('utf-8')
+                output.extend(struct.pack('<Q', len(data)))
+                output.extend(data)
+            elif val.lower() == 'true':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append((0x09 << 4) | 1)  # bool type (9) + value in lower nibble
+            elif val.lower() == 'false':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append((0x09 << 4) | 0)  # bool type (9) + value in lower nibble
+            elif val == '[]':
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x40)  # List type byte
+                output.extend(struct.pack('<Q', 0))
+            elif '.' in val and val.replace('.', '', 1).replace('-', '', 1).isdigit():
+                # Float (f64)
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append(0x08 << 4)  # f64 type in meta (8)
+                output.extend(struct.pack('<d', float(val)))
+            elif val.lstrip('-').replace('0x', '', 1).replace('0X', '', 1).isalnum() and (val.lstrip('-').isdigit() or val.lstrip('-').startswith('0x')):
+                # Integer (i64)
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x00)  # Numeric type byte
+                output.append(0x03 << 4)  # i64 type in meta
+                if val.startswith('0x') or val.startswith('-0x'):
+                    output.extend(struct.pack('<q', int(val, 16)))
+                else:
+                    output.extend(struct.pack('<q', int(val)))
+            else:
+                # Treat as unquoted string (convenience)
+                output.append(OPCODES['push'])  # 0x24
+                output.append(0x30)  # String type byte
+                data = val.encode('utf-8')
+                output.extend(struct.pack('<Q', len(data)))
+                output.extend(data)
 
         elif op in ('get', 'set', 'unset', 'dec'):
             output.append(OPCODES[op])
@@ -285,12 +507,12 @@ def assemble(source):
             output.append(OPCODES[op])
             target = args[0]
             if target in labels:
-                output.extend(struct.pack('<I', labels[target]))
+                output.extend(struct.pack('<Q', labels[target]))
             elif target in sections:
-                output.extend(struct.pack('<I', sections[target]))
+                output.extend(struct.pack('<Q', sections[target]))
             else:
                 fixups.append((len(output), target))
-                output.extend(struct.pack('<I', 0))
+                output.extend(struct.pack('<Q', 0))
 
         elif op == 'call':
             output.append(OPCODES['call'])
@@ -298,8 +520,8 @@ def assemble(source):
             if name.startswith('"') and name.endswith('"'):
                 name = name[1:-1]
             output.extend(encode_string(name))
-            argc = int(args[1]) if len(args) > 1 else 0
-            output.append(argc)
+            argc = int(args[1]) if len(args) >= 2 else 0
+            output.extend(struct.pack('<Q', argc))  # 64-bit argc
 
         elif op == 'ret':
             output.append(OPCODES['ret'])
@@ -320,7 +542,34 @@ def assemble(source):
         else:
             print(f"Error: unresolved label '{target}'")
             addr = 0
-        output[offset:offset+4] = struct.pack('<I', addr)
+        output[offset:offset+8] = struct.pack('<Q', addr)
+
+    # Function table offset is current end of output
+    table_off = len(output)
+
+    # Write function table
+    # Format per function: name(str) + entry(u64) + ret(u8) + paramCount(u64) + params(str[])
+    for fn_name in functions:
+        fn_entry = labels.get(fn_name, 0)
+        output.extend(encode_string(fn_name))   # name
+        output.extend(struct.pack('<Q', fn_entry))  # entry point
+        output.append(0)  # ret type (0 = default)
+        output.extend(struct.pack('<Q', 0))  # param count = 0
+        # No params to write
+
+    # Write header
+    # Magic: 8 bytes (matching what VM expects)
+    magic = b'  \xc2\xbd6e\xc3\xa8'  # "  ½6eè" = 2 spaces + 6 UTF-8 bytes = 8 bytes
+    fn_count = len(functions)
+
+    # Pack header: magic(8) + table_off(8) + fnCount(8) + entry_main(8) + line_map_off(8)
+    header = magic
+    header += struct.pack('<Q', table_off)      # table_off
+    header += struct.pack('<Q', fn_count)       # fnCount
+    header += struct.pack('<Q', entry_point)    # entry_main
+    header += struct.pack('<Q', 0)              # line_map_off (0 = none)
+
+    output[0:HEADER_SIZE] = header
 
     return bytes(output)
 
