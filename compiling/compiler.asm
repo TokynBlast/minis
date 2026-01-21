@@ -51,17 +51,35 @@
       set curr_char
 
       get curr_char
-      push "\;"
+      push ";"
       eq
       jmpif increment_line
+
+      get new_line
+      get curr_char
+      add
+      set new_line
+
+      get line_pos
+      push 1
+      add
+      set line_pos
+
 
     increment_line:
       set line_pos 0
       get curr_line
       push 1
       add
+      set curr_line
 
-      get pos
+      get output
+      get new_line
+      add
+      set contents
+
+      push ""
+      set new_line
 
       jmp while_in_comment
 
