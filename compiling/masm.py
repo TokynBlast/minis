@@ -246,6 +246,7 @@ def assemble(source):
         line = strip_comment(line)
         if not line:
             continue
+        print(line)
 
         # Section
         if line.startswith('.'):
