@@ -20,7 +20,7 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER false
+#define DEBUGGER true
 
 // Fortran math functions from src/maths.f08
 extern "C" {
@@ -835,6 +835,9 @@ namespace minis {
             switch (op & 0x1F) {
               // FIXME: Use Fortran functions
               case static_cast<uint8>(Math::SUB): {
+                #if DEBUGGER
+                  print("Subtracting");
+                #endif
                 Value a = pop(), b = pop();
                 if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
                   if (a.t == Type::Float || b.t == Type::Float) {
