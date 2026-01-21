@@ -231,7 +231,6 @@ def assemble(source):
             continue
 
         # Parse instruction
-        print(line)
         tokens = shlex.split(line)
         if not tokens:
             continue
@@ -606,3 +605,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print("\n"*3)
