@@ -760,6 +760,7 @@ namespace minis {
                 }
                 #if DEBUGGER
                   print("did not jump to ", tgt, "\n");
+                #endif
               } break;
               case static_cast<uint8>(Logic::AND): {
                 #if DEBUGGER
@@ -1448,7 +1449,12 @@ namespace minis {
                   std::vector<Value> xs; xs.resize(n);
                   for (uint64 i = 0; i < n; ++i) xs[n-1-i] = pop();
                   #if DEBUGGER
-                    print("push ", n," item list: ", xs. "\n");
+                    print("push ", n, " item list: [");
+                    for (uint64 i = 0; i < n; ++i) {
+                      print_value(xs[i]);
+                      if (i + 1 < n) print(" ");
+                    }
+                    print("]\n");
                   #endif
                   push(Value::List(std::move(xs)));
                 } break;
