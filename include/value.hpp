@@ -5,8 +5,10 @@
 #include <sstream>
 #include <string>
 #include <stdint.h>
+
 #include "types.hpp"
 #include "macros.h"
+#include "../fast_io/include/fast_io.h"
 
 
 using namespace minis;
@@ -125,5 +127,69 @@ struct Value
   bool operator!=(const Value &other) const { return !(*this == other); }
 
   bool operator<(const Value &other) const { return !(*this < other); }
-  bool operator>(const Value &other) const { return !(*this < other); }
+  bool operator>(const Value &other) const { return !(*this > other); }
 };
+using fast_io::io::print;
+
+inline void print_value(const Value& v) {
+  switch (v.t) {
+    case Type::Null: {
+      ("FATAL ERROR: Cannot print null type");
+      exit(1);
+    }
+    case Type::Bool:
+      print(std::string(std::get<bool>(v.v) ? "true" : "false"));
+      break;
+    case Type::TriBool: {
+      TriBool tb = std::get<TriBool>(v.v);
+      switch (tb) {
+        case TriBool::True: print("true"); break;
+        case TriBool::False: print("false"); break;
+        case TriBool::Unknown: print("unknown"); break;
+      }
+      break;
+    }
+    case Type::Str:
+      print('"', std::get<std::string>(v.v), '"');
+      break;
+    case Type::Float:
+      print(std::get<double>(v.v));
+      break;
+    case Type::i8:
+      print(std::get<int8>(v.v));
+      break;
+    case Type::i16:
+      print(std::get<int16>(v.v));
+      break;
+    case Type::i32:
+      print(std::get<int32>(v.v));
+      break;
+    case Type::i64:
+      print(std::get<int64>(v.v));
+      break;
+    case Type::ui8:
+      print(std::get<uint8>(v.v));
+      break;
+    case Type::ui16:
+      print(std::get<uint16>(v.v));
+      break;
+    case Type::ui32:
+      print(std::get<uint32>(v.v));
+      break;
+    case Type::ui64:
+      print(std::get<uint64>(v.v));
+      break;
+    case Type::List: {
+      print("[");
+      const auto& list = std::get<std::vector<Value>>(v.v);
+      for (size_t i = 0; i < list.size(); ++i) {
+        print_value(list[i]);
+        if (i + 1 < list.size()) print(" ");
+      }
+      print("]");
+      break;
+    }
+    default:
+      print("<unknown>");
+  }
+}
