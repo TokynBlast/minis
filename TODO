@@ -54,6 +54,8 @@ Change to Rust:
   Built-ins
   Plugin manager
 
+Rather than do 40 byte buffer, we do uint64+buffer, to know where to jump to for afterwards :)
+
 Implement entire logical register in Fortran
 
 Make Var only take Value
