@@ -211,19 +211,18 @@ namespace minis {
                    { return std::get<double>(a.v) < std::get<double>(b.v); });
          return Value::List(list);
        }},
-      {"reverse", [](std::vector<Value> &args) -> Value
-       {
-         if (args[0].t == Type::List) {
-           std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
-           std::reverse(list.begin(), list.end());
-           return Value::List(list);
-         } else if (args[0].t == Type::Str) {
-           std::string reversed = std::get<std::string>(args[0].v);
-           std::reverse(reversed.begin(), reversed.end());
-           return Value::Str(std::move(reversed));
-         }
-         exit(1);
-       }},
+      {"reverse", [](std::vector<Value> &args) -> Value {
+        if (args[0].t == Type::List) {
+          std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
+          std::reverse(list.begin(), list.end());
+          return Value::List(list);
+        } else if (args[0].t == Type::Str) {
+          std::string reversed = std::get<std::string>(args[0].v);
+          std::reverse(reversed.begin(), reversed.end());
+          return Value::Str(std::move(reversed));
+        }
+        exit(1);
+      }},
       // FIXME:Use Fortran backend instead of C++s
       {"sum", [](std::vector<Value> &args) {
          const auto &list = std::get<std::vector<Value>>(args[0].v);
@@ -237,46 +236,42 @@ namespace minis {
          return sum;
        }},
       // Print like print, using all values
-      {"input", [](std::vector<Value> &args) {
+      {"input", [](std::vector<Value> &args) -> Value {
         #if DEBUGGER
           print("Getting input\n");
         #endif
-         std::string input;
-         if (!args.empty())
-         {
-           scan(input);
-           return Value::Str(std::move(input));
-         }
-         return Value::Str("");
-       }},
+        std::string input;
+        if (!args.empty()) {
+          print("");
+        }
+        scan(input);
+        return Value::Str(std::move(input));
+      }},
       {"len", [](std::vector<Value> &args) -> Value {
-         const auto &arg = args[0];
-         if (arg.t == Type::List)
-         {
-           return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
-         }
-         else if (arg.t == Type::Str)
-         {
-           return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
-         }
-         return Value::Null();
+        const auto &arg = args[0];
+        if (arg.t == Type::List) {
+          return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
+        } else if (arg.t == Type::Str) {
+          return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
+        }
+        return Value::Null();
        }},
       {"split", [](std::vector<Value> &args) -> Value {
-         const std::string &str = std::get<std::string>(args[0].v);
-         const std::string &delim = std::get<std::string>(args[1].v);
+        const std::string &str = std::get<std::string>(args[0].v);
+        const std::string &delim = std::get<std::string>(args[1].v);
 
-         std::vector<Value> result;
-         std::string s(str);
-         std::string delimiter(delim);
+        std::vector<Value> result;
+        std::string s(str);
+        std::string delimiter(delim);
 
-         size_t pos = 0;
-         while ((pos = s.find(delimiter)) != std::string::npos) {
-           result.push_back(Value::Str(s.substr(0, pos).c_str()));
-           s.erase(0, pos + delimiter.length());
-         }
-         result.push_back(Value::Str(s.c_str()));
+        size_t pos = 0;
+        while ((pos = s.find(delimiter)) != std::string::npos) {
+          result.push_back(Value::Str(s.substr(0, pos).c_str()));
+          s.erase(0, pos + delimiter.length());
+        }
+        result.push_back(Value::Str(s.c_str()));
 
-         return Value::List(result);
+        return Value::List(result);
        }},
       {"upper", [](std::vector<Value> &args) -> Value {
          std::string result = std::get<std::string>(args[0].v);
@@ -289,8 +284,8 @@ namespace minis {
          return Value::Str(std::move(result));
        }},
       {"round", [](std::vector<Value> &args) -> Value {
-         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
-       }},
+        return Value::I64((int64)std::round(std::get<double>(args[0].v)));
+      }},
       // Implement via Fortran and C++
       {"random", [](std::vector<Value> &args) -> Value {
         if (args.empty()) {
@@ -299,7 +294,7 @@ namespace minis {
           uint64 max_val = std::get<uint64>(args[0].v);
           return Value::UI64(rand() % max_val);
         }
-       }},
+      }},
 
       // FIXME: Use fast_io :)
       {"open", [](std::vector<Value> &args) -> Value {
@@ -1483,16 +1478,21 @@ namespace minis {
                 frames.back().env->SetOrDeclare(GETstr(), pop());
               #endif
             } break;
+
             case static_cast<uint8>(Variable::DECLARE): {
               std::string id = GETstr();
               uint64 tt = GETu64();
+              #if DEBUGGER
+                print("declaring variable ", id);
+              #endif
               Value v  = pop();
               if (tt == 0xECull) frames.back().env->Declare(id, v);
               else               frames.back().env->Declare(id, v);
             } break;
+
             case static_cast<uint8>(Variable::GET): {
               std::string id = GETstr();
-              #ifdef DEBUGGER
+              #if DEBUGGER
                 print("Getting ", id, "\n");
               #endif
               push(frames.back().env->Get(id).val);
@@ -1508,10 +1508,24 @@ namespace minis {
 
           case static_cast<uint8>(Register::GENERAL): {
             switch (op & 0x1F) {
-              case static_cast<uint8>(General::HALT): return;
-              case static_cast<uint8>(General::NOP): break;
+              case static_cast<uint8>(General::HALT): {
+                #if DEBUGGER
+                  print("halting\n");
+                #endif
+                return;
+              }
+              case static_cast<uint8>(General::NOP): {
+                #if DEBUGGER
+                  print("doing nothing\n");
+                #endif
+                break;
+              }
               case static_cast<uint8>(General::POP): discard(); break;
               case static_cast<uint8>(General::YIELD): {
+                #if DEBUGGER
+                  print("yielding");
+                #endif
+
                 #ifdef _WIN32
                   _getch();
                 #else
@@ -1519,11 +1533,11 @@ namespace minis {
                 #endif
               } break;
               case static_cast<uint8>(General::INDEX): {
-                #if DEBUGGER
-                  print("indexing\n");
-                #endif
                 Value base = pop(), idxV = pop();
                 long long i = std::get<int32>(idxV.v);
+                #if DEBUGGER
+                  print("indexing at ", i, "\n");
+                #endif
                 if (base.t == Type::List) {
                   // FIXME: Prefer explicit over auto
                   auto& xs = std::get<std::vector<Value>>(base.v);
@@ -1539,12 +1553,13 @@ namespace minis {
               } break;
             }
           } break;
+
           case static_cast<uint8>(Register::FUNCTION): {
             switch (op & 0x1F) {
               // FIXME: Could be simpler to implement via other MVME opcodes
               case static_cast<uint8>(Func::TAIL): {
-                #if DEBUUGER
-                  print("Tail call return\n");
+                #if DEBUGGER
+                  print("tail call return\n");
                 #endif
                 std::string name = GETstr();
                 uint64 argc = GETu64();
@@ -1578,7 +1593,7 @@ namespace minis {
 
               case static_cast<uint8>(Func::RETURN): {
                 #if DEBUGGER
-                  print("Returning value\n");
+                  print("returning value\n");
                 #endif
                 Value rv;
                 if (stack.size() > frames.back().stack_base) {
