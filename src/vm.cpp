@@ -604,7 +604,7 @@ namespace minis {
         #endif
       );
       #if DEBUGGER
-        print("Get ", n, " character string, \"\n");
+        print("Get ", n, " character string, \"");
       #endif
       if(n == 0) {
         #if DEBUGGER
