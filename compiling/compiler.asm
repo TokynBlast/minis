@@ -15,9 +15,18 @@
   push []
   declare output
   set ui64 pos 0
-
+  jmp while_loop
 
 while_loop:
+  push "new_line = "
+  get new_line
+  push "\n"
+
+  push "output = "
+  get output
+  push "\n"
+  call "print" 6
+
   get lines
   call "len" 1
   set lines_len
