@@ -20,10 +20,26 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER false
-#define DEBUG_READ_PRINT false
+#define DEBUGGER true
+#define DEBUG_READ_PRINT true
 #define DEBUG_BUILTIN_PRINT true
-#define DEBUG_OP_PRINT false
+#define DEBUG_OP_PRINT true
+#define DEBUG_ALL_PRINT false
+#define DEBUG_PROG_CATCH_PRINT false
+
+#if DEBUG_PROG_CATCH_PRINT
+#define CATCH_ALL(EXPR) \
+  try { \
+      EXPR; \
+  } catch (const std::bad_variant_access& e) { \
+    print("[FATAL] std::bad_variant_access caught!\n"); \
+    print("Exception: ", std::string(e.what()), "\n"); \
+    print("[DEBUG] VM ip: ", ip, "\n"); \
+    print("[DEBUG] Stack size: ", stack.size(), "\n"); \
+    print("[DEBUG] Top stack type: ", stack.empty() ? -1 : (int)stack.back().t, "\n"); \
+    exit(1); \
+  }
+#endif
 
 // Fortran math functions from src/maths.f08
 extern "C" {
@@ -100,7 +116,7 @@ namespace minis {
       // FIXME: We need to add the ability to add the end line manually.
       // FIXME: We need to make print more customizable
       {"print", [](std::vector<Value> &args) {
-        #if DEBUGGER and DEBUG_BUILTIN_PRINT
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
           print("Running print\n");
         #endif
         auto print_value = [&](const Value& val, auto&& print_value_ref) -> void {
@@ -143,12 +159,18 @@ namespace minis {
         return Value::Null();
       }},
       {"abs", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running abs\n");
+        #endif
         auto val = args[0];
         if (val.t == Type::Float)
           return Value::Float(std::abs(std::get<double>(val.v)));
         return Value::I64(std::abs(std::get<int64>(val.v)));
       }},
       {"neg", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running neg\n");
+        #endif
         auto &arg = args[0];
         if (arg.t == Type::Float)
           return Value::Float(-std::get<double>(arg.v));
@@ -176,6 +198,9 @@ namespace minis {
       // Memory-efficient range: stores only start and end values, not the entire list
       // Usage: range(5) -> Range(0,5) or range(2,5) -> Range(2,5)
       {"range", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running range\n");
+        #endif
          uint64 start = 0, end;
          if (args.size() == 1) {
            end = std::get<uint64>(args[0].v);
@@ -191,6 +216,9 @@ namespace minis {
        }},
       // FIXME: Should return Value types
       {"max", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running max\n");
+        #endif
          Value max = args[0];
          for (size_t i = 1; i < args.size(); i++)
          {
@@ -200,6 +228,9 @@ namespace minis {
          return max;
        }},
       {"min", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running min\n");
+        #endif
         Value min = args[0];
         for (size_t i = 1; i < args.size(); i++) {
           if (args[i] < min)
@@ -208,6 +239,9 @@ namespace minis {
         return min;
       }},
       {"sort", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running sort\n");
+        #endif
          std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
          std::sort(list.begin(), list.end(),
                    [](const Value &a, const Value &b)
@@ -215,6 +249,9 @@ namespace minis {
          return Value::List(list);
        }},
       {"reverse", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running reverse\n");
+        #endif
         if (args[0].t == Type::List) {
           std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
           std::reverse(list.begin(), list.end());
@@ -228,6 +265,9 @@ namespace minis {
       }},
       // FIXME:Use Fortran backend instead of C++s
       {"sum", [](std::vector<Value> &args) {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running sum\n");
+        #endif
          const auto &list = std::get<std::vector<Value>>(args[0].v);
          Value sum = Value::I32(0);
          for (const auto &v : list)
@@ -241,16 +281,20 @@ namespace minis {
       // Print like print, using all values
       {"input", [](std::vector<Value> &args) -> Value {
         #if DEBUGGER
-          print("Getting input\n");
+          print("getting input\n");
         #endif
         std::string input;
         if (!args.empty()) {
-          print("");
+          print(""); // print the values in here :)
+                     // maybe run built-in print function?
         }
         scan(input);
         return Value::Str(std::move(input));
       }},
       {"len", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running len\n");
+        #endif
         const auto &arg = args[0];
         if (arg.t == Type::List) {
           return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
@@ -260,10 +304,13 @@ namespace minis {
         return Value::Null();
        }},
       {"split", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running split\n");
+        #endif
         const std::string &str = std::get<std::string>(args[0].v);
         const std::string &delim = std::get<std::string>(args[1].v);
         #if DEBUGGER and DEBUG_BUILTIN_PRINT
-          print("splitting ", str, " by ", delim, "\n");
+          print("splitting by ", delim, "\n");
         #endif
 
         std::vector<Value> result;
@@ -280,20 +327,34 @@ namespace minis {
         return Value::List(result);
        }},
       {"upper", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running upper\n");
+        #endif
+        // >> 30 :)
         std::string result = std::get<std::string>(args[0].v);
         std::transform(result.begin(), result.end(), result.begin(), ::toupper);
         return Value::Str(std::move(result));
       }},
       {"lower", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running lower\n");
+        #endif
         std::string result = std::get<std::string>(args[0].v);
         std::transform(result.begin(), result.end(), result.begin(), ::tolower);
         return Value::Str(std::move(result));
       }},
       {"round", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running round\n");
+        #endif
         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
       }},
       // Implement via Fortran and C++
       {"random", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running random\n");
+        #endif
+        // use random lib instead
         if (args.empty()) {
           return Value::Float((double)rand() / RAND_MAX);
         } else {
@@ -354,9 +415,9 @@ namespace minis {
           std::string filename = std::get<std::string>(args[0].v);
           fast_io::native_file_loader loader(filename);
 
-          #if DEBUGGER and DEBUG_BUILTIN_PRINT
+          #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
             std::string val = std::string(loader.data(), loader.size());
-            print("running open, contents of ", filename, " are:\n", val);
+            print("opening ", filename, "\n");
             Value result = Value::Str(std::move(val));
           #else
             Value result = Value::Str(std::string(loader.data(), loader.size()));
@@ -381,6 +442,9 @@ namespace minis {
       // FIXME: We need better type checking
       // FIXME: Add returning multiple values
       {"typeof", [](std::vector<Value> &args) -> Value {
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+          print("running typeof\n");
+        #endif
          switch (args[0].t) {
          case Type::Float:   return Value::Str("float");
          case Type::Str:     return Value::Str("str");
@@ -400,7 +464,7 @@ namespace minis {
          case Type::Void:    return Value::Str("void"); // Safety
          case Type::TriBool: return Value::Str("tribool");
          default: {
-           print("Unknown type");
+           print("Unknown type\n");
            std::exit(1);
          }
          }
@@ -874,6 +938,26 @@ namespace minis {
                 Value a = pop(), b = pop();
                 // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
                 //        I found the first if as an else if.
+                #if DEBUGGER
+                  print("[ADD] a type: ", (int)a.t, ", b type: ", (int)b.t, "\n");
+                  // Print value types for a and b
+                  switch (a.t) {
+                    case Type::List: print("a is list\n"); break;
+                    case Type::Str: print("a is str: ", std::get<std::string>(a.v), "\n"); break;
+                    case Type::Float: print("a is float: ", std::get<double>(a.v), "\n"); break;
+                    case Type::i64: print("a is i64: ", std::get<int64>(a.v), "\n"); break;
+                    case Type::ui64: print("a is ui64: ", std::get<uint64>(a.v), "\n"); break;
+                    default: print("a is other type\n"); break;
+                  }
+                  switch (b.t) {
+                    case Type::List: print("b is list\n"); break;
+                    case Type::Str: print("b is str: ", std::get<std::string>(b.v), "\n"); break;
+                    case Type::Float: print("b is float: ", std::get<double>(b.v), "\n"); break;
+                    case Type::i64: print("b is i64: ", std::get<int64>(b.v), "\n"); break;
+                    case Type::ui64: print("b is ui64: ", std::get<uint64>(b.v), "\n"); break;
+                    default: print("b is other type\n"); break;
+                  }
+                #endif
                 if (a.t == Type::List) {
                   std::vector<Value> result = std::get<std::vector<Value>>(a.v);
                   // If b is a list, concatenate; else, append b to the list
@@ -884,7 +968,11 @@ namespace minis {
                     result.push_back(b);
                   }
                   push(Value::List(std::move(result)));
-                // FIXME: Should be more flexible :)
+                } else if (b.t == Type::List) {
+                  // If b is a list, append a to the front of b
+                  std::vector<Value> result = std::get<std::vector<Value>>(b.v);
+                  result.insert(result.begin(), a);
+                  push(Value::List(std::move(result)));
                 } else if (a.t == Type::Str || b.t == Type::Str) {
                   std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
                   push(Value::Str(std::move(result)));
@@ -1716,7 +1804,11 @@ namespace minis {
     #if DEBUGGER
       print("Running\n");
     #endif
-    vm.run();
+    #if DEBUGGER and DEBUG_PROG_CATCH_PRINT
+      CATCH_ALL(vm.run());
+    #else
+      vm.run();
+    #endif
     #if DEBUGGER
       print("done\n");
     #endif
