@@ -20,23 +20,23 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER true
+#define DEBUGGER false
 #define DEBUG_READ_PRINT true
 #define DEBUG_BUILTIN_PRINT true
 #define DEBUG_OP_PRINT true
 #define DEBUG_ALL_PRINT false
-#define DEBUG_PROG_CATCH_PRINT false
+#define DEBUG_PROG_CATCH_PRINT true
 
 #if DEBUG_PROG_CATCH_PRINT
-#define CATCH_ALL(EXPR) \
+#define CATCH_ALL(EXPR, VMREF) \
   try { \
       EXPR; \
   } catch (const std::bad_variant_access& e) { \
     print("[FATAL] std::bad_variant_access caught!\n"); \
     print("Exception: ", std::string(e.what()), "\n"); \
-    print("[DEBUG] VM ip: ", ip, "\n"); \
-    print("[DEBUG] Stack size: ", stack.size(), "\n"); \
-    print("[DEBUG] Top stack type: ", stack.empty() ? -1 : (int)stack.back().t, "\n"); \
+    print("[DEBUG] VM ip: ", (VMREF).ip, "\n"); \
+    print("[DEBUG] Stack size: ", (VMREF).stack.size(), "\n"); \
+    print("[DEBUG] Top stack type: ", (VMREF).stack.empty() ? -1 : (int)(VMREF).stack.back().t, "\n"); \
     exit(1); \
   }
 #endif
@@ -364,51 +364,51 @@ namespace minis {
       }},
 
       // FIXME: Use fast_io :)
-      {"open", [](std::vector<Value> &args) -> Value {
-        const char *filename = std::get<std::string>(args[0].v).c_str();
-        const char *mode_str = std::get<std::string>(args[1].v).c_str();
-        // FIXME: This should be a switch instead
-        // Translate Minis modes to C modes
-        const char *c_mode = "r";
-        // FIXME: Simplify to normality
-        if (strcmp(mode_str, "r") == 0) c_mode = "r";
-        else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
-        else if (strcmp(mode_str, "rs") == 0) c_mode = "r"; // read specific = read but read only a section, rather than put the whole file into mem
-        else if (strcmp(mode_str, "w") == 0) c_mode = "w";
-        else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
-        else if (strcmp(mode_str, "ws") == 0) c_mode = "w"; // write specific = write but write to a specific area rather than rewrite the whole thing
-        /*write targeted = append but write anywhere, not just the end, shifting alldata after up
-         * For example:
-         * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
-         */
-        else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
-        else if (strcmp(mode_str, "a") == 0) c_mode = "a"; // also support append directly
+      // {"open", [](std::vector<Value> &args) -> Value {
+      //   const char *filename = std::get<std::string>(args[0].v).c_str();
+      //   const char *mode_str = std::get<std::string>(args[1].v).c_str();
+      //   // FIXME: This should be a switch instead
+      //   // Translate Minis modes to C modes
+      //   const char *c_mode = "r";
+      //   // FIXME: Simplify to normality
+      //   if (strcmp(mode_str, "r") == 0) c_mode = "r";
+      //   else if (strcmp(mode_str, "rb") == 0) c_mode = "rb";
+      //   else if (strcmp(mode_str, "rs") == 0) c_mode = "r"; // read specific = read but read only a section, rather than put the whole file into mem
+      //   else if (strcmp(mode_str, "w") == 0) c_mode = "w";
+      //   else if (strcmp(mode_str, "wb") == 0) c_mode = "wb";
+      //   else if (strcmp(mode_str, "ws") == 0) c_mode = "w"; // write specific = write but write to a specific area rather than rewrite the whole thing
+      //   /*write targeted = append but write anywhere, not just the end, shifting alldata after up
+      //    * For example:
+      //    * appending ", " to five (5) in "Helloworld" makes it "Hello, world"
+      //    */
+      //   else if (strcmp(mode_str, "wt") == 0) c_mode = "a";
+      //   else if (strcmp(mode_str, "a") == 0) c_mode = "a"; // also support append directly
 
-        FILE *file = fopen(filename, c_mode);
-        if (!file) return Value::Bool(1); // Error code
+      //   FILE *file = fopen(filename, c_mode);
+      //   if (!file) return Value::Bool(1); // Error code
 
-        // Store file pointer as integer (simple approach)
-        return Value::UI64((uint64)(uintptr_t)file);
-       }},
+      //   // Store file pointer as integer (simple approach)
+      //   return Value::UI64((uint64)(uintptr_t)file);
+      //  }},
 
-      {"close", [](std::vector<Value> &args) -> Value {
-        FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
-        if (file && file != stdin && file != stdout && file != stderr)
-        {
-          fclose(file);
-        }
-         return Value::Bool(false);
-       }},
+      // {"close", [](std::vector<Value> &args) -> Value {
+      //   FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+      //   if (file && file != stdin && file != stdout && file != stderr)
+      //   {
+      //     fclose(file);
+      //   }
+      //    return Value::Bool(false);
+      //  }},
 
-      {"write", [](std::vector<Value> &args) -> Value {
-         FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
-         const char *data = std::get<std::string>(args[1].v).c_str();
+      // {"write", [](std::vector<Value> &args) -> Value {
+      //    FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+      //    const char *data = std::get<std::string>(args[1].v).c_str();
 
-         if (!file) std::exit(1);
+      //    if (!file) std::exit(1);
 
-         size_t written = fwrite(data, 1, strlen(data), file);
-         return Value::Bool((bool)written);
-       }},
+      //    size_t written = fwrite(data, 1, strlen(data), file);
+      //    return Value::Bool((bool)written);
+      //  }},
 
       {"read", [](std::vector<Value> &args) -> Value {
         try {
@@ -430,14 +430,14 @@ namespace minis {
        }},
 
       // FIXME: We don't need to take any arguments
-      {"flush", [](std::vector<Value> &args) -> Value {
-         FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
-         if (file)
-         {
-           fflush(file);
-         }
-         return Value::UI8(0);
-       }},
+      // {"flush", [](std::vector<Value> &args) -> Value {
+      //    FILE *file = (FILE *)(uintptr_t)std::get<int32>(args[0].v);
+      //    if (file)
+      //    {
+      //      fflush(file);
+      //    }
+      //    return Value::UI8(0);
+      //  }},
 
       // FIXME: We need better type checking
       // FIXME: Add returning multiple values
@@ -692,7 +692,7 @@ namespace minis {
 
     inline Value pop() {
       #if DEBUGGER
-        print("Popping value\n");
+        print("popping value, top val is: ", (int)stack.back().t, ", with ", (int)stack.size()," values left\n");
       #endif
       try {
         if (stack.empty()) {
@@ -790,7 +790,21 @@ namespace minis {
         switch (op >> 5) {
           case static_cast<uint8>(Register::LOGIC): {
             switch (op & 0x1F) {
+              case static_cast<uint8>(Logic::NOT): {
+                #if DEBUGGER and DEBUG_OP_PRINT or DEBUGGER and DEBUG_ALL_PRINT
+                  print("not op\n");
+                #endif
+                Value a = pop();
+                if (a.t != Type::Bool) {
+                  perr("FATAL ERROR: Top of stack wasn't bool");
+                  exit(1);
+                }
+                push(Value::Bool(!std::get<bool>(a.v)));
+              }
               case static_cast<uint8>(Logic::EQUAL): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("equal op\n");
+                #endif
                 Value a = pop(), b = pop();
                 bool eq = (a.t == b.t) ? (a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
@@ -857,6 +871,9 @@ namespace minis {
                 );
               } break;
               case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("less or equal op\n");
+                #endif
                 Value a = pop(), b = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) <= std::get<std::string>(b.v)));
@@ -875,6 +892,9 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Logic::LESS_THAN): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("less than op\n");
+                #endif
                 Value a = pop(), b = pop();
                 if (a.t == Type::Str && b.t == Type::Str)
                   push(Value::Bool(std::get<std::string>(a.v) < std::get<std::string>(b.v)));
@@ -892,6 +912,9 @@ namespace minis {
                   push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
               } break;
               case static_cast<uint8>(Logic::NOT_EQUAL): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("not equal op\n");
+                #endif
                 Value a = pop(), b = pop();
                 bool ne = (a.t == b.t) ? !(a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
@@ -988,6 +1011,9 @@ namespace minis {
                 }
               } break;
               case static_cast<uint8>(Math::ADD_MULT): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("add multiple op\n");
+                #endif
                 uint32 n = GETu32();
 
                 if (n == 0) {
@@ -1099,6 +1125,9 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Math::DIV_MULT): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("divide multiple op\n");
+                #endif
                 uint32 n = GETu32();
 
                 #if DEBUGGER
@@ -1213,6 +1242,9 @@ namespace minis {
               } break;
 
               case static_cast<uint8>(Math::SUB_MULT): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("subtract multiple op\n");
+                #endif
                 uint32 n = GETu32();
 
                 if (n == 0) {
@@ -1322,6 +1354,9 @@ namespace minis {
                 push(result);
               } break;
               case static_cast<uint8>(Math::MULT_MULT): {
+                #if DEBUGGER and DEBUG_OP_PRINT
+                  print("multiply multiple op\n");
+                #endif
                 // FIXME: shorten this, do 64-bit and cast to variables size :)
                 // Do this for all others
                 uint32 n = GETu32();
@@ -1434,6 +1469,7 @@ namespace minis {
               } break;
             } break;
           } break;
+
           case static_cast<uint8>(Register::VARIABLE): {
             switch (op & 0x1F) {
               case static_cast<uint8>(Variable::PUSH): {
@@ -1575,6 +1611,9 @@ namespace minis {
             } break;
 
             case static_cast<uint8>(Variable::DECLARE): {
+              #if DEBUGGER and DEBUG_OP_PRINT
+                  print("declare op\n");
+                #endif
               std::string id = GETstr();
               uint64 tt = GETu64();
               #if DEBUGGER
@@ -1805,7 +1844,7 @@ namespace minis {
       print("Running\n");
     #endif
     #if DEBUGGER and DEBUG_PROG_CATCH_PRINT
-      CATCH_ALL(vm.run());
+      CATCH_ALL(vm.run(), vm);
     #else
       vm.run();
     #endif

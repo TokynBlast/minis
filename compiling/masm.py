@@ -57,7 +57,7 @@ import struct
 
 # Generate opcode: register << 5 | op
 def g(reg, op):
-    return (reg << 5) | op
+  return (reg << 5) | op
 
 # Opcodes matching bytecode.hpp
 OPCODES = {
@@ -69,7 +69,7 @@ OPCODES = {
     # Variable (1)
     'get':      g(1, 0),
     'set':      g(1, 1),
-    'dec':      g(1, 2),
+    'declare':      g(1, 2),
     'unset':    g(1, 3),
     'push':     g(1, 4),
 
@@ -84,7 +84,6 @@ OPCODES = {
     'jmpif':    g(2, 7),
     'jmpifn':   g(2, 8),
     'not':      g(2, 9),
-    'xor':      g(2, 10),
 
     # Function (3)
     'call':     g(3, 0),
@@ -99,11 +98,6 @@ OPCODES = {
     'pop':      g(4, 2),
     'index':    g(4, 3),
     'yield':    g(4, 4),
-    'dup':      g(4, 5),
-    'swap':     g(4, 6),
-    'rot':      g(4, 7),
-    'over':     g(4, 8),
-    'assert':   g(4, 9),
 
     # Math (5)
     'add':      g(5, 0),
