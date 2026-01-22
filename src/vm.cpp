@@ -875,20 +875,15 @@ namespace minis {
                 // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
                 //        I found the first if as an else if.
                 if (a.t == Type::List) {
+                  std::vector<Value> result = std::get<std::vector<Value>>(a.v);
+                  // If b is a list, concatenate; else, append b to the list
                   if (b.t == Type::List) {
-                    std::vector<Value> result;
-                    // FIXME: Prefer specific type over auto
-                    const auto& L = std::get<std::vector<Value>>(a.v);
                     const auto& R = std::get<std::vector<Value>>(b.v);
-                    result.reserve(L.size() + R.size());
-                    result.insert(result.end(), L.begin(), L.end());
                     result.insert(result.end(), R.begin(), R.end());
-                    push(Value::List(std::move(result)));
                   } else {
-                    std::vector<Value> result = std::get<std::vector<Value>>(a.v);
                     result.push_back(b);
-                    push(Value::List(std::move(result)));
                   }
+                  push(Value::List(std::move(result)));
                 // FIXME: Should be more flexible :)
                 } else if (a.t == Type::Str || b.t == Type::Str) {
                   std::string result = std::get<std::string>(a.v) + std::get<std::string>(b.v);
