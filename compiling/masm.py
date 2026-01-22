@@ -1,3 +1,51 @@
+# Utility: decode escape sequences in any string
+def decode_escapes(raw):
+    out = []
+    i = 0
+    while i < len(raw):
+        if raw[i] == '\\' and i + 1 < len(raw):
+            esc = raw[i+1]
+            if esc == 'n':
+                out.append('\n')
+                i += 2
+            elif esc == 't':
+                out.append('\t')
+                i += 2
+            elif esc == 'r':
+                out.append('\r')
+                i += 2
+            elif esc == '\\':
+                out.append('\\')
+                i += 2
+            elif esc == '"':
+                out.append('"')
+                i += 2
+            elif esc == '0':
+                out.append('\0')
+                i += 2
+            elif esc == 'x' and i + 3 < len(raw):
+                try:
+                    hexval = raw[i+2:i+4]
+                    out.append(chr(int(hexval, 16)))
+                    i += 4
+                except Exception:
+                    out.append('x')
+                    i += 2
+            elif esc == 'u' and i + 5 < len(raw):
+                try:
+                    hexval = raw[i+2:i+6]
+                    out.append(chr(int(hexval, 16)))
+                    i += 6
+                except Exception:
+                    out.append('u')
+                    i += 2
+            else:
+                out.append(esc)
+                i += 2
+        else:
+            out.append(raw[i])
+            i += 1
+    return ''.join(out)
 #!/usr/bin/env python3
 """
 MASM - Minis ASM Assembler
@@ -151,60 +199,16 @@ def parse_typed_value(typ, raw):
     if typ == 'str':
         if raw.startswith('"') and raw.endswith('"'):
             raw = raw[1:-1]
-        # Decode escape sequences
-        def decode_escapes(s):
-            out = []
-            i = 0
-            while i < len(s):
-                if s[i] == '\\' and i + 1 < len(s):
-                    c = s[i+1]
-                    if c == 'n':
-                        out.append('\n')
-                        i += 2
-                    elif c == 't':
-                        out.append('\t')
-                        i += 2
-                    elif c == 'r':
-                        out.append('\r')
-                        i += 2
-                    elif c == '"':
-                        out.append('"')
-                        i += 2
-                    elif c == '*':
-                        out.append('*')
-                        i += 2
-                    elif c == '\\':
-                        out.append('\\')
-                        i += 2
-                    else:
-                        out.append(c)
-                        i += 2
-                else:
-                    out.append(s[i])
-                    i += 1
-            # Now join and replace placeholders with real chars
-            joined = ''.join(out)
-            return joined.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\')
-        s = decode_escapes(raw).encode('utf-8')
-        return struct.pack('<Q', len(s)) + s  # 64-bit length prefix
-
-    # List/Dict (just marker, no data)
-    if typ in ('list', 'dict'):
-        return bytes()
+        decoded = decode_escapes(raw)
+        data = decoded.encode('utf-8')
+        return struct.pack('<Q', len(data)) + data  # 64-bit length prefix
 
     # Numeric types
     if typ in TYPE_FORMATS:
-        fmt = TYPE_FORMATS[typ]
-        if typ.startswith('f'):
-            val = float(raw)
-        elif raw.startswith('0x') or raw.startswith('-0x'):
-            val = int(raw, 16)
-        else:
-            val = int(raw)
-        # Let it overflow/wrap naturally - user's responsibility
-        return struct.pack(fmt, val & ((1 << (TYPE_SIZES[typ] * 8)) - 1) if typ.startswith('u') else val)
+        return struct.pack(TYPE_FORMATS[typ], int(raw) if 'i' in typ or 'u' in typ else float(raw))
 
-    raise ValueError(f"Unknown type: {typ}")
+    # Fallback
+    return bytes()
 
 
 def encode_string(s):
@@ -245,7 +249,7 @@ def assemble(source):
     entry_point = HEADER_SIZE  # Default entry point is right after header
 
     for line in lines:
-        line = strip_comment(line).replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\')
+        line = strip_comment(line)
         if not line:
             continue
 
@@ -307,6 +311,8 @@ def assemble(source):
         # List: 0x24 + 0x40 + count(8)
         elif op in TYPE_SIZES:
             if args:
+                # Accept escapes in all args
+                val = decode_escapes(args[0])
                 byte_offset += 1 + 1 + 1 + TYPE_SIZES[op]  # opcode + typeByte + meta + data
             else:
                 byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (no data)
@@ -315,6 +321,7 @@ def assemble(source):
             val = args[0] if args else '""'
             if val.startswith('"') and val.endswith('"'):
                 val = val[1:-1]
+            val = decode_escapes(val)
             byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))  # opcode + typeByte + 8-byte length prefix + data
 
         elif op == 'bool':
@@ -338,7 +345,7 @@ def assemble(source):
                 name = name[1:-1]
             byte_offset += 1 + 8 + len(name.encode('utf-8')) + 8  # opcode + 8-byte length prefix + name + argc(8)
 
-        # Handle generic push with type inference
+        # Generic push with type inference
         # Note: shlex.split strips quotes, so we check the raw line
         # Format: PUSH opcode(0x24) + typeByte + data
         elif op == 'push' and args:
@@ -348,7 +355,9 @@ def assemble(source):
             is_string = raw_after_push.strip().startswith('"')
 
             if is_string:
-                # String: opcode + typeByte + 8-byte len + data
+                # Always decode escapes for string pushes
+                val = val[1:-1] if val.startswith('"') and val.endswith('"') else val
+                val = decode_escapes(val)
                 byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
             elif val.lower() in ('true', 'false'):
                 # Bool: opcode + typeByte + meta (value in lower nibble)
@@ -364,6 +373,7 @@ def assemble(source):
                 byte_offset += 1 + 1 + 1 + 8
             else:
                 # Treat as unquoted string (convenience)
+                val = decode_escapes(val)
                 byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
 
         elif op in OPCODES:
@@ -455,7 +465,8 @@ def assemble(source):
             if op == 'str':
                 output.append(OPCODES['push'])  # 0x24
                 output.append(0x30)  # String type byte
-                output.extend(parse_typed_value('str', args[0] if args else '""'))
+                # Accept escapes in all string args
+                output.extend(parse_typed_value('str', decode_escapes(args[0] if args else '""')))
             elif op == 'list':
                 output.append(OPCODES['push'])  # 0x24
                 output.append(0x40)  # List type byte
@@ -479,7 +490,8 @@ def assemble(source):
                 else:
                     output.append(META_TYPES[op] << 4)  # Type in upper 4 bits of meta
                     if args:
-                        output.extend(parse_typed_value(op, args[0]))
+                        # Accept escapes in all string/char args for numeric types
+                        output.extend(parse_typed_value(op, decode_escapes(args[0])))
 
         # Generic push with type inference
         # Note: shlex.split strips quotes, so we check the raw line
@@ -491,7 +503,9 @@ def assemble(source):
             is_string = raw_after_push.strip().startswith('"')
 
             if is_string:
-                # String: opcode + typeByte + string data
+                # Always decode escapes for string pushes
+                val = val[1:-1] if val.startswith('"') and val.endswith('"') else val
+                val = decode_escapes(val)
                 output.append(OPCODES['push'])  # 0x24
                 output.append(0x30)  # String type byte
                 data = val.encode('utf-8')
@@ -526,6 +540,7 @@ def assemble(source):
                     output.extend(struct.pack('<q', int(val)))
             else:
                 # Treat as unquoted string (convenience)
+                val = decode_escapes(val)
                 output.append(OPCODES['push'])  # 0x24
                 output.append(0x30)  # String type byte
                 data = val.encode('utf-8')
@@ -639,4 +654,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    print("\n"*3)
+    #print("\n"*3)
