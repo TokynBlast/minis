@@ -20,7 +20,10 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER true
+#define DEBUGGER false
+#define DEBUG_READ_PRINT false
+#define DEBUG_BUILTIN_PRINT true
+#define DEBUG_OP_PRINT false
 
 // Fortran math functions from src/maths.f08
 extern "C" {
@@ -97,7 +100,7 @@ namespace minis {
       // FIXME: We need to add the ability to add the end line manually.
       // FIXME: We need to make print more customizable
       {"print", [](std::vector<Value> &args) {
-        #ifdef DEBUGGER
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT
           print("Running print\n");
         #endif
         auto print_value = [&](const Value& val, auto&& print_value_ref) -> void {
@@ -196,14 +199,14 @@ namespace minis {
          }
          return max;
        }},
-      {"min", [](std::vector<Value> &args) {
-         Value min = args[0];
-         for (size_t i = 1; i < args.size(); i++) {
-           if (args[i] < min)
-             min = args[i];
-         }
-         return min;
-       }},
+      {"min", [](std::vector<Value> &args) -> Value {
+        Value min = args[0];
+        for (size_t i = 1; i < args.size(); i++) {
+          if (args[i] < min)
+            min = args[i];
+        }
+        return min;
+      }},
       {"sort", [](std::vector<Value> &args) {
          std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
          std::sort(list.begin(), list.end(),
@@ -259,6 +262,9 @@ namespace minis {
       {"split", [](std::vector<Value> &args) -> Value {
         const std::string &str = std::get<std::string>(args[0].v);
         const std::string &delim = std::get<std::string>(args[1].v);
+        #if DEBUGGER and DEBUG_BUILTIN_PRINT
+          print("splitting ", str, " by ", delim, "\n");
+        #endif
 
         std::vector<Value> result;
         std::string s(str);
@@ -274,15 +280,15 @@ namespace minis {
         return Value::List(result);
        }},
       {"upper", [](std::vector<Value> &args) -> Value {
-         std::string result = std::get<std::string>(args[0].v);
-         std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-         return Value::Str(std::move(result));
-       }},
+        std::string result = std::get<std::string>(args[0].v);
+        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+        return Value::Str(std::move(result));
+      }},
       {"lower", [](std::vector<Value> &args) -> Value {
-         std::string result = std::get<std::string>(args[0].v);
-         std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-         return Value::Str(std::move(result));
-       }},
+        std::string result = std::get<std::string>(args[0].v);
+        std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+        return Value::Str(std::move(result));
+      }},
       {"round", [](std::vector<Value> &args) -> Value {
         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
       }},
@@ -298,9 +304,6 @@ namespace minis {
 
       // FIXME: Use fast_io :)
       {"open", [](std::vector<Value> &args) -> Value {
-        #if DEBUGGER
-          print("Running open\n");
-        #endif
         const char *filename = std::get<std::string>(args[0].v).c_str();
         const char *mode_str = std::get<std::string>(args[1].v).c_str();
         // FIXME: This should be a switch instead
@@ -351,7 +354,13 @@ namespace minis {
           std::string filename = std::get<std::string>(args[0].v);
           fast_io::native_file_loader loader(filename);
 
-          Value result = Value::Str(std::string(loader.data(), loader.size()));
+          #if DEBUGGER and DEBUG_BUILTIN_PRINT
+            std::string val = std::string(loader.data(), loader.size());
+            print("running open, contents of ", filename, " are:\n", val);
+            Value result = Value::Str(std::move(val));
+          #else
+            Value result = Value::Str(std::string(loader.data(), loader.size()));
+          #endif
           return result;
         } catch (const std::exception& e) {
           print("File I/O error: ", std::string(e.what()), "\n");
@@ -618,7 +627,7 @@ namespace minis {
     }
 
     inline Value pop() {
-      #ifdef DEBUGGER
+      #if DEBUGGER
         print("Popping value\n");
       #endif
       try {
@@ -832,7 +841,7 @@ namespace minis {
               // FIXME: Use Fortran functions
               case static_cast<uint8>(Math::SUB): {
                 #if DEBUGGER
-                  print("Subtracting");
+                  print("Subtracting\n");
                 #endif
                 Value a = pop(), b = pop();
                 if ((a.t == Type::Int || a.t == Type::Float) && (b.t == Type::Int || b.t == Type::Float)) {
@@ -859,6 +868,9 @@ namespace minis {
                 push(Value::Float(std::get<double>(a.v) / std::get<double>(b.v)));
               } break;
               case static_cast<uint8>(Math::ADD): {
+                #if DEBUGGER
+                  print("add op\n");
+                #endif
                 Value a = pop(), b = pop();
                 // FIXME: This needs to be tested for bugs heavily; When it was found for sorting,
                 //        I found the first if as an else if.
@@ -1350,67 +1362,67 @@ namespace minis {
                   uint8 type = meta >> 4;
                   switch(type) {
                     case 0x00:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push i8\n");
                       #endif
                       push(Value::I8(GETs8()));
                     } break;
                     case 0x01:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push i16\n");
                       #endif
                       push(Value::I16(GETs16()));
                     } break;
                     case 0x02:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push i32\n");
                       #endif
                       push(Value::I32(GETs32()));
                     } break;
                     case 0x03:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push i64\n");
                       #endif
                       push(Value::I64(GETs64()));
                     } break;
                     case 0x04:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push ui8\n");
                       #endif
                       push(Value::UI8(GETu8()));
                     } break;
                     case 0x05:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push ui16\n");
                       #endif
                       push(Value::UI16(GETu16()));
                     } break;
                     case 0x06:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push ui32\n");
                       #endif
                       push(Value::UI32(GETu32()));
                     } break;
                     case 0x07:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push ui64\n");
                       #endif
                       push(Value::UI64(GETu64()));
                     } break;
                     case 0x08:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push double\n");
                       #endif
                       push(Value::Float(GETd64()));
                     } break;
                     case 0x09:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push bool\n");
                       #endif
                       push(Value::Bool(meta & 1));
                     } break;  // Bool - last bit is 0/1
                     case 0x0A:{
-                      #ifdef DEBUGGER
+                      #if DEBUGGER
                         print("Push null\n");
                       #endif
                       push(Value::Null());
@@ -1431,7 +1443,7 @@ namespace minis {
                 } break;
 
                 case 0x30: {
-                  #ifdef DEBUGGER
+                  #if DEBUGGER
                     std::string val = GETstr();
                     print("Push string ", val, "\n");
                     push(Value::Str(std::move(val)));
@@ -1483,7 +1495,7 @@ namespace minis {
               std::string id = GETstr();
               uint64 tt = GETu64();
               #if DEBUGGER
-                print("declaring variable ", id);
+                print("declaring variable ", id, "\n");
               #endif
               Value v  = pop();
               if (tt == 0xECull) frames.back().env->Declare(id, v);
@@ -1493,7 +1505,7 @@ namespace minis {
             case static_cast<uint8>(Variable::GET): {
               std::string id = GETstr();
               #if DEBUGGER
-                print("Getting ", id, "\n");
+                print("getting ", id, "\n");
               #endif
               push(frames.back().env->Get(id).val);
             } break;
@@ -1523,10 +1535,10 @@ namespace minis {
               case static_cast<uint8>(General::POP): discard(); break;
               case static_cast<uint8>(General::YIELD): {
                 #if DEBUGGER
-                  print("yielding");
+                  print("yielding\n");
                 #endif
 
-                #ifdef _WIN32
+                #if _WIN32
                   _getch();
                 #else
                   system("read -n 1");
