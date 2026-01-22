@@ -20,7 +20,7 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER false
+#define DEBUGGER true
 #define DEBUG_READ_PRINT true
 #define DEBUG_BUILTIN_PRINT true
 #define DEBUG_OP_PRINT true
@@ -563,7 +563,7 @@ namespace minis {
     ~VMEngine() { if (f) fclose(f); }
 
     inline void jump(uint64 target) {
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Jumping to ", target, "\n");
       #endif
       ip = target; fseek(f, (long)ip, SEEK_SET);
@@ -571,7 +571,7 @@ namespace minis {
 
     // unsigned ints
     inline uint8 GETu8() {
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Get ui8\n");
       #endif
       uint8 v;
@@ -581,7 +581,7 @@ namespace minis {
     }
 
     inline uint16 GETu16() {
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Get ui16\n");
       #endif
       uint16 v;
@@ -590,7 +590,7 @@ namespace minis {
       return v;
     }
     inline uint32 GETu32() {
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Get ui32\n");
       #endif
       uint32 v;
@@ -600,12 +600,12 @@ namespace minis {
     }
 
     inline uint64 GETu64(
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         bool from_GETstr = false
-      #endif
-    ) {
-      #if DEBUGGER
+      ) {
         if (!from_GETstr) print("Get ui64\n");
+      #else
+      ) {
       #endif
       uint64 v;
       fread(&v, 8, 1, f);
@@ -615,7 +615,7 @@ namespace minis {
 
     // signed ints
     inline int8 GETs8() {
-      #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Get i8\n");
       #endif
       int8 v;
