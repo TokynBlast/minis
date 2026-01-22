@@ -182,7 +182,9 @@ def parse_typed_value(typ, raw):
                 else:
                     out.append(s[i])
                     i += 1
-            return ''.join(out)
+            # Now join and replace placeholders with real chars
+            joined = ''.join(out)
+            return joined.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\')
         s = decode_escapes(raw).encode('utf-8')
         return struct.pack('<Q', len(s)) + s  # 64-bit length prefix
 
@@ -243,10 +245,9 @@ def assemble(source):
     entry_point = HEADER_SIZE  # Default entry point is right after header
 
     for line in lines:
-        line = strip_comment(line)
+        line = strip_comment(line).replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\')
         if not line:
             continue
-        print(line)
 
         # Section
         if line.startswith('.'):
