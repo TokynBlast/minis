@@ -667,26 +667,20 @@ namespace minis {
     inline std::string GETstr() {
       // FIXME: simplify debugger version
       uint64 n=GETu64(
-        #if DEBUGGER
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
           true // Mark as coming from string, so don't print we got the ui64
-        #endif
-      );
-      #if DEBUGGER
-        print("Get ", n, " character string, \"");
+        );
+        print("get ", n, " character string\n");
+      #else
+        ); // If we're not debugging, be sure to close it :)
       #endif
       if(n == 0) {
-        #if DEBUGGER
-          print("\"\n");
-        #endif
         return std::string();
       }
 
       std::string s(n, '\0');
       fread(&s[0], 1, n, f);
       ip += n;
-      #if DEBUGGER
-        print(s, "\"\n");
-      #endif
       return s;
     }
 
