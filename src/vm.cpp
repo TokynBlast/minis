@@ -20,23 +20,23 @@
 // #include <fast_io.h>
 #include "../fast_io/include/fast_io.h"
 
-#define DEBUGGER true
-#define DEBUG_READ_PRINT true
-#define DEBUG_BUILTIN_PRINT true
-#define DEBUG_OP_PRINT true
+#define DEBUGGER false
+#define DEBUG_READ_PRINT false
+#define DEBUG_BUILTIN_PRINT false
+#define DEBUG_OP_PRINT false
 #define DEBUG_ALL_PRINT false
-#define DEBUG_PROG_CATCH_PRINT true
+#define DEBUG_PROG_CATCH_PRINT false
 
 #if DEBUG_PROG_CATCH_PRINT
 #define CATCH_ALL(EXPR, VMREF) \
   try { \
       EXPR; \
-  } catch (const std::bad_variant_access& e) { \
-    print("[FATAL] std::bad_variant_access caught!\n"); \
+  } catch (const std::exception& e) { \
+    print("\n\n\n[FATAL] error caught!\n"); \
     print("Exception: ", std::string(e.what()), "\n"); \
     print("[DEBUG] VM ip: ", (VMREF).ip, "\n"); \
     print("[DEBUG] Stack size: ", (VMREF).stack.size(), "\n"); \
-    print("[DEBUG] Top stack type: ", (VMREF).stack.empty() ? -1 : (int)(VMREF).stack.back().t, "\n"); \
+    print("[DEBUG] Top stack type: ", (VMREF).stack.empty() ? -1 : (int)(VMREF).stack.back().t, "\n\n\n"); \
     exit(1); \
   }
 #endif
@@ -115,15 +115,15 @@ namespace minis {
   inline static std::unordered_map<std::string, BuiltinFn> builtins = {
       // FIXME: We need to add the ability to add the end line manually.
       // FIXME: We need to make print more customizable
-      {"print", [](std::vector<Value> &args) {
+      {"print", [](std::vector<Value> &args) -> Value {
         #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
-          print("Running print\n");
+          print("running print\n");
         #endif
         auto print_value = [&](const Value& val, auto&& print_value_ref) -> void {
           switch (val.t) {
             case Type::Float: print(std::get<double>(val.v)); break;
             case Type::Str:   print(std::get<std::string>(val.v)); break;
-            case Type::Bool:  print(std::get<bool>(val.v)); break;
+            case Type::Bool:  print((bool)std::get<bool>(val.v)); break;
             case Type::Null:  print(""); break;
             case Type::i8:    print(std::get<int8>(val.v)); break;
             case Type::i16:   print(std::get<int16>(val.v)); break;
@@ -146,7 +146,7 @@ namespace minis {
             case Type::Dict: print("[Dict]"); break; // TODO: pretty print dicts
             case Type::Void: print("Error :("); exit(1);
             case Type::TriBool: /* TODO: handle tribool */ break;
-            default: print("FARAL EROR: Unknown type "); exit(1);
+            default: print("FATAL EROR: Unknown type ", (uint8)val.t); exit(1);
           }
         };
 
@@ -156,7 +156,7 @@ namespace minis {
           if (i + 1 < arg_amnt) print(" ");
         }
         // FIXME: print should return nothing
-        return Value::Null();
+        return Value::Void();
       }},
       {"abs", [](std::vector<Value> &args) {
         #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
@@ -310,7 +310,7 @@ namespace minis {
         const std::string &str = std::get<std::string>(args[0].v);
         const std::string &delim = std::get<std::string>(args[1].v);
         #if DEBUGGER and DEBUG_BUILTIN_PRINT
-          print("splitting by ", delim, "\n");
+          print("splitting by \"", delim, "\"\n");
         #endif
 
         std::vector<Value> result;
@@ -324,8 +324,17 @@ namespace minis {
         }
         result.push_back(Value::Str(s.c_str()));
 
-        return Value::List(result);
-       }},
+        #if (DEBUGGER and DEBUG_BUILTIN_PRINT) or (DEBUG_ALL_PRINT and DEBUGGER)
+            print("[");
+            for (size_t i = 0; i < result.size(); ++i) {
+            print_value(result[i]);
+            if (i + 1 < result.size()) print(", ");
+            }
+            print("]\n");
+        #endif
+
+        return Value::List(std::move(result));
+      }},
       {"upper", [](std::vector<Value> &args) -> Value {
         #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
           print("running upper\n");
@@ -349,19 +358,20 @@ namespace minis {
         #endif
         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
       }},
+
       // Implement via Fortran and C++
-      {"random", [](std::vector<Value> &args) -> Value {
-        #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
-          print("running random\n");
-        #endif
-        // use random lib instead
-        if (args.empty()) {
-          return Value::Float((double)rand() / RAND_MAX);
-        } else {
-          uint64 max_val = std::get<uint64>(args[0].v);
-          return Value::UI64(rand() % max_val);
-        }
-      }},
+      // {"random", [](std::vector<Value> &args) -> Value {
+      //   #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
+      //     print("running random\n");
+      //   #endif
+      //   // use random lib instead
+      //   if (args.empty()) {
+      //     return Value::Float((double)rand() / RAND_MAX);
+      //   } else {
+      //     uint64 max_val = std::get<uint64>(args[0].v);
+      //     return Value::UI64(rand() % max_val);
+      //   }
+      // }},
 
       // FIXME: Use fast_io :)
       // {"open", [](std::vector<Value> &args) -> Value {
@@ -415,19 +425,33 @@ namespace minis {
           std::string filename = std::get<std::string>(args[0].v);
           fast_io::native_file_loader loader(filename);
 
-          #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
-            std::string val = std::string(loader.data(), loader.size());
-            print("opening ", filename, "\n");
-            Value result = Value::Str(std::move(val));
-          #else
-            Value result = Value::Str(std::string(loader.data(), loader.size()));
+          // Create the string from the loader data immediately
+          std::string filedata(reinterpret_cast<const char*>(loader.data()), loader.size());
+
+          // 1. Remove UTF-8 BOM if present (Crucial for preventing garbled starts)
+          if (filedata.size() >= 3 &&
+            (unsigned char)filedata[0] == 0xEF &&
+            (unsigned char)filedata[1] == 0xBB &&
+            (unsigned char)filedata[2] == 0xBF) {
+            filedata = filedata.substr(3);
+          }
+
+          // 2. Debugging logs (Combined logic)
+          #if (DEBUGGER && DEBUG_BUILTIN_PRINT) || (DEBUG_ALL_PRINT && DEBUGGER)
+            print("[DEBUG] Opening: ", filename, " (Size: ", filedata.size(), " bytes)\n");
+            if (filedata.size() > 0) {
+              print("[DEBUG] First 100 bytes: ", filedata.substr(0, std::min<size_t>(filedata.size(), 100)), "\n");
+            }
           #endif
-          return result;
+
+          // 3. Return the processed string
+          return Value::Str(std::move(filedata));
+
         } catch (const std::exception& e) {
           print("File I/O error: ", std::string(e.what()), "\n");
-          exit(1);
+          std::exit(1);
         }
-       }},
+      }},
 
       // FIXME: We don't need to take any arguments
       // {"flush", [](std::vector<Value> &args) -> Value {
@@ -445,29 +469,29 @@ namespace minis {
         #if DEBUGGER and DEBUG_BUILTIN_PRINT or DEBUG_ALL_PRINT and DEBUGGER
           print("running typeof\n");
         #endif
-         switch (args[0].t) {
-         case Type::Float:   return Value::Str("float");
-         case Type::Str:     return Value::Str("str");
-         case Type::Bool:    return Value::Str("bool");
-         case Type::List:    return Value::Str("list");
-         case Type::Null:    return Value::Str("null");
-         case Type::Dict:    return Value::Str("dict");
-         case Type::i8:      return Value::Str("i8");
-         case Type::i16:     return Value::Str("i16");
-         case Type::i32:     return Value::Str("i32");
-         case Type::i64:     return Value::Str("i64");
-         case Type::ui8:     return Value::Str("ui8");
-         case Type::ui16:    return Value::Str("ui16");
-         case Type::ui32:    return Value::Str("ui32");
-         case Type::ui64:    return Value::Str("ui64");
-         case Type::Range:   return Value::Str("range");
-         case Type::Void:    return Value::Str("void"); // Safety
-         case Type::TriBool: return Value::Str("tribool");
-         default: {
-           print("Unknown type\n");
-           std::exit(1);
-         }
-         }
+          switch (args[0].t) {
+            case Type::Float:   return Value::Str("float");
+            case Type::Str:     return Value::Str("str");
+            case Type::Bool:    return Value::Str("bool");
+            case Type::List:    return Value::Str("list");
+            case Type::Null:    return Value::Str("null");
+            case Type::Dict:    return Value::Str("dict");
+            case Type::i8:      return Value::Str("i8");
+            case Type::i16:     return Value::Str("i16");
+            case Type::i32:     return Value::Str("i32");
+            case Type::i64:     return Value::Str("i64");
+            case Type::ui8:     return Value::Str("ui8");
+            case Type::ui16:    return Value::Str("ui16");
+            case Type::ui32:    return Value::Str("ui32");
+            case Type::ui64:    return Value::Str("ui64");
+            case Type::Range:   return Value::Str("range");
+            case Type::Void:    return Value::Str("void"); // Safety
+            case Type::TriBool: return Value::Str("tribool");
+            default: {
+              print("Unknown type\n");
+              std::exit(1);
+            }
+          }
        }},
   };
 
@@ -670,7 +694,7 @@ namespace minis {
       #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
           true // Mark as coming from string, so don't print we got the ui64
         );
-        print("get ", n, " character string\n");
+        print("get ", n, " character string");
       #else
         ); // If we're not debugging, be sure to close it :)
       #endif
@@ -681,6 +705,13 @@ namespace minis {
       std::string s(n, '\0');
       fread(&s[0], 1, n, f);
       ip += n;
+      #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
+        if (n < 35) {
+          print(" ", s, "\n");
+        } else {
+          print("\n");
+        }
+      #endif
       return s;
     }
 
@@ -697,14 +728,28 @@ namespace minis {
           print("FATAL ERROR: Stack had null top value.");
           std::exit(1);
         }
+        if (stack.back().t == Type::Void) {
+          print("FATAL ERROR: Stack had void top value.");
+          std::exit(1);
+        }
         Value v = std::move(stack.back());
+        #if DEBUGGER
+          if (sizeof(v) < 30){
+            print("value popped: ");
+            print_value(v);
+            print("\n");
+          } else {
+            print("value too large to print, sizeof: ", sizeof(v));
+          }
+        #endif
         stack.pop_back();
         return v;
       } catch (...) {
         print("FATAL ERROR: Stack operation failed.");
         std::exit(1);
       }
-      return Value::Null();
+      return Value::Null(); // impossible to reach :)
+                            // we can use GNU impossible :3
     }
 
     inline void push(Value v) { stack.push_back(std::move(v)); }
@@ -799,7 +844,7 @@ namespace minis {
                 #if DEBUGGER and DEBUG_OP_PRINT
                   print("equal op\n");
                 #endif
-                Value a = pop(), b = pop();
+                Value a = pop(), b = pop();f
                 bool eq = (a.t == b.t) ? (a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                               ? (std::get<double>(a.v) == std::get<double>(b.v)) : false);
@@ -816,13 +861,14 @@ namespace minis {
                 #endif
               } break;
               case static_cast<uint8>(Logic::JUMP_IF): {
-                uint64 tgt = GETu64();
                 Value v = pop();
                 if (std::get<bool>(v.v)) {
                   #if DEBUGGER
+                    uint64 tgt = GETu64();
                     print("jumping to ", tgt, "\n");
+                  #else
+                    jump(GETu64());
                   #endif
-                  jump(tgt);
                 }
               } break;
               case static_cast<uint8>(Logic::JUMP_IF_NOT): {
@@ -920,7 +966,7 @@ namespace minis {
           case static_cast<uint8>(Register::MATH): {
             switch (op & 0x1F) {
               // FIXME: Use Fortran functions
-              case static_cast<uint8>(Math::SUB): {
+              /*case static_cast<uint8>(Math::SUB): {
                 #if DEBUGGER
                   print("Subtracting\n");
                 #endif
@@ -932,7 +978,7 @@ namespace minis {
                     push(Value::I64(std::get<int64>(a.v) - std::get<int64>(b.v)));
                   }
                 }
-              } break;
+              } break;*/
               case static_cast<uint8>(Math::MULT): {
                 #if DEBUGGER
                   // FIXME: This should print out the values to be multiplied :)
@@ -1654,7 +1700,7 @@ namespace minis {
                   print("yielding\n");
                 #endif
 
-                #if _WIN32
+                #ifdef _WIN32
                   _getch();
                 #else
                   system("read -n 1");
@@ -1727,6 +1773,7 @@ namespace minis {
                 if (stack.size() > frames.back().stack_base) {
                   rv = pop();
                 } else {
+                  // FIXME: DANGEROUS, find some alternative
                   rv = Value::Void();
                 }
                 if (frames.size() == 1) return;
@@ -1739,10 +1786,11 @@ namespace minis {
                 }
 
                 jump(ret);
-                push(rv);
+                push(std::move(rv));
               } break;
 
               case static_cast<uint8>(Func::CALL): {
+                // FIXME: We need to add a specific directory for plugin object files!
                 std::string name = GETstr();
                 uint64 argc = GETu64();
                 #if DEBUGGER
@@ -1799,7 +1847,9 @@ namespace minis {
               [64-bit variable location]
             Using this table, we dispatch and run() the found function
             */
+            // Simpler way, this simply tells the code, "This is what we have acess to :)" and we base it on file name!
           } break;
+          // NOTE: This is going to be given to Rust to do
           case static_cast<uint8>(Register::STACK): {
 
           } break;
@@ -1831,11 +1881,11 @@ namespace minis {
   void run(const std::string& path) {
     VMEngine vm;
     #if DEBUGGER
-      print("Loading VM\n");
+      print("loading VM\n");
     #endif
     vm.load(path);
     #if DEBUGGER
-      print("Running\n");
+      print("running\n");
     #endif
     #if DEBUGGER and DEBUG_PROG_CATCH_PRINT
       CATCH_ALL(vm.run(), vm);
