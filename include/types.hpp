@@ -2,7 +2,6 @@
 
 namespace minis {
   enum class Type : unsigned char {
-    Int=0,
     Float,
     Bool,
     Str,
