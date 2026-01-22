@@ -1,16 +1,36 @@
 .main
+  push "Running :)\n"
+  call "print" 1
+
   push "compiler.asm"
   call "read" 1
   set contents
+
+  ;push "set contents :D\n"
+  ;call "print" 1
 
   jmp preprocess
 
 
 .preprocess
+  push "in preprocess!\n"
+  call "print" 1
+
   get contents
   push "\n"
   call "split" 2
   set lines
+
+  push "lines ["
+  call "print" 1
+  get lines
+  call "print" 1
+  push "] lines\n"
+  call "print" 1
+
+  ;push "set lines to:\n"
+  ;get lines
+  ;call "print" 2
 
   push []
   declare output
@@ -18,23 +38,36 @@
   jmp while_loop
 
 while_loop:
-  push "new_line = "
-  get new_line
-  push "\n"
-
-  push "output = "
-  get output
-  push "\n"
-  call "print" 6
+  push "while_loop\n"
+  call "print" 1
 
   get lines
   call "len" 1
   set lines_len
 
+  push "set lines_len, "
+  get lines_len
+  push "\n"
+  call "print" 3
+
   get pos
   get lines_len
   lt
+  ;not
   set cond_while
+
+  push "pos = "
+  get pos
+
+  push "\nset cond_while, "
+  get cond_while
+
+  push "\n\n\n"
+  push true
+  push "\n"
+  push false
+  push "\n\n\n"
+  call "print" 9
 
   get cond_while
   jmpifn pre_proc_end
@@ -45,12 +78,19 @@ while_loop:
   index
   set curr_line
 
-  set str new_line ""
+  push "set curr_line: "
+  get curr_line
+  push "\n"
+  call "print" 3
+
+  set str new_line "a"
   set i64 line_pos 0
   set bool in_quotes false
 
 
 char_loop:
+  push "char_loop"
+  call "print" 1
   get curr_line
   call "len" 1
   set curr_line_len
@@ -64,20 +104,26 @@ char_loop:
   jmpifn end_line
 
 
+  push "curr_char = "
+  get curr_char
+  push "\n"
+  call "print" 3
+
+
   get curr_line
   get line_pos
   index
   set curr_char
 
 
-  ; ────────────── QUOTE TOGGLE ──────────────
+  ; QUOTE TOGGLE
   get curr_char
   push "\""
   eq
   jmpif toggle_quotes
 
 
-  ; ────────────── COMMENT CHECK ──────────────
+  ; COMMENT CHECK
   get curr_char
   push ";"
   eq
@@ -96,7 +142,7 @@ char_loop:
   jmpif end_line
 
 
-  ; ────────────── NORMAL CHAR ──────────────
+  ; NORMAL CHAR
   get new_line
   get curr_char
   add
@@ -111,6 +157,8 @@ char_loop:
 
 
 toggle_quotes:
+  push "toggle_quotes"
+  call "print" 1
   get in_quotes
   not
   set in_quotes
@@ -129,6 +177,8 @@ toggle_quotes:
 
 
 end_line:
+  push "end_line"
+  call "print" 1
   get new_line
   call "len" 1
   set new_line_len
@@ -148,6 +198,8 @@ end_line:
 
 
 next_line:
+  push "next_line\n"
+  call "print" 1
   get pos
   push 1
   add
@@ -157,13 +209,15 @@ next_line:
 
 
 pre_proc_end:
+  push "pre_proc_end\n"
   get output
-  call "print" 1
   push "\n"
-  call "print" 1
+  call "print" 3
 
   jmp prog_end
 
 
 .prog_end
+  push "prog_end\n"
+  call "print" 1
   halt
