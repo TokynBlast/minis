@@ -296,17 +296,12 @@ def assemble(source):
         # Smart get: get i32 varname  (type hint for casting)
         elif op == 'get' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
             varname = args[1]
-            byte_offset += 1 + 8 + len(varname.encode('utf-8'))  # 8-byte length prefix
+            byte_offset += 1 + 8 + len(varname.encode('utf-8'))  # opcode + 8-byte length prefix + varname
 
         # Typed push matching VM format:
-        # Format: PUSH opcode(0x24) + typeByte + data
-        # Numeric/bool: 0x24 + 0x00 + meta(1) + data
-        # String: 0x24 + 0x30 + string(8+len)
-        # List: 0x24 + 0x40 + count(8)
+        # Only strings get a length prefix, numbers are encoded as binary
         elif op in TYPE_SIZES:
             if args:
-                # Accept escapes in all args
-                val = decode_escapes(args[0])
                 byte_offset += 1 + 1 + 1 + TYPE_SIZES[op]  # opcode + typeByte + meta + data
             else:
                 byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (no data)
@@ -327,8 +322,13 @@ def assemble(source):
         elif op == 'null':
             byte_offset += 1 + 1 + 1  # opcode + typeByte + meta (VM doesn't read data for null)
 
+        elif op == 'declare':
+            # declare varname: opcode + length-prefixed varname + uint64 type tag
+            varname = args[0]
+            byte_offset += 1 + 8 + len(varname.encode('utf-8')) + 8  # opcode + 8-byte varname + uint64 type tag
         elif op in ('get', 'set', 'unset', 'dec'):
-            byte_offset += 1 + 8 + len(args[0].encode('utf-8'))  # 8-byte length prefix
+            # Only encode variable name as length-prefixed string
+            byte_offset += 1 + 8 + len(args[0].encode('utf-8'))  # opcode + 8-byte length prefix + varname
 
         elif op in ('jmp', 'jmpif', 'jmpifn'):
             byte_offset += 1 + 8  # opcode + 64-bit target
@@ -340,33 +340,25 @@ def assemble(source):
             byte_offset += 1 + 8 + len(name.encode('utf-8')) + 8  # opcode + 8-byte length prefix + name + argc(8)
 
         # Generic push with type inference
-        # Note: shlex.split strips quotes, so we check the raw line
-        # Format: PUSH opcode(0x24) + typeByte + data
+        # Only strings get a length prefix, numbers are encoded as binary
         elif op == 'push' and args:
             val = args[0]
-            # Check if original line has a quoted string after 'push'
             raw_after_push = line.split(None, 1)[1] if len(line.split(None, 1)) > 1 else ''
             is_string = raw_after_push.strip().startswith('"')
 
             if is_string:
-                # Always decode escapes for string pushes
                 val = val[1:-1] if val.startswith('"') and val.endswith('"') else val
                 val = decode_escapes(val)
                 byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
             elif val.lower() in ('true', 'false'):
-                # Bool: opcode + typeByte + meta (value in lower nibble)
                 byte_offset += 1 + 1 + 1
             elif val == '[]':
-                # Empty list: opcode + typeByte + count
                 byte_offset += 1 + 1 + 8
             elif '.' in val and val.replace('.', '', 1).replace('-', '', 1).isdigit():
-                # Float (f64): opcode + typeByte + meta + 8 bytes
                 byte_offset += 1 + 1 + 1 + 8
             elif val.lstrip('-').replace('0x', '', 1).replace('0X', '', 1).isalnum() and (val.lstrip('-').isdigit() or val.lstrip('-').startswith('0x')):
-                # Integer (i64): opcode + typeByte + meta + 8 bytes
                 byte_offset += 1 + 1 + 1 + 8
             else:
-                # Treat as unquoted string (convenience)
                 val = decode_escapes(val)
                 byte_offset += 1 + 1 + 8 + len(val.encode('utf-8'))
 
@@ -406,7 +398,13 @@ def assemble(source):
 
         # Emit
         # Smart set: set i32 varname 42
-        if op == 'set' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
+        if op == 'declare':
+            # declare varname: opcode + length-prefixed varname + uint64 type tag (0xEC)
+            output.append(OPCODES['declare'])
+            varname = args[0]
+            output.extend(encode_string(varname))
+            output.extend(struct.pack('<Q', 0xEC))
+        elif op == 'set' and len(args) >= 2 and args[0].lower() in ALL_TYPES:
             typ = args[0].lower()
             varname = args[1]
             val = args[2] if len(args) > 2 else ('0' if typ in TYPE_SIZES else ('[]' if typ == 'list' else 'null'))
@@ -542,6 +540,7 @@ def assemble(source):
                 output.extend(data)
 
         elif op in ('get', 'set', 'unset', 'dec'):
+            # Only encode variable name as length-prefixed string
             output.append(OPCODES[op])
             output.extend(encode_string(args[0]))
 
