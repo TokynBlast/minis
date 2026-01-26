@@ -4,14 +4,14 @@
 
 // NOTE: 3-bit register and 5-bit opcode
 enum class Register : uint8 {
-  IMPORT,     // Importing libraries and other files
-  VARIABLE,   // Operations on variables
-  LOGIC,      // Boolean and comparison operations
-  FUNCTION,   // Function support
-  GENERAL,    // Operations that don't fit into the others
-  MATH,       // Math operations (Powered by Fortran)
-  STACK,      // Stack manipulation
-  BITWISE     // Bitwise operations
+  LOGIC,    // Boolean and comparison operations
+  VARIABLE, // Operations on variables
+  FUNCTION, // Function support
+  IMPORT,   // Importing libraries and other files
+  GENERAL,  // Operations that don't fit into the others
+  MATH,     // Math operations (Powered by Fortran)
+  STACK,    // Stack manipulation
+  BITWISE   // Bitwise operations
 };
 
 enum class Import : uint8 {
@@ -36,9 +36,9 @@ enum class Logic : uint8 {
   AND,           // Pop b,a -> push (a && b)
   OR,            // Pop b,a -> push (a || b)
   JUMP,          // Jump to address unconditionally
-  JUMP_IF,       // Pop cond, jump if true
   JUMP_IF_NOT,   // Pop cond, jump if false
-  NOT            // Pop a -> push (!a)
+  NOT,            // Pop a -> push (!a)
+  JUMP_IF   // Pop cond, jump if true
 };
 
 enum class Func : uint8 {
