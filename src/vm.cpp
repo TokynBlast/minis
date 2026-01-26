@@ -124,7 +124,7 @@ namespace minis {
             case Type::Float: print(std::get<double>(val.v)); break;
             case Type::Str:   print(std::get<std::string>(val.v)); break;
             case Type::Bool:  print((bool)std::get<bool>(val.v)); break;
-            case Type::Null:  print(""); break;
+            case Type::Null:  print("null..."); break;
             case Type::i8:    print(std::get<int8>(val.v)); break;
             case Type::i16:   print(std::get<int16>(val.v)); break;
             case Type::i32:   print(std::get<int32>(val.v)); break;
@@ -578,7 +578,7 @@ namespace minis {
     struct FnMeta {
       uint64 entry;
       // FIXME: Return types can be 100% compile-time
-      Type ret;
+      //Type ret;
       std::vector<std::string> params;
     };
     std::unordered_map<std::string, FnMeta> fnEntry;
@@ -590,7 +590,7 @@ namespace minis {
       #if DEBUGGER and DEBUG_READ_PRINT or DEBUGGER and DEBUG_ALL_PRINT
         print("Jumping to ", target, "\n");
       #endif
-      ip = target; fseek(f, (long)ip, SEEK_SET);
+      ip = target; fseek(f, (uint64)ip, SEEK_SET);
     }
 
     // unsigned ints
@@ -780,7 +780,7 @@ namespace minis {
       ip = entry_main;
       code_end = table_off;
 
-      fseek(f, (long)table_off, SEEK_SET);
+      fseek(f, (uint64)table_off, SEEK_SET);
       for (uint64 i = 0; i < fnCount; i++) {
         std::string name = GETstr();
         uint64 entry = GETu64();
@@ -789,13 +789,13 @@ namespace minis {
         std::vector<std::string> params;
         params.reserve((size_t)pcnt);
         for (uint64 j = 0; j < pcnt; ++j) params.push_back(GETstr());
-        fnEntry[name] = FnMeta{ entry, ret, params };
+        fnEntry[name] = FnMeta{ entry, /*ret,*/ params };
       }
 
       // Read and load plugins if line_map_off points to plugin table
       // For now, seek to line_map_off and check if there's a plugin table after
       if (line_map_off > 0) {
-        fseek(f, (long)line_map_off, SEEK_SET);
+        fseek(f, (uint64)line_map_off, SEEK_SET);
         // Skip line map
         uint64 line_map_count = GETu64();
         for (uint64 i = 0; i < line_map_count; i++) {
@@ -844,7 +844,7 @@ namespace minis {
                 #if DEBUGGER and DEBUG_OP_PRINT
                   print("equal op\n");
                 #endif
-                Value a = pop(), b = pop();f
+                Value a = pop(), b = pop();
                 bool eq = (a.t == b.t) ? (a == b)
                           : ((a.t != Type::Str && a.t != Type::List && b.t != Type::Str && b.t != Type::List)
                               ? (std::get<double>(a.v) == std::get<double>(b.v)) : false);
@@ -1054,17 +1054,17 @@ namespace minis {
                 #if DEBUGGER and DEBUG_OP_PRINT
                   print("add multiple op\n");
                 #endif
-                uint32 n = GETu32();
+                uint64 n = GETu64();
 
                 if (n == 0) {
-                  push(Value::I32(0));
+                  push(Value::I64(0));
                   break;
                 }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint32 i = 0; i < n; ++i) {
+                for (uint64 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
 
@@ -1168,21 +1168,21 @@ namespace minis {
                 #if DEBUGGER and DEBUG_OP_PRINT
                   print("divide multiple op\n");
                 #endif
-                uint32 n = GETu32();
+                uint64 n = GETu64();
 
                 #if DEBUGGER
                   print("div ", n, " values\n");
                 #endif
 
                 if (n == 0) {
-                  push(Value::I32(0));
+                  push(Value::I64(0));
                   break;
                 }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint32 i = 0; i < n; ++i) {
+                for (uint64 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
                 // FIXME: Should use largest type given :)
@@ -1285,17 +1285,17 @@ namespace minis {
                 #if DEBUGGER and DEBUG_OP_PRINT
                   print("subtract multiple op\n");
                 #endif
-                uint32 n = GETu32();
+                uint64 n = GETu64();
 
                 if (n == 0) {
-                  push(Value::I32(0));
+                  push(Value::I64(0));
                   break;
                 }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint32 i = 0; i < n; ++i) {
+                for (uint64 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
                 // FIXME: Should use largest type given :)
@@ -1399,17 +1399,17 @@ namespace minis {
                 #endif
                 // FIXME: shorten this, do 64-bit and cast to variables size :)
                 // Do this for all others
-                uint32 n = GETu32();
+                uint64 n = GETu64();
 
                 if (n == 0) {
-                  push(Value::I32(0));
+                  push(Value::I64(0));
                   break;
                 }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
-                for (uint32 i = 0; i < n; ++i) {
+                for (uint64 i = 0; i < n; ++i) {
                   operands.push_back(pop());
                 }
                 // FIXME: Should use largest type given :)
@@ -1652,8 +1652,8 @@ namespace minis {
 
             case static_cast<uint8>(Variable::DECLARE): {
               #if DEBUGGER and DEBUG_OP_PRINT
-                  print("declare op\n");
-                #endif
+                print("declare op\n");
+              #endif
               std::string id = GETstr();
               uint64 tt = GETu64();
               #if DEBUGGER
@@ -1708,7 +1708,7 @@ namespace minis {
               } break;
               case static_cast<uint8>(General::INDEX): {
                 Value base = pop(), idxV = pop();
-                long long i = std::get<int32>(idxV.v);
+                uint64 i = std::get<uint64>(idxV.v);
                 #if DEBUGGER
                   print("indexing at ", i, "\n");
                 #endif
