@@ -1,5 +1,6 @@
 .main
-  push "Running :)\n"
+  push "Running :)
+"
   call "print" 1
 
   push "compiler.asm"
@@ -17,16 +18,23 @@
   call "print" 1
 
   get contents
-  push "\n"
+  push "
+"
   call "split" 2
   set lines
 
-  push "lines ["
+  unset contents
+
+  get lines
+  push "\n"
+  call "print" 2
+
+  push "This is the first item:\n"
   call "print" 1
   get lines
-  call "print" 1
-  push "] lines\n"
-  call "print" 1
+  push 1
+  index
+  call "print" 2
 
   ;push "set lines to:\n"
   ;get lines
