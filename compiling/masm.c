@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <vect.h>
+#include "vect.h"
 
 // Global FILE pointers
 FILE *compiler;
@@ -135,6 +135,7 @@ int main() {
   FILE *bufferFile = fmemopen(buffer, strlen(buffer), "r");
 
   char* noNewLine = NULL;
+  bool inQuote = true;
 
   while ((ch = fgetc(bufferFile)) != EOF) {
     if ((ch == '\n') && (lastChar == '\n')) {
@@ -143,13 +144,21 @@ int main() {
       charCat(&noNewLine, ch);
     }
     lastChar = ch;
+    if (ch == '\"') {
+      inQuote = !inQuote;
+    }
+    if (!inQuote && ch == ';') {
+      while (ch != '\n') {
+        ch = fgetc(bufferFile);
+      }
+    }
   }
   fclose(bufferFile);
 
   char *out = NULL;
 
   FILE *final = fmemopen(noNewLine, strlen(noNewLine), "r");
-  FILE *out = fmemopen(out, 0, "r");
+  FILE *out = fmemopen(out, 0, "w");
   // keep bufferFile open so we can get it
   // begin replacing variables :)
   // make a simple AST :3
@@ -160,24 +169,27 @@ int main() {
     if (checkNext(final, ".")) {
       while (emitted_bytes != ':') {
         if (emitted_bytes == ' ' && emitted_bytes == '\n') {
-          perrror("Namespace MUST start with '.' and end with ':', and cannot contain spaces\n");
+          perror("Namespace MUST start with '.' and end with ':', and cannot contain spaces\n");
         } else {
           // push(&final, fgetc(final));
-          fputc(final, emitted_bytes);
+          fputc(out, emitted_bytes);
         }
         emitted_bytes = fgetc(final);
       }
     } else if (checkNext(final, "set")) {
-      fputc(regop(1,1));
+      fputc(out, regop(1,1));
       fgetc(final);
       while (emitted_bytes != ' ' && emitted_bytes != '\n') {
-
-        emitted_bytes = fgetc(final);
+        fputc(out, getc(final));
       }
     }
   }
-  if (checkNext(bufferFile, ".")) {
+  /*if (checkNext(final, ".")) {
 
+  }*/
+  rewind(final);
+  while ((ch = fgetc(final)) != EOF) {
+    printf("%c", ch);
   }
   fclose(bufferFile);
   return 0;
