@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <set>
 #include <array>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
@@ -762,64 +763,118 @@ namespace minis {
       stack.pop_back();
     }
 
-    inline void load(const std::string& path) {
-      f = fopen(path.c_str(), "rb");
-      if (!f) throw std::runtime_error("cannot open bytecode");
+    static std::set<std::string> loaded_plugins;
+    static std::set<std::string> loaded_libs;
+    static uint8 lib_recursion_depth = 0;
+    static const uint8 MAX_LIB_RECURSION = 32;
+
+    inline void load(const std::string& path, bool is_lib = false) {
+      // Check for library cycles
+      if (is_lib) {
+        if (loaded_libs.count(path)) return;
+
+        lib_recursion_depth++;
+        if (lib_recursion_depth > MAX_LIB_RECURSION) {
+          throw std::runtime_error("library recursion depth exceeded\n");
+        }
+      }
+
+      FILE* file = fopen(path.c_str(), "rb");
+      if (!file) throw std::runtime_error("cannot open bytecode\n");
 
       char magic[9] = {0};
-      fread(magic, 1, 8, f);
-      if (std::memcmp(magic, "  \xc2\xbd" "6e" "\xc3\xa8", 8) != 0)  // "  ½6eè" = 8 bytes
-        throw std::runtime_error("bad bytecode verification");
-
-      table_off = GETu64();
-      uint64 fnCount = GETu64();
-      uint64 entry_main = GETu64();
-      uint64 line_map_off = GETu64();
-
-      // Header is now exactly 40 bytes (8 magic + 32 data), no padding
-      ip = entry_main;
-      code_end = table_off;
-
-      fseek(f, (uint64)table_off, SEEK_SET);
-      for (uint64 i = 0; i < fnCount; i++) {
-        std::string name = GETstr();
-        uint64 entry = GETu64();
-        Type ret = (Type)GETu8();
-        uint64 pcnt = GETu64();
-        std::vector<std::string> params;
-        params.reserve((size_t)pcnt);
-        for (uint64 j = 0; j < pcnt; ++j) params.push_back(GETstr());
-        fnEntry[name] = FnMeta{ entry, /*ret,*/ params };
+      fread(magic, 1, 8, file);
+      if (std::memcmp(magic, "  \xc2\xbd" "6e" "\xc3\xa8", 8) != 0) {
+        fclose(file);
+        throw std::runtime_error("bad bytecode verification\n");
       }
 
-      // Read and load plugins if line_map_off points to plugin table
-      // For now, seek to line_map_off and check if there's a plugin table after
-      if (line_map_off > 0) {
-        fseek(f, (uint64)line_map_off, SEEK_SET);
-        // Skip line map
-        uint64 line_map_count = GETu64();
-        for (uint64 i = 0; i < line_map_count; i++) {
-          GETu64(); // offset
-          GETu32(); // line
-        }
+      uint64 entry_main = GETu64();
+      uint64 plugin_table_off = GETu64();
+      uint64 lib_table_off = GETu64();
 
-        // Now read plugin table
+      // Header is exactly 40 bytes (8 magic + 32 data)
+
+      // Mark library as loaded BEFORE recursing
+      if (is_lib) {
+        loaded_libs.insert(path);
+      } else {
+        // For main program
+        ip = entry_main;
+        code_end = table_off;
+      }
+
+      // Load function table
+      fseek(file, (uint64)table_off, SEEK_SET);
+
+      // Load libraries if lib table exists
+      if (lib_table_off > 0) {
+        fseek(file, (uint64)lib_table_off, SEEK_SET);
+        uint64 lib_count = GETu64();
+
+        for (uint64 i = 0; i < lib_count; i++) {
+          std::string lib_name = GETstr();
+          bool has_custom_path = GETu8();
+          std::string lib_path;
+
+          if (has_custom_path) {
+            lib_path = GETstr();
+          } else {
+            lib_path = "./libs/" + lib_name + ".vbc";
+          }
+
+          // Recursively load library
+          load(lib_path, true);
+        }
+      }
+
+      // Load plugins if plugin table exists
+      if (plugin_table_off > 0) {
+        fseek(file, (uint64)plugin_table_off, SEEK_SET);
         uint64 plugin_count = GETu64();
+
         for (uint64 i = 0; i < plugin_count; i++) {
           std::string module_name = GETstr();
-          std::string library_path = GETstr();
 
-          // Load plugin
+          // Skip if already loaded
+          if (loaded_plugins.count(module_name)) continue;
+
+          bool has_custom_path = GETu8();
+          std::string library_path;
+
+          if (has_custom_path) {
+            library_path = GETstr();
+          } else {
+            #if defined(_WIN32) || defined(_WIN64)
+              library_path = "./plugins/" + module_name + ".dll";
+            #elif defined(__linux__) || defined(__unix__) || defined(__APPLE__) || defined(__MACH__)
+              library_path = "./plugins/" + module_name + ".so";
+            #endif
+          }
+
           if (!PluginManager::load_plugin(module_name, library_path)) {
-            print("FATAL ERROR: Failed to load plugin ", module_name, "\n");
+            fclose(file);
+            print("FATAL ERROR: Failed to load plugin ", module_name, ", ", library_path, " does not exist\n");
             std::exit(1);
           }
+
+          loaded_plugins.insert(module_name);
         }
       }
 
-      jump(entry_main);
-      frames.push_back(Frame{ (uint64)-1, nullptr, 0 });
-      frames.back().env = std::make_unique<Env>(&globals);
+      fclose(file);
+
+      // Decrement recursion depth
+      if (is_lib) {
+        lib_recursion_depth--;
+      }
+
+      // Only initialize for main program
+      if (!is_lib) {
+        jump(entry_main);
+        frames.push_back(Frame{ (uint64)-1, nullptr, 0 });
+        frames.back().env = std::make_unique<Env>(&globals);
+      }
     }
 
     inline void run() {

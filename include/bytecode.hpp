@@ -46,7 +46,6 @@ enum class Func : uint8 {
   TAIL,       // Tail call optimization
   RETURN,     // Return value(s) from function
   BUILTIN,    // Call builtin function
-  LAMBDA      // Create anonymous function
 };
 
 enum class Math : uint8 {
