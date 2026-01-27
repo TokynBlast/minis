@@ -1,4 +1,4 @@
-.main
+.main:
   push "Running :)
 "
   call "print" 1
@@ -13,7 +13,7 @@
   jmp preprocess
 
 
-.preprocess
+.preprocess:
   push "in preprocess!\n"
   call "print" 1
 
@@ -45,7 +45,7 @@
   set ui64 pos 0
   jmp while_loop
 
-while_loop:
+.while_loop:
   push "while_loop\n"
   call "print" 1
 
@@ -96,7 +96,7 @@ while_loop:
   set bool in_quotes false
 
 
-char_loop:
+.char_loop:
   push "char_loop"
   call "print" 1
   get curr_line
@@ -161,7 +161,7 @@ char_loop:
   jmp char_loop
 
 
-toggle_quotes:
+.toggle_quotes:
   push "toggle_quotes"
   call "print" 1
   get in_quotes
@@ -181,7 +181,7 @@ toggle_quotes:
   jmp char_loop
 
 
-end_line:
+.end_line:
   push "end_line"
   call "print" 1
   get new_line
@@ -202,7 +202,7 @@ end_line:
   set output
 
 
-next_line:
+.next_line:
   push "next_line\n"
   call "print" 1
   get pos
@@ -213,7 +213,7 @@ next_line:
   jmp while_loop
 
 
-pre_proc_end:
+.pre_proc_end:
   push "pre_proc_end\n"
   get output
   push "\n"
@@ -222,7 +222,11 @@ pre_proc_end:
   jmp prog_end
 
 
-.prog_end
+.prog_end:
   push "prog_end\n"
   call "print" 1
   halt
+
+; hey
+
+"; hey"
