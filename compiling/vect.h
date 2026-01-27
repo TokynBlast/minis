@@ -6,4 +6,4 @@
     (v)->data = realloc((v->data), (v)->cap * sizeof(*(v)->data)); \
   } \
    (v)->data[(v)->len++] = (x); \
-} while (0) \
+} while (0)
