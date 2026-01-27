@@ -790,6 +790,7 @@ namespace minis {
       }
 
       uint64 entry_main = GETu64();
+      table_off = GETu64();
       uint64 plugin_table_off = GETu64();
       uint64 lib_table_off = GETu64();
 
