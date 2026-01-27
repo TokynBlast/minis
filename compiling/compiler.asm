@@ -137,12 +137,9 @@ char_loop:
   eq
   set is_semicolon
 
+  get is_semicolon
   get in_quotes
   not
-  set not_in_quotes
-
-  get is_semicolon
-  get not_in_quotes
   and
   set is_comment_cut
 
