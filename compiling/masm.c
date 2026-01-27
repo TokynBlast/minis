@@ -29,17 +29,17 @@ int charCat(char **string, char character) { // Concat a character to a charrrrr
   return 0;
 }
 
-char *readTill(char chara) {
+char *readTill(FILE *f, char chara) {
   // Hi, I'm chara the explorer! In Spanish, char is carbonizarse! Can you say "carbonizarse"?
   char ch;
   char *gotten = NULL;
-  while ((ch = fgetc(compiler)) != EOF && (ch != chara)) {
+  while ((ch = fgetc(f)) != EOF && (ch != chara)) {
     if (ch == '\\') {
-      ch = fgetc(compiler);
+      ch = fgetc(f);
       if (ch == EOF) {
-        fprintf(stderr, "Error: Unexpected EOF after escape character\n");
+        fprintf(stderr, "Error: Unexpected EOF after escape character\nsome files not closed-\n");
         free(gotten);
-        fclose(compiler);
+        fclose(f);
         fclose(compiled_out);
         exit(1);
       }
@@ -75,12 +75,37 @@ bool checkNext(FILE *buff, char toCheck[]) {
   return true;
 }
 
-uint8_t opgen(reg, op) {
-  return ((reg << 5) | op);
+uint8_t opgen(uint8_t reg, uint8_t op) {
+  return (reg << 5) | op;
 }
 
+uint8_t eq, not_eq, less_than, and, or, jmp, jmp_if_not, not, jmp_if, // logic
+        get, set, dec, unset, push, // variable
+        call, tail, ret, builtin, // function
+        ;
+
 int main() {
-  printf("Starting main loop\n");
+  eq = opgen(0,0);
+  not_eq = opgen(0,1);
+  less_than = opgen(0,2);
+  and = opgen(0,3);
+  or = opgen(0,4);
+  jmp = opgen(0,5);
+  jmp_if_not = opgen(0,6);
+  not = opgen(0,7);
+  jmp_if = opgen(0,8);
+
+  get = opgen(1,0);
+  set = opgen(1,1);
+  dec = opgen(1,2);
+  unset = opgen(1,3);
+  push = opgen(1,4);
+
+  call = opgen(1,0);
+  tail = opgen(1,1);
+  ret = opgen(1,2);
+  builtin = opgen(1,3);
+
   char ch;
   char *str = NULL;
 
@@ -109,7 +134,7 @@ int main() {
 
     if (ch == '"') {
       charCat(&buffer, '"'); // Print opening quote
-      str = readTill('"');  // Read until closing quote
+      str = readTill(compiler, '"');  // Read until closing quote
       if (str) {
         for (char *p = str; *p; ++p) {
           charCat(&buffer, *p);
@@ -128,22 +153,14 @@ int main() {
   str = NULL;
   fclose(compiler);
 
-  fclose(compiled_out);
-
   char lastChar = 0;
 
   FILE *bufferFile = fmemopen(buffer, strlen(buffer), "r");
 
   char* noNewLine = NULL;
-  bool inQuote = true;
+  bool inQuote = false;
 
   while ((ch = fgetc(bufferFile)) != EOF) {
-    if ((ch == '\n') && (lastChar == '\n')) {
-      // Skip - don't add
-    } else {
-      charCat(&noNewLine, ch);
-    }
-    lastChar = ch;
     if (ch == '\"') {
       inQuote = !inQuote;
     }
@@ -152,45 +169,78 @@ int main() {
         ch = fgetc(bufferFile);
       }
     }
+    if ((ch == '\n') && (lastChar == '\n')) {
+      // Skip - don't add
+    } else {
+      charCat(&noNewLine, ch);
+    }
+    lastChar = ch;
   }
   fclose(bufferFile);
 
-  char *out = NULL;
-
+  // processed
   FILE *final = fmemopen(noNewLine, strlen(noNewLine), "r");
-  FILE *out = fmemopen(out, 0, "w");
-  // keep bufferFile open so we can get it
-  // begin replacing variables :)
-  // make a simple AST :3
+  // output
+  char *out_ = '\0';
+  FILE *out = fmemopen(out_, 1, "w+");
+
+
+  // header
+  char *head = "  \xc2\xbd" "6e" "\xc3\xa8";
+  charCat(&head, (char)(uint64_t)32);
+  charCat(&head, '\0');
+  FILE *header = fmemopen(head, strlen(head), "w");
+
   // VEC(char) ASTTree = {0};
   char emitted_bytes;
 
+  inQuote = false;
+
+
   while ((emitted_bytes = fgetc(final)) != EOF) {
-    if (checkNext(final, ".")) {
+    if (emitted_bytes == '\"') {
+      inQuote = !inQuote;
+    }
+    if (checkNext(final, ".") && !inQuote) {
+      printf("section\n");
       while (emitted_bytes != ':') {
-        if (emitted_bytes == ' ' && emitted_bytes == '\n') {
+        printf("looking for ':'\n");
+        if (emitted_bytes == ' ' || emitted_bytes == '\n') {
           perror("Namespace MUST start with '.' and end with ':', and cannot contain spaces\n");
         } else {
           // push(&final, fgetc(final));
-          fputc(out, emitted_bytes);
+          fputc(emitted_bytes, out);
+          jump_to++;
+          printf("emitting :3\n");
         }
         emitted_bytes = fgetc(final);
       }
-    } else if (checkNext(final, "set")) {
-      fputc(out, regop(1,1));
+    } else if (checkNext(final, "set")  && !inQuote) {
+      fputc(opgen(1,1), out);
       fgetc(final);
-      while (emitted_bytes != ' ' && emitted_bytes != '\n') {
-        fputc(out, getc(final));
+      while (emitted_bytes != ' ' && emitted_bytes != '\n' && emitted_bytes != EOF) {
+        fputc(emitted_bytes, out);
+        emitted_bytes = fgetc(final);
+      }
+    } else if (checkNext(final, "push")) {
+      fgetc(final);
+      fputc(opgen(1,4), out);
+      if (checkNext(final, "\"")) {
+        char *str = readTill(final, '"');
+        uint64_t len = strlen(str);
+        fwrite(&len, 8, 1, out);
+        fwrite(str, 1, len, out);
+        free(str);
       }
     }
   }
-  /*if (checkNext(final, ".")) {
-
-  }*/
-  rewind(final);
-  while ((ch = fgetc(final)) != EOF) {
-    printf("%c", ch);
+  rewind(out);
+  while ((ch = fgetc(out)) != EOF) {
+    putchar(ch);
+    fputc(ch, compiled_out);
   }
-  fclose(bufferFile);
+  fclose(compiled_out);
+  fclose(final);
+  fclose(out);
   return 0;
 }
