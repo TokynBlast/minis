@@ -82,7 +82,8 @@ uint8_t opgen(uint8_t reg, uint8_t op) {
 uint8_t eq, not_eq, less_than, and, or, jmp, jmp_if_not, not, jmp_if, // logic
         get, set, dec, unset, push, // variable
         call, tail, ret, builtin, // function
-        ;
+        halt, nop, pop, index, yield, // general
+        add, sub, mult, div, addm, divm, multm, subm, mod, pow; // math
 
 int main() {
   eq = opgen(0,0);
@@ -101,10 +102,27 @@ int main() {
   unset = opgen(1,3);
   push = opgen(1,4);
 
-  call = opgen(1,0);
-  tail = opgen(1,1);
-  ret = opgen(1,2);
-  builtin = opgen(1,3);
+  call = opgen(2,0);
+  tail = opgen(2,1);
+  ret = opgen(2,2);
+  builtin = opgen(2,3);
+
+  halt = opgen(4,0);
+  nop = opgen(4,1);
+  pop = opgen(4,2);
+  index = opgen(4,3);
+  yield = opgen(4,4);
+
+  add = opgen(5, 0);
+  sub = opgen(5, 1);
+  mult = opgen(5, 2);
+  div = opgen(5, 3);
+  addm = opgen(5, 4);
+  divm = opgen(5, 5);
+  multm = opgen(5, 6);
+  subm = opgen(5, 7);
+  mod = opgen(5, 8);
+  pow = opgen(5, 9);
 
   char ch;
   char *str = NULL;
@@ -196,27 +214,25 @@ int main() {
 
   inQuote = false;
 
+  uint64_t main_end = 0;
 
   while ((emitted_bytes = fgetc(final)) != EOF) {
     if (emitted_bytes == '\"') {
       inQuote = !inQuote;
     }
     if (checkNext(final, ".") && !inQuote) {
-      printf("section\n");
       while (emitted_bytes != ':') {
-        printf("looking for ':'\n");
         if (emitted_bytes == ' ' || emitted_bytes == '\n') {
           perror("Namespace MUST start with '.' and end with ':', and cannot contain spaces\n");
         } else {
           // push(&final, fgetc(final));
           fputc(emitted_bytes, out);
-          jump_to++;
-          printf("emitting :3\n");
+          main_end++;
         }
         emitted_bytes = fgetc(final);
       }
     } else if (checkNext(final, "set")  && !inQuote) {
-      fputc(opgen(1,1), out);
+      fputc(set, out);
       fgetc(final);
       while (emitted_bytes != ' ' && emitted_bytes != '\n' && emitted_bytes != EOF) {
         fputc(emitted_bytes, out);
@@ -224,7 +240,7 @@ int main() {
       }
     } else if (checkNext(final, "push")) {
       fgetc(final);
-      fputc(opgen(1,4), out);
+      fputc(push, out);
       if (checkNext(final, "\"")) {
         char *str = readTill(final, '"');
         uint64_t len = strlen(str);
