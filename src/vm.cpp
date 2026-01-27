@@ -1035,6 +1035,7 @@ namespace minis {
                 }
               } break;*/
               case static_cast<uint8>(Math::MULT): {
+                // FIXME: Make it so power of two shifts to left
                 #if DEBUGGER
                   // FIXME: This should print out the values to be multiplied :)
                   print("multiplying\n");
