@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <vect.h>
 
 // Global FILE pointers
 FILE *compiler;
@@ -74,6 +75,10 @@ bool checkNext(FILE *buff, char toCheck[]) {
   return true;
 }
 
+uint8_t opgen(reg, op) {
+  return ((reg << 5) | op);
+}
+
 int main() {
   printf("Starting main loop\n");
   char ch;
@@ -141,10 +146,39 @@ int main() {
   }
   fclose(bufferFile);
 
-  FILE *ASTMake = fmemopen(noNewLine, strlen(noNewLine), "r");
+  char *out = NULL;
+
+  FILE *final = fmemopen(noNewLine, strlen(noNewLine), "r");
+  FILE *out = fmemopen(out, 0, "r");
   // keep bufferFile open so we can get it
   // begin replacing variables :)
   // make a simple AST :3
+  // VEC(char) ASTTree = {0};
+  char emitted_bytes;
+
+  while ((emitted_bytes = fgetc(final)) != EOF) {
+    if (checkNext(final, ".")) {
+      while (emitted_bytes != ':') {
+        if (emitted_bytes == ' ' && emitted_bytes == '\n') {
+          perrror("Namespace MUST start with '.' and end with ':', and cannot contain spaces\n");
+        } else {
+          // push(&final, fgetc(final));
+          fputc(final, emitted_bytes);
+        }
+        emitted_bytes = fgetc(final);
+      }
+    } else if (checkNext(final, "set")) {
+      fputc(regop(1,1));
+      fgetc(final);
+      while (emitted_bytes != ' ' && emitted_bytes != '\n') {
+
+        emitted_bytes = fgetc(final);
+      }
+    }
+  }
+  if (checkNext(bufferFile, ".")) {
+
+  }
   fclose(bufferFile);
   return 0;
 }
