@@ -8,7 +8,6 @@
 // Global FILE pointers
 FILE *compiler;
 FILE *compiled_out;
-
 int charCat(char **string, char character) { // Concat a character to a charrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr (arf)
   size_t stringLen;
   char *temp;
@@ -75,15 +74,15 @@ bool checkNext(FILE *buff, char toCheck[]) {
   return true;
 }
 
-uint8_t opgen(uint8_t reg, uint8_t op) {
+const uint8_t opgen(uint8_t reg, uint8_t op) {
   return (reg << 5) | op;
 }
 
 uint8_t eq, not_eq, less_than, and, or, jmp, jmp_if_not, not, jmp_if, // logic
         get, set, dec, unset, push, // variable
         call, tail, ret, builtin, // function
-        halt, nop, pop, index, yield, // general
-        add, sub, mult, div, addm, divm, multm, subm, mod, pow; // math
+        halt, nop, pop, index_, yield, // general
+        add, sub, mult/*, div, addm, divm, multm, subm, mod, pow*/; // math
 
 int main() {
   eq = opgen(0,0);
@@ -110,19 +109,19 @@ int main() {
   halt = opgen(4,0);
   nop = opgen(4,1);
   pop = opgen(4,2);
-  index = opgen(4,3);
+  index_ = opgen(4,3);
   yield = opgen(4,4);
 
   add = opgen(5, 0);
   sub = opgen(5, 1);
   mult = opgen(5, 2);
-  div = opgen(5, 3);
+  /*div = opgen(5, 3);
   addm = opgen(5, 4);
   divm = opgen(5, 5);
   multm = opgen(5, 6);
   subm = opgen(5, 7);
   mod = opgen(5, 8);
-  pow = opgen(5, 9);
+  pow = opgen(5, 9);*/
 
   char ch;
   char *str = NULL;
@@ -175,20 +174,11 @@ int main() {
 
   FILE *bufferFile = fmemopen(buffer, strlen(buffer), "r");
 
-  char* noNewLine = NULL;
-  bool inQuote = false;
+  char *noNewLine = NULL;
 
   while ((ch = fgetc(bufferFile)) != EOF) {
-    if (ch == '\"') {
-      inQuote = !inQuote;
-    }
-    if (!inQuote && ch == ';') {
-      while (ch != '\n') {
-        ch = fgetc(bufferFile);
-      }
-    }
     if ((ch == '\n') && (lastChar == '\n')) {
-      // Skip - don't add
+      ch = fgetc(bufferFile);
     } else {
       charCat(&noNewLine, ch);
     }
@@ -197,16 +187,40 @@ int main() {
   fclose(bufferFile);
 
   // processed
-  FILE *final = fmemopen(noNewLine, strlen(noNewLine), "r");
+  FILE *rmNL = fmemopen(noNewLine, strlen(noNewLine), "r");
+
+  char *noComment = NULL;
+  bool inQuote = false;
+
+  // remove comments
+
+  while ((ch = fgetc(rmNL)) != EOF) {
+    if (ch == '\"') {
+      inQuote = !inQuote;
+    }
+    if (!inQuote && ch == ';') {
+      while (ch != '\n' && ch != EOF) {
+        ch = fgetc(rmNL);
+      }
+      charCat(&noComment, '\n');
+    } else {
+      charCat(&noComment, ch);
+    }
+  }
+  for (int i = 0; i < strlen(noNewLine); ++i) {
+    putchar(noComment[i]);
+  }
+
+  fclose(rmNL);
+  FILE *final = fmemopen(noComment, strlen(noComment), "r");
+
   // output
   char *out_ = '\0';
   FILE *out = fmemopen(out_, 1, "w+");
 
 
   // header
-  char *head = "  \xc2\xbd" "6e" "\xc3\xa8";
-  charCat(&head, (char)(uint64_t)32);
-  charCat(&head, '\0');
+  char *head = "  \xc2\xbd" "6e" "\xc3\xa8" "40\0";
   FILE *header = fmemopen(head, strlen(head), "w");
 
   // VEC(char) ASTTree = {0};
@@ -250,11 +264,19 @@ int main() {
       }
     }
   }
-  rewind(out);
+  //rewind(out);
   while ((ch = fgetc(out)) != EOF) {
     putchar(ch);
     fputc(ch, compiled_out);
   }
+  rewind(out);
+  rewind(compiled_out);
+  rewind(final);
+  fflush(out);
+  fflush(compiled_out);
+  fflush(final);
+  main_end = ftell(compiled_out);
+
   fclose(compiled_out);
   fclose(final);
   fclose(out);
