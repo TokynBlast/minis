@@ -273,6 +273,13 @@ int main() {
         fwrite(str, 1, len, out);
         free(str);
       }
+    } else if (checkNext(final, "get")) {
+      fputc(get, out);
+    } else {
+      char toPrint[] = "Wrong\n\0";
+      for (int i = 0; i < strlen(toPrint); ++i) {
+        fputc(toPrint[i], out);
+      }
     }
   }
   //rewind(out);
