@@ -173,46 +173,45 @@ int main() {
   char lastChar = 0;
 
   FILE *bufferFile = fmemopen(buffer, strlen(buffer), "r");
-
-  char *noNewLine = NULL;
-
-  while ((ch = fgetc(bufferFile)) != EOF) {
-    if ((ch == '\n') && (lastChar == '\n')) {
-      ch = fgetc(bufferFile);
-    } else {
-      charCat(&noNewLine, ch);
-    }
-    lastChar = ch;
-  }
-  fclose(bufferFile);
-
-  // processed
-  FILE *rmNL = fmemopen(noNewLine, strlen(noNewLine), "r");
-
   char *noComment = NULL;
   bool inQuote = false;
 
-  // remove comments
-
-  while ((ch = fgetc(rmNL)) != EOF) {
+  // remove comments first
+  while ((ch = fgetc(bufferFile)) != EOF) {
     if (ch == '\"') {
       inQuote = !inQuote;
     }
     if (!inQuote && ch == ';') {
       while (ch != '\n' && ch != EOF) {
-        ch = fgetc(rmNL);
+        ch = fgetc(bufferFile);
       }
       charCat(&noComment, '\n');
     } else {
       charCat(&noComment, ch);
     }
   }
+  fclose(bufferFile);
+
+  // now remove blank lines
+  char *noNewLine = NULL;
+  char lastChar = 0;
+  FILE *rmNL = fmemopen(noComment, strlen(noComment), "r");
+
+  while ((ch = fgetc(rmNL)) != EOF) {
+    if ((ch == '\n') && (lastChar == '\n')) {
+      ch = fgetc(rmNL);
+    } else {
+      charCat(&noNewLine, ch);
+    }
+    lastChar = ch;
+  }
+  fclose(rmNL);
+
   for (int i = 0; i < strlen(noNewLine); ++i) {
-    putchar(noComment[i]);
+    putchar(noNewLine[i]);
   }
 
-  fclose(rmNL);
-  FILE *final = fmemopen(noComment, strlen(noComment), "r");
+  FILE *final = fmemopen(noNewLine, strlen(noNewLine), "r");
 
   // output
   char *out_ = '\0';
