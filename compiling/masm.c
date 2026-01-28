@@ -170,8 +170,6 @@ int main() {
   str = NULL;
   fclose(compiler);
 
-  char lastChar = 0;
-
   FILE *bufferFile = fmemopen(buffer, strlen(buffer), "r");
   char *noComment = NULL;
   bool inQuote = false;
@@ -195,17 +193,31 @@ int main() {
   // now remove blank lines
   char *noNewLine = NULL;
   char lastChar = 0;
-  FILE *rmNL = fmemopen(noComment, strlen(noComment), "r");
+  char *input = noComment;
+  size_t inputLen = strlen(noComment);
+
+  // Remove consecutive blank lines in a single pass
+  char *tempNoNewLine = NULL;
+  lastChar = 0;
+  FILE *rmNL = fmemopen(input, inputLen, "r");
 
   while ((ch = fgetc(rmNL)) != EOF) {
-    if ((ch == '\n') && (lastChar == '\n')) {
-      ch = fgetc(rmNL);
+    if (ch == '\n') {
+      if (lastChar != '\n') {
+        charCat(&tempNoNewLine, ch);
+      }
+      // else: skip this newline (it's consecutive)
     } else {
-      charCat(&noNewLine, ch);
+      charCat(&tempNoNewLine, ch);
     }
     lastChar = ch;
   }
   fclose(rmNL);
+
+  if (input != noComment) {
+    free(input);
+  }
+  noNewLine = tempNoNewLine;
 
   for (int i = 0; i < strlen(noNewLine); ++i) {
     putchar(noNewLine[i]);
