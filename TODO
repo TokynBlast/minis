@@ -37,6 +37,8 @@ Find a way to implement unsigned bits into Fortran...
 
 "for" keyword
 
+Rather than error on wandering values, optomize away
+
 Add program-wide destructor
 
 Standardize fail and pass return
