@@ -181,7 +181,21 @@ fn diagnose_block_error(text: &str) -> String {
   let trimmed = text.trim();
 
   if trimmed.starts_with("class ") {
-    "Class declaration inside a block - classes must be at top level or check access modifiers".to_string()
+    // Check for class syntax issues
+    if !trimmed.contains("public {") && !trimmed.contains("private {") {
+      "Class must have at least one access section (public { ... } or private { ... })".to_string()
+    } else if trimmed.matches('{').count() != trimmed.matches('}').count() {
+      format!("Mismatched braces: {} opening {{ vs {} closing }}", 
+        trimmed.matches('{').count(), trimmed.matches('}').count())
+    } else {
+      // Check for method/field syntax inside access sections
+      let lines: Vec<&str> = trimmed.lines().collect();
+      if lines.iter().any(|l| l.contains("->") && !l.trim().starts_with("//")) {
+        "Circuit variable syntax (-> arrows) found - may need to check circuit arm formatting"
+      } else {
+        "Class declaration syntax error - check access modifiers, field types, and method signatures"
+      }.to_string()
+    }
   } else if trimmed.contains("public {") || trimmed.contains("private {") {
     "Access modifier block - should only appear inside class declarations".to_string()
   } else if trimmed.starts_with(";") {
