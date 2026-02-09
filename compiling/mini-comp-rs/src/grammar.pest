@@ -1,0 +1,262 @@
+// Comments
+COMMENT = _{
+    "//" ~ (!"\n" ~ ANY)* ~ "\n"?
+  | "/*" ~ (!"*/" ~ ANY)* ~ "*/"
+}
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+NEWLINE = _{ "\r\n" | "\n" }
+
+// Preprocessor directives
+// #def for simple defines (no value)
+// No body; continuation should be handled by macro_def
+macro_simple_def = { "#def" ~ identifier ~ macro_params ~ NEWLINE }
+
+// #def with parameters and body (can use backslash for continuation)
+macro_def = { "#def" ~ identifier ~ macro_params? ~ macro_body }
+macro_params = { "(" ~ macro_param_list ~ ")" }
+macro_param_list = { macro_param ~ ("," ~ macro_param)* }
+macro_param = { identifier | "$$*" }
+// Macro body - backslash at end of line means continue to next line
+// Must end on a non-continued line to stop the macro.
+macro_body = { macro_line_continued* ~ macro_line_terminal }
+// Do not consume the trailing backslash as content
+macro_line_continued = @{ (!NEWLINE ~ !"\\" ~ ANY)* ~ "\\" ~ NEWLINE }
+macro_line_terminal = @{ (!NEWLINE ~ !"\\" ~ ANY)* ~ NEWLINE }
+
+// Conditional compilation (#if with defined macros only!)
+// Ends with #endif (no braces needed!)
+macro_if = { "#if" ~ identifier ~ NEWLINE }
+macro_endif = { "#endif" ~ NEWLINE? }
+macro_block = { macro_if ~ statement* ~ macro_endif }
+
+// Type system (defined early so keyword can reference it)
+base_type = {
+    "i8" | "i16" | "i32" | "i64"
+  | "ui8" | "ui16" | "ui32" | "ui64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
+  | "void" | "auto"
+}
+modifier = { "const" | "static" | "over" }
+type_spec = { modifier? ~ base_type }
+// Type reference: built-in or user-defined (from imports/aliases)
+type_ref = { type_spec | class_name }
+
+// Return type modifiers for functions
+return_modifier = {
+    "constexpr" ~ "static"?
+  | "const" ~ "static"
+  | "static" ~ "const"
+  | "static"
+  | "const"
+}
+
+// Access modifiers for classes
+access_modifier = { "public" | "private" }
+
+// All keywords in one place
+keyword = @{
+  ( "if" | "else" | "elif"
+  | "while" | "for" | "with" | "and"
+  | "table" | "use" | "class" | "new"
+  | "public" | "private"
+  | "exit" | "over"
+  | base_type
+  | modifier
+  | "true" | "false" | "global" | "unknown"
+  | "constexpr"
+  | "return" | "in" | "as"
+  | "not")
+  ~ !ASCII_ALPHANUMERIC
+}
+
+// Identifier - just don't match keywords (but can be class names)
+identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+class_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// String with format support
+string = { "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+
+hex_number = @{ "0x" ~ ASCII_HEX_DIGIT+ }
+binary_number = @{ "0b" ~ ("0" | "1")+ }
+any_num = { hex_number | binary_number | float | number }
+number = @{ "-"? ~ ASCII_DIGIT+ }
+float = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+) }
+bool = @{ "true" | "false" }
+tribool_val = @{ "true" | "false" | "unknown"}
+
+// Math operators
+add = { "+" }
+subtract = { "-" }
+multiply = { "*" }
+divide = { "/" }
+modulo = { "%" }
+comparator = { "<" | ">" | "<=" | "!=" | "==" | ">=" }
+logical_and = { "&&" }
+logical_or = { "||" }
+logical_not = { "!" }
+increment = { "++" }
+decrement = { "--" }
+
+// Consume anything that isn't a semicolon, then the semicolon itself
+error_recovery = { (!";" ~ ANY)* ~ ";" }
+block_recovery = { (!"}" ~ ANY)* ~ "}" }
+
+// Type casting/conversion
+type_cast = { "(" ~ (base_type | class_name) ~ ")" ~ &primary }
+
+// Array/list indexing
+index_access = { identifier ~ "[" ~ expr ~ "]" }
+
+// Class instantiation
+class_instantiation = { "new" ~ class_name }
+
+// Expressions with precedence
+primary = {
+  "(" ~ expr ~ ")"
+  | type_cast
+  | class_instantiation
+  | function_call
+  | method_call
+  | index_access
+  | hex_number
+  | binary_number
+  | float
+  | number
+  | string
+  | bool
+  | tribool_val
+  | identifier
+  | list_literal
+  | dict_literal
+  | circuit_var
+}
+
+// Ternary operator
+ternary = { logical_expr ~ "?" ~ expr ~ ":" ~ expr }
+
+// Logical expressions (streamlined - removed pass-through wrappers)
+comparison = { arith_expr ~ (comparator ~ arith_expr)* }
+logical_and_expr = { (logical_not? ~ comparison) ~ (logical_and ~ (logical_not? ~ comparison))* }
+logical_expr = { logical_and_expr ~ (logical_or ~ logical_and_expr)* }
+
+term = { primary ~ ((multiply | divide | modulo) ~ primary)* }
+arith_expr = { term ~ ((add | subtract) ~ term)* }
+expr = { logical_expr }
+
+function_call = { identifier ~ "(" ~ expr_list? ~ ")" }
+method_call = { identifier ~ "::" ~ identifier ~ "(" ~ expr_list? ~ ")" }
+expr_list = { expr ~ ("," ~ expr)* }
+list_literal = { "[" ~ expr_list? ~ "]" }
+
+// Dictionary literal
+dict_pair = { expr ~ ":" ~ expr }
+dict_literal = { "{" ~ (dict_pair ~ ("," ~ dict_pair)*)? ~ "}" }
+
+// Circuit variable (inline conditional assignment)
+// Can be simple expression OR block with return
+circuit_value = { block | expr }
+circuit_arm = { ("_" | ("(" ~ expr ~ ")")) ~ "->" ~ circuit_value ~ ";" }
+circuit_var = { "{" ~ circuit_arm+ ~ "}" }
+
+range = { number ~ ".." ~ number ~ (".." ~ number)? }
+
+// for x as 1..4 {}
+for_dot_dot = { identifier ~ "as" ~ range }
+val_manipulate = {
+    identifier ~ increment
+  | identifier ~ decrement
+  | increment ~ identifier
+  | decrement ~ identifier
+  | identifier ~ (( "+" | "*" | "^" | "/" | "-" ) ~ "=") ~ any_num
+}
+
+// for (int i = 0; i < 32; ++i) {}
+for_c = { "(" ~ (( type_spec ~ identifier ~ "=" ~ any_num ~ ";" ~ identifier ~ comparator ~ any_num ~ ";" ~ val_manipulate ) | ";;") ~ ")" }
+for_loop = { "for" ~ ( for_dot_dot | for_c ) ~ block }
+
+// Function parameters
+param = { type_ref ~ identifier }
+param_list = { param ~ ("," ~ param)* }
+
+// Auto type inference: Replace 'auto' with inferred type based on the expression
+inferred_type = @{
+    "auto"
+}
+
+var_decl_single = { (inferred_type | type_spec | class_name) ~ identifier ~ ("=" ~ expr)? }
+var_decl_multi = { (inferred_type | type_spec | class_name) ~ identifier ~ ("=" ~ expr)? ~ ("," ~ identifier ~ ("=" ~ expr)?)* }
+var_decl = { var_decl_multi ~ ";" }
+
+// Constexpr declaration - MUST have an expression that can be evaluated at compile time
+constexpr_decl = { "constexpr" ~ base_type? ~ identifier ~ "=" ~ expr ~ ";" }
+
+// Function with optional return modifier
+func_decl = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
+
+// Class member (field or method)
+class_field = { type_ref ~ identifier ~ ("=" ~ expr)? ~ ";" }
+class_method = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
+class_member = { class_field | class_method }
+
+// Class access section
+access_section = { access_modifier ~ "{" ~ class_member* ~ "}" }
+
+// Class declaration (must have at least one access section with content)
+class_decl = { "class" ~ class_name ~ "{" ~ access_section+ ~ "}" }
+
+// Use (import) statement - can import specific features
+use_feature = { identifier ~ "::" ~ identifier }
+use_item = { use_feature | identifier }
+use_stmt = { "use" ~ use_item ~ ("," ~ use_item)* ~ ";" }
+
+// Assignment (can assign circuit variable too!)
+assignment = { identifier ~ "=" ~ expr ~ ";" }
+property_assignment = { identifier ~ "." ~ identifier ~ "=" ~ expr ~ ";" }
+
+// Increment/Decrement statements
+inc_dec_stmt = { val_manipulate ~ ";" }
+
+// Exit statement
+exit_stmt = { "exit" ~ "(" ~ ")" ~ ";" }
+
+// Table (match) statement - simplified (no == key needed)
+table_name = { identifier ~ ":" }
+table_type = { base_type }
+table_arm = { "[" ~ expr_list ~ "]" ~ "->" ~ block }
+table_stmt = { "table" ~ table_name? ~ table_type? ~ identifier ~ "{" ~ table_arm* ~ "}" }
+
+// With statement (parallel execution)
+with_block = { "{" ~ statement* ~ "}" }
+with_stmt = { "with" ~ with_block ~ ("and" ~ with_block)+ }
+
+// Statements
+statement = {
+  macro_simple_def
+  | macro_def
+  | use_stmt
+  | class_decl
+  | constexpr_decl
+  | if_stmt
+  | var_decl
+  | func_decl
+  | table_stmt
+  | with_stmt
+  | assignment
+  | property_assignment
+  | inc_dec_stmt
+  | exit_stmt
+  | method_call ~ ";"
+  | function_call ~ ";"
+  | while_stmt
+  | for_loop
+  | block
+  | return_stmt
+  | block_recovery
+  | error_recovery
+}
+block = { "{" ~ statement* ~ "}" }
+if_stmt = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (("elif" ~ "(" ~ expr ~ ")" ~ block)* ~ ("else" ~ block)?)? }
+while_stmt = { "while" ~ "(" ~ expr ~ ")" ~ block }
+return_stmt = { "return" ~ expr? ~ ";" }
+program = { SOI ~ (statement | error_recovery)* ~ EOI }
