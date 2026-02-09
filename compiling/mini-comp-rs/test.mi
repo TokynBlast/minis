@@ -1,0 +1,60 @@
+use typeExtend::any_num;
+use math::max;
+
+// Variadic error macro
+#def error($$*) \
+  for i as 0..len($$*) { \
+    print($$*[i]); \
+  } \
+  exit();
+
+// Generic clamp with any_num
+any_num clamp(any_num num, any_num min, any_num max) {
+  if (min > max) {
+    error("Min cannot be greater than max!");
+  }
+  num = {
+    (num < min) -> {
+        return min;
+    };
+    (num > max) -> {
+        return max;
+    };
+    _ -> num;
+  };
+  return num;
+}
+
+// Allow overflow for s pecial case
+over i64 bigCounter = 99999999999999999999999999999999;
+
+class player {
+  public {
+    int health = 100;
+    int x = 0;
+    int y = 0;
+
+    void setHealth(int h) {
+      health = {
+        (h > 100) -> {
+          print("Max health!");
+          return 100;
+      };
+        (h < 0) -> {
+          print("Player died!");
+          return 0;
+        };
+        _ -> h;
+      };
+    }
+
+    void move(int dx, int dy) {
+      x = clamp(x + dx, 0, 100);
+      y = clamp(y + dy, 0, 100);
+    }
+  }
+}
+
+player p = new player;
+p::move(10, 20);
+p::setHealth(150);  // Clamps to 100
