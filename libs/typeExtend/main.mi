@@ -1,0 +1,17 @@
+// This is uner CC0 1.0 Universal
+#if 32_bit
+  #def int u32
+#if 64_bit
+  #def int u64
+#endif
+
+#def any_num   \
+             u8  \
+            |u16 \
+            |u32 \
+            |u64 \
+            |i8  \
+            |i16 \
+            |i32 \
+            |i64 \
+            |float
