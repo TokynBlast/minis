@@ -1,0 +1,15 @@
+// Only activate any_num macro :)
+use typeExtend::any_num;
+
+
+/// Clamp value a and b
+any_num clamp(any_num num, any_num min, any_num max) {
+  if (min > max) {
+    error("Min cannot be greater than max!")
+  }
+  num = {
+    mum < min -> min;
+    num > max -> max;
+    _ -> num;
+  };
+}

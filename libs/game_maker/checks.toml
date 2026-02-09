@@ -1,0 +1,10 @@
+[macros]
+_num="u8|u16|u32|u64|i8|i16|i32|i64|float"
+
+[functions]
+clamp(_num num, _num min, _num max)
+
+[checks]
+clamp.min > clamp.max -> "clamp min cannot be larger than max"
+clamp.min = clamp.max -> "clamp min cannot be the same as max"
+
