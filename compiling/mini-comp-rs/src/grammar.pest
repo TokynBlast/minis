@@ -238,8 +238,8 @@ statement = {
   | class_decl
   | constexpr_decl
   | if_stmt
-  | var_decl
   | func_decl
+  | var_decl
   | table_stmt
   | with_stmt
   | assignment
@@ -250,7 +250,6 @@ statement = {
   | function_call ~ ";"
   | while_stmt
   | for_loop
-  | block
   | return_stmt
   | block_recovery
   | error_recovery
