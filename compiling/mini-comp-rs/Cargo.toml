@@ -1,0 +1,20 @@
+[package]
+name = "mini-comp-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pest="2.8.5"
+pest_derive="2.8.5"
+hashbrown="0.16.1"
+
+[profile.release]
+opt-level = "z"     # Optimize for size instead of speed
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Better optimization (slower compile, smaller binary)
+strip = true        # Strip symbols from binary
+panic = "abort"     # Smaller panic handler
+
+[profile.dev]
+opt-level = "z"     # Optimize for size in dev too
+panic = "abort"     # Smaller panic handler even in dev
