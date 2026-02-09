@@ -20,7 +20,7 @@ fn main() {
   match MiniParser::parse(Rule::program, &input) {
     Ok(pairs) => {
       println!("Parse ok. Tree:");
-      print_pairs(pairs, 0);
+      print_pairs(pairs, 0, &input);
     }
     Err(err) => {
       eprintln!("Parse error:\n{}", err);
@@ -47,7 +47,7 @@ fn read_input() -> String {
   }
 }
 
-fn print_pairs(pairs: Pairs<Rule>, indent: usize) {
+fn print_pairs(pairs: Pairs<Rule>, indent: usize, input: &str) {
   for pair in pairs {
     let rule = pair.as_rule();
     let inner = pair.clone().into_inner();
@@ -55,19 +55,60 @@ fn print_pairs(pairs: Pairs<Rule>, indent: usize) {
 
     // Skip pure pass-through nodes (single child with same span)
     if should_skip_rule(&rule, child_count, &pair) {
-      print_pairs(pair.into_inner(), indent);
+      print_pairs(pair.into_inner(), indent, input);
       continue;
     }
 
     let span = pair.as_span();
     let text = span.as_str();
     let snippet = summarize_text(text);
-    println!("{}{:?}  [{}..{}]  {}", "  ".repeat(indent), rule, span.start(), span.end(), snippet);
+
+    // Highlight recovery rules
+    match rule {
+      Rule::error_recovery => {
+        let (line, col) = get_line_col(input, span.start());
+        let diagnosis = diagnose_error(text);
+        eprintln!("\n{}🔴 ERROR RECOVERY at line {}:{}", "  ".repeat(indent), line, col);
+        eprintln!("{}   Failed to parse: {}", "  ".repeat(indent), text);
+        eprintln!("{}   Diagnosis: {}", "  ".repeat(indent), diagnosis);
+        eprintln!("{}   Consumed up to semicolon [{}..{}]\n", "  ".repeat(indent), span.start(), span.end());
+      }
+      Rule::block_recovery => {
+        let (line, col) = get_line_col(input, span.start());
+        let diagnosis = diagnose_block_error(text);
+        eprintln!("\n{}🔴 BLOCK RECOVERY at line {}:{}", "  ".repeat(indent), line, col);
+        eprintln!("{}   Failed to parse: {}", "  ".repeat(indent), show_multiline(text));
+        eprintln!("{}   Diagnosis: {}", "  ".repeat(indent), diagnosis);
+        eprintln!("{}   Consumed up to closing brace [{}..{}]\n", "  ".repeat(indent), span.start(), span.end());
+      }
+      _ => {
+        println!("{}{:?}  [{}..{}]  {}", "  ".repeat(indent), rule, span.start(), span.end(), snippet);
+      }
+    }
 
     if child_count > 0 {
-      print_pairs(pair.into_inner(), indent + 1);
+      print_pairs(pair.into_inner(), indent + 1, input);
     }
   }
+}
+
+fn get_line_col(input: &str, pos: usize) -> (usize, usize) {
+  let mut line = 1;
+  let mut col = 1;
+
+  for (i, ch) in input.chars().enumerate() {
+    if i >= pos {
+      break;
+    }
+    if ch == '\n' {
+      line += 1;
+      col = 1;
+    } else {
+      col += 1;
+    }
+  }
+
+  (line, col)
 }
 
 fn should_skip_rule(rule: &Rule, child_count: usize, pair: &pest::iterators::Pair<Rule>) -> bool {
@@ -100,5 +141,56 @@ fn summarize_text(text: &str) -> String {
     format!("\"{}...\"", &cleaned[..MAX])
   } else {
     format!("\"{}\"", cleaned)
+  }
+}
+
+fn show_multiline(text: &str) -> String {
+  let lines: Vec<&str> = text.lines().collect();
+  if lines.len() <= 3 {
+    text.to_string()
+  } else {
+    format!("{}\n       ... ({} more lines) ...\n       {}",
+      lines[0], lines.len() - 2, lines[lines.len() - 1])
+  }
+}
+
+fn diagnose_error(text: &str) -> String {
+  let trimmed = text.trim();
+
+  // Check for common patterns
+  if trimmed.starts_with("class ") {
+    "Looks like a class declaration - check class syntax (class Name { public {...} })"
+  } else if trimmed.contains("(") && trimmed.contains(")") && trimmed.contains("{") {
+    "Looks like a function declaration - check return type, parameters, and block syntax"
+  } else if trimmed.contains("=") && trimmed.contains("{") && trimmed.contains("->") {
+    "Looks like circuit variable assignment - check circuit syntax ({ (condition) -> value; })"
+  } else if trimmed.starts_with("for ") || trimmed.starts_with("while ") || trimmed.starts_with("if ") {
+    "Control flow statement - check condition syntax and block delimiters"
+  } else if trimmed.contains("=") {
+    "Assignment or declaration - check type and expression syntax"
+  } else if trimmed.starts_with(";") {
+    "Unexpected semicolon - might be leftover from previous parse error"
+  } else if trimmed == "}" {
+    "Stray closing brace - check for mismatched braces or missing statement before it"
+  } else {
+    "Unknown syntax - check for typos, missing semicolons, or unsupported language features"
+  }.to_string()
+}
+
+fn diagnose_block_error(text: &str) -> String {
+  let trimmed = text.trim();
+
+  if trimmed.starts_with("class ") {
+    "Class declaration inside a block - classes must be at top level or check access modifiers".to_string()
+  } else if trimmed.contains("public {") || trimmed.contains("private {") {
+    "Access modifier block - should only appear inside class declarations".to_string()
+  } else if trimmed.starts_with(";") {
+    "Statement starts with semicolon - likely parse error continuation from previous line".to_string()
+  } else if trimmed == "}" {
+    "Unexpected closing brace - check block nesting and statement syntax".to_string()
+  } else if trimmed.contains("->") && trimmed.contains("{") {
+    "Circuit arm syntax - check if parent is a circuit variable ({ (cond) -> value; })".to_string()
+  } else {
+    diagnose_error(text)
   }
 }
