@@ -54,7 +54,6 @@ impl Value {
             Value::String(s) => !s.is_empty(),
             Value::List(l) => !l.is_empty(),
             Value::Void => false,
-            _ => true,
         }
     }
 
