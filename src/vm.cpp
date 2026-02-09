@@ -789,9 +789,14 @@ namespace minis {
         throw std::runtime_error("bad bytecode verification\n");
       }
 
+      uint8 ons_offs = GETu8();
+
+
       uint64 entry_main = GETu64();
       table_off = GETu64();
-      uint64 plugin_table_off = GETu64();
+      if ((ons_offs | 0b00000010)) {
+        uint64 plugin_table_off = GETu64();
+      }
       uint64 lib_table_off = GETu64();
 
       // Header is exactly 40 bytes (8 magic + 32 data)
