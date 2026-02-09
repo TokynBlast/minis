@@ -1,0 +1,7 @@
+// make error take infinite args
+// Simple regex, $$ is "anything"
+#def error($$*) \
+     for prints in 0..len(prints) { \
+       print($$*); \
+       exit();    \
+     } \
