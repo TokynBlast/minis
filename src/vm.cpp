@@ -809,11 +809,7 @@ namespace minis {
 
               case static_cast<uint8>(Logic::LESS_THAN): {
                 Value a = pop(), b = pop();
-                if (a.t == Type::Str && b.t == Type::Str)
-                  push(Value::Bool(std::get<std::string>(a.v) < std::get<std::string>(b.v)));
-                if (a.t == Type::Float || b.t == Type::Float)
-                  push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
-                else if (a.t == Type::ui64 || b.t == Type::ui64)
+                if (a.t == Type::ui64 || b.t == Type::ui64)
                   push(Value::Bool(std::get<uint64>(a.v) < std::get<uint64>(b.v)));
                 else if (a.t == Type::i64 || b.t == Type::i64)
                   push(Value::Bool(std::get<int64>(a.v) < std::get<int64>(b.v)));
