@@ -590,17 +590,17 @@ namespace minis {
       try {
         if (stack.empty()) {
           print("FATAL ERROR: Stack underflow; Tried to pop an empty stack\n");
-          print("  at ", get_debug_location(), "\n");
+          perr_debug_location_if_available();
           std::exit(1);
         }
         if (stack.back().t == Type::Null) {
           print("FATAL ERROR: Stack had null top value\n");
-          print("  at ", get_debug_location(), "\n");
+          perr_debug_location_if_available();
           std::exit(1);
         }
         if (stack.back().t == Type::Void) {
           print("FATAL ERROR: Stack had void top value\n");
-          print("  at ", get_debug_location(), "\n");
+          perr_debug_location_if_available();
           std::exit(1);
         }
         Value v = std::move(stack.back());
@@ -608,7 +608,7 @@ namespace minis {
         return v;
       } catch (...) {
         print("FATAL ERROR: Stack operation failed\n");
-        print("  at ", get_debug_location(), "\n");
+        perr_debug_location_if_available();
         std::exit(1);
       }
       return Value::Null(); // impossible to reach :)
@@ -620,7 +620,7 @@ namespace minis {
     inline void discard() {
       if (stack.empty()) {
         print("FATAL ERROR: stack underflow; tried to empty an already empty stack\n");
-        print("  at ", get_debug_location(), "\n");
+        perr_debug_location_if_available();
         std::exit(1);
       }
       stack.pop_back();
@@ -669,6 +669,12 @@ namespace minis {
       }
 
       return debug_info.filename + ":?";
+    }
+
+    inline void perr_debug_location_if_available() {
+      if (!debug_info.offset_to_line.empty()) {
+        perr("  at ", get_debug_location(), "\n");
+      }
     }
 
     static std::set<std::string> loaded_plugins;
@@ -857,7 +863,7 @@ namespace minis {
                 Value a = pop();
                 if (a.t != Type::Bool) {
                   perr("FATAL ERROR: Not (!= or !) requires boolean operand\n");
-                  perr("  at ", get_debug_location(), "\n");
+                  perr_debug_location_if_available();
                   perr("  got type: ", type_name(a.t), "\n");
                   exit(1);
                 }
@@ -1092,7 +1098,7 @@ namespace minis {
 
                   default:
                     print("FATAL ERROR: Add values with non-numeric type(s)\n");
-                    print("  at ", get_debug_location(), "\n");
+                    perr_debug_location_if_available();
                     std::exit(1);
                 }
 
@@ -1302,7 +1308,7 @@ namespace minis {
 
                   default:
                     print("FATAL ERROR: Subtracting multiple values with unknown type(s)\n");
-                    print("  at ", get_debug_location(), "\n");
+                    perr_debug_location_if_available();
                     std::exit(1);
                 }
 
@@ -1408,7 +1414,7 @@ namespace minis {
 
                   default:
                     print("FATAL ERROR: Multiplying multiple values with unknown type(s)\n");
-                    print("  at ", get_debug_location(), "\n");
+                    perr_debug_location_if_available();
                     std::exit(1);
                 }
 
@@ -1496,7 +1502,7 @@ namespace minis {
                 } break;*/
                 default: {
                   print("FATAL ERROR: Unknown literal type tag: 0x", std::hex, (uint32)typeByte, std::dec, "\n");
-                  print("  at ", get_debug_location(), "\n");
+                  perr_debug_location_if_available();
                   std::exit(1);
                 }
               }
@@ -1679,7 +1685,7 @@ namespace minis {
           } break;
           default: {
             print("FATAL ERROR: Bad or unknown opcode: 0x", std::hex, (uint32)op, std::dec, "\n");
-            print("  at ", get_debug_location(), "\n");
+            perr_debug_location_if_available();
             std::exit(1);
           }
         }
