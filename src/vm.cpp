@@ -639,14 +639,31 @@ namespace minis {
         throw std::runtime_error("bad bytecode verification\n");
       }
 
-      uint8 ons_offs = GETu8();
-
+      // Activation bits
+      // 00000001 = debugging
+      // 00000010 = plugins
+      // 00000100 = functions
+      // rest unused
+      uint8 activation_bits = GETu8();
 
       uint64 entry_main = GETu64();
       table_off = GETu64();
-      if ((ons_offs | 0b00000010)) {
-        uint64 plugin_table_off = GETu64();
+
+      // Read conditional table offsets based on activation bits
+      uint64 debug_table_off = 0;
+      uint64 plugin_table_off = 0;
+      uint64 function_table_off = 0;
+
+      if (activation_bits & 0b00000001) {
+        debug_table_off = GETu64();
       }
+      if (activation_bits & 0b00000010) {
+        plugin_table_off = GETu64();
+      }
+      if (activation_bits & 0b00000100) {
+        function_table_off = GETu64();
+      }
+
       uint64 lib_table_off = GETu64();
 
       // Header is exactly 40 bytes (8 magic + 32 data)
@@ -660,8 +677,25 @@ namespace minis {
         code_end = table_off;
       }
 
-      // Load function table
-      fseek(file, (uint64)table_off, SEEK_SET);
+      // Load function table if present
+      if (function_table_off > 0) {
+        fseek(file, (uint64)function_table_off, SEEK_SET);
+        uint64 fn_count = GETu64();
+
+        for (uint64 i = 0; i < fn_count; i++) {
+          std::string name = GETstr();
+          uint64 entry = GETu64();
+          uint64 param_count = GETu64();
+
+          std::vector<std::string> params;
+          params.reserve((size_t)param_count);
+          for (uint64 j = 0; j < param_count; ++j) {
+            params.push_back(GETstr());
+          }
+
+          fnEntry[name] = FnMeta{ entry, params };
+        }
+      }
 
       // Load libraries if lib table exists
       if (lib_table_off > 0) {
