@@ -112,7 +112,13 @@ fn get_line_col(input: &str, pos: usize) -> (usize, usize) {
 }
 
 fn should_skip_rule(rule: &Rule, child_count: usize, pair: &pest::iterators::Pair<Rule>) -> bool {
-  // Skip expression wrapper layers that just pass through a single child
+  // Always skip statement wrappers (they're purely organizational)
+  match rule {
+    Rule::statement | Rule::top_statement => return true,
+    _ => {}
+  }
+  
+  // Skip wrapper layers that just pass through a single child
   if child_count == 1 {
     match rule {
       Rule::expr |
