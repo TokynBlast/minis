@@ -102,7 +102,7 @@ namespace minis {
             case Type::Float: print(std::get<double>(val.v)); break;
             case Type::Str:   print(std::get<std::string>(val.v)); break;
             case Type::Bool:  print((bool)std::get<bool>(val.v)); break;
-            case Type::Null:  print("null..."); break;
+            case Type::Null:  print("null"); break;
             case Type::i8:    print(std::get<int8>(val.v)); break;
             case Type::i16:   print(std::get<int16>(val.v)); break;
             case Type::i32:   print(std::get<int32>(val.v)); break;
