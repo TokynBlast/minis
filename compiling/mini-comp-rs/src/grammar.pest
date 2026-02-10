@@ -61,8 +61,12 @@ keyword = @{
   | "table" | "use" | "class" | "new"
   | "public" | "private"
   | "exit" | "over"
-  | base_type
-  | modifier
+  | "i8" | "i16" | "i32" | "i64"
+  | "ui8" | "ui16" | "ui32" | "ui64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
+  | "void" | "auto"
+  | "const" | "static"
   | "true" | "false" | "global" | "unknown"
   | "constexpr"
   | "return" | "in" | "as"
@@ -239,6 +243,7 @@ statement = {
   | constexpr_decl
   | if_stmt
   | func_decl
+  | return_stmt
   | var_decl
   | table_stmt
   | with_stmt
@@ -250,12 +255,17 @@ statement = {
   | function_call ~ ";"
   | while_stmt
   | for_loop
-  | return_stmt
+}
+
+// Top-level statements (includes recovery)
+top_statement = {
+  statement
   | block_recovery
   | error_recovery
 }
+
 block = { "{" ~ statement* ~ "}" }
 if_stmt = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (("elif" ~ "(" ~ expr ~ ")" ~ block)* ~ ("else" ~ block)?)? }
 while_stmt = { "while" ~ "(" ~ expr ~ ")" ~ block }
 return_stmt = { "return" ~ expr? ~ ";" }
-program = { SOI ~ (statement | error_recovery)* ~ EOI }
+program = { SOI ~ (top_statement | error_recovery)* ~ EOI }
