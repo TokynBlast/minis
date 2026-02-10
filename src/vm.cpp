@@ -10,7 +10,6 @@
 #include <cmath>
 #include <set>
 #include <array>
-#include <type_traits>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
