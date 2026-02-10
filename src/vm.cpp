@@ -679,7 +679,7 @@ namespace minis {
 
     static std::set<std::string> loaded_plugins;
     static std::set<std::string> loaded_libs;
-    static uint8 lib_recursion_depth = 0;
+    uint8 lib_recursion_depth = 0;
     static const uint8 MAX_LIB_RECURSION = 32;
 
     inline void load(const std::string& path, bool is_lib = false) {
