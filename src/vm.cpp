@@ -893,10 +893,6 @@ namespace minis {
               } break;
               case static_cast<uint8>(Math::ADD_MULT): {
                 uint64 n = GETu64();
-                if (n == 0) {
-                  push(Value::I64(0));
-                  break;
-                }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
@@ -1004,11 +1000,6 @@ namespace minis {
               case static_cast<uint8>(Math::DIV_MULT): {
                 uint64 n = GETu64();
 
-                if (n == 0) {
-                  push(Value::I64(0));
-                  break;
-                }
-
                 // Collect operands from stack
                 std::vector<Value> operands;
                 operands.reserve(n);
@@ -1113,11 +1104,6 @@ namespace minis {
 
               case static_cast<uint8>(Math::SUB_MULT): {
                 uint64 n = GETu64();
-
-                if (n == 0) {
-                  push(Value::I64(0));
-                  break;
-                }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
@@ -1224,11 +1210,6 @@ namespace minis {
                 // FIXME: shorten this, do 64-bit and cast to variables size :)
                 // Do this for all others
                 uint64 n = GETu64();
-
-                if (n == 0) {
-                  push(Value::I64(0));
-                  break;
-                }
 
                 // Collect operands from stack
                 std::vector<Value> operands;
