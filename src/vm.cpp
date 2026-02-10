@@ -1140,7 +1140,7 @@ namespace minis {
                   } break;
 
                   case Type::ui8: {
-                    std::vector<uint8> vals;
+                    std::vector<uint64> vals;
                     vals.reserve(n);
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint8>(op.v));
@@ -1152,13 +1152,13 @@ namespace minis {
                     std::vector<uint16> vals;
                     vals.reserve(n);
                     for (const auto& op : operands) {
-                      vals.push_back(std::get<uint16>(op.v));
+                      vals.push_back(std::get<uint64>(op.v));
                     }
                     result = Value::UI16(subtract_multi_ui16(vals.data(), n));
                   } break;
 
                   case Type::ui32: {
-                    std::vector<uint32> vals;
+                    std::vector<uint64> vals;
                     vals.reserve(n);
                     for (const auto& op : operands) {
                       vals.push_back(std::get<uint32>(op.v));
@@ -1176,7 +1176,7 @@ namespace minis {
                   } break;
 
                   case Type::Float: {
-                    std::vector<double> vals;
+                    std::vector<uint64> vals;
                     vals.reserve(n);
                     for (const auto& op : operands) {
                       vals.push_back(std::get<double>(op.v));
