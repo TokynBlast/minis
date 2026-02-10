@@ -589,17 +589,17 @@ namespace minis {
     inline Value pop() {
       try {
         if (stack.empty()) {
-          print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.\n");
+          print("FATAL ERROR: Stack underflow; Tried to pop an empty stack\n");
           print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
         if (stack.back().t == Type::Null) {
-          print("FATAL ERROR: Stack had null top value.\n");
+          print("FATAL ERROR: Stack had null top value\n");
           print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
         if (stack.back().t == Type::Void) {
-          print("FATAL ERROR: Stack had void top value.\n");
+          print("FATAL ERROR: Stack had void top value\n");
           print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
@@ -607,7 +607,7 @@ namespace minis {
         stack.pop_back();
         return v;
       } catch (...) {
-        print("FATAL ERROR: Stack operation failed.\n");
+        print("FATAL ERROR: Stack operation failed\n");
         print("  at ", get_debug_location(), "\n");
         std::exit(1);
       }
@@ -856,7 +856,7 @@ namespace minis {
               case static_cast<uint8>(Logic::NOT): {
                 Value a = pop();
                 if (a.t != Type::Bool) {
-                  perr("FATAL ERROR: Logical NOT requires boolean operand\n");
+                  perr("FATAL ERROR: Not (!= or !) requires boolean operand\n");
                   perr("  at ", get_debug_location(), "\n");
                   perr("  got type: ", type_name(a.t), "\n");
                   exit(1);
@@ -1091,7 +1091,7 @@ namespace minis {
                   } break;
 
                   default:
-                    print("FATAL ERROR: ADD_MULT called with non-numeric type\n");
+                    print("FATAL ERROR: Add values with non-numeric type(s)\n");
                     print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
@@ -1301,7 +1301,7 @@ namespace minis {
                   } break;
 
                   default:
-                    print("FATAL ERROR: SUB_MULT called with unknown type\n");
+                    print("FATAL ERROR: Subtracting multiple values with unknown type(s)\n");
                     print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
@@ -1407,7 +1407,7 @@ namespace minis {
                   } break;
 
                   default:
-                    print("FATAL ERROR: MULT_MULT called with unknown type\n");
+                    print("FATAL ERROR: Multiplying multiple values with unknown type(s)\n");
                     print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
