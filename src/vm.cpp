@@ -753,6 +753,12 @@ namespace minis {
         }
       }
 
+      // TODO: Load debug table if present
+      // if (debug_table_off > 0) {
+      //   fseek(file, (uint64)debug_table_off, SEEK_SET);
+      //   // Read debug info
+      // }
+
       fclose(file);
 
       // Decrement recursion depth
