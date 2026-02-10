@@ -11,7 +11,7 @@
 #include <set>
 #include <array>
 #if _WIN32
-#include <conio.h> // Provides Windows _getch()
+  #include <conio.h> // Provides Windows _getch()
 #endif
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
@@ -589,22 +589,26 @@ namespace minis {
     inline Value pop() {
       try {
         if (stack.empty()) {
-          print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.");
+          print("FATAL ERROR: Stack underflow. Tried to pop an empty stack.\n");
+          print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
         if (stack.back().t == Type::Null) {
-          print("FATAL ERROR: Stack had null top value.");
+          print("FATAL ERROR: Stack had null top value.\n");
+          print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
         if (stack.back().t == Type::Void) {
-          print("FATAL ERROR: Stack had void top value.");
+          print("FATAL ERROR: Stack had void top value.\n");
+          print("  at ", get_debug_location(), "\n");
           std::exit(1);
         }
         Value v = std::move(stack.back());
         stack.pop_back();
         return v;
       } catch (...) {
-        print("FATAL ERROR: Stack operation failed.");
+        print("FATAL ERROR: Stack operation failed.\n");
+        print("  at ", get_debug_location(), "\n");
         std::exit(1);
       }
       return Value::Null(); // impossible to reach :)
@@ -615,7 +619,8 @@ namespace minis {
 
     inline void discard() {
       if (stack.empty()) {
-        print("FATAL ERROR: stack underflow; tried to empty an already empty stack");
+        print("FATAL ERROR: stack underflow; tried to empty an already empty stack\n");
+        print("  at ", get_debug_location(), "\n");
         std::exit(1);
       }
       stack.pop_back();
@@ -851,7 +856,9 @@ namespace minis {
               case static_cast<uint8>(Logic::NOT): {
                 Value a = pop();
                 if (a.t != Type::Bool) {
-                  perr("FATAL ERROR: Top of stack wasn't bool");
+                  perr("FATAL ERROR: Logical NOT requires boolean operand\n");
+                  perr("  at ", get_debug_location(), "\n");
+                  perr("  got type: ", type_name(a.t), "\n");
                   exit(1);
                 }
                 push(Value::Bool(!std::get<bool>(a.v)));
@@ -1084,8 +1091,8 @@ namespace minis {
                   } break;
 
                   default:
-                    // FIXME: Need better error message
-                    print("ERROR: ADD_MULTI called with non-numeric type\n");
+                    print("FATAL ERROR: ADD_MULT called with non-numeric type\n");
+                    print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
 
@@ -1294,8 +1301,8 @@ namespace minis {
                   } break;
 
                   default:
-                    // FIXME: Need better error
-                    print("ERROR: Unknown type\n");
+                    print("FATAL ERROR: SUB_MULT called with unknown type\n");
+                    print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
 
@@ -1400,8 +1407,8 @@ namespace minis {
                   } break;
 
                   default:
-                    // FIXME: Need better error
-                    print("ERROR: Unknown type\n");
+                    print("FATAL ERROR: MULT_MULT called with unknown type\n");
+                    print("  at ", get_debug_location(), "\n");
                     std::exit(1);
                 }
 
@@ -1488,7 +1495,8 @@ namespace minis {
                   push(Value::Dict(std::move(dict)));
                 } break;*/
                 default: {
-                  print("unknown literal type tag: ", (int)typeByte, "\n");
+                  print("FATAL ERROR: Unknown literal type tag: 0x", std::hex, (uint32)typeByte, std::dec, "\n");
+                  print("  at ", get_debug_location(), "\n");
                   std::exit(1);
                 }
               }
@@ -1670,7 +1678,8 @@ namespace minis {
 
           } break;
           default: {
-            print("FATAL ERROR: Bad or unknown opcode. ", op);
+            print("FATAL ERROR: Bad or unknown opcode: 0x", std::hex, (uint32)op, std::dec, "\n");
+            print("  at ", get_debug_location(), "\n");
             std::exit(1);
           }
         }
