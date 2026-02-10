@@ -10,6 +10,7 @@
 #include <cmath>
 #include <set>
 #include <array>
+#include <type_traits>
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
@@ -802,16 +803,12 @@ namespace minis {
 
               case static_cast<uint8>(Logic::LESS_THAN): {
                 Value a = pop(), b = pop();
-                if (a.t == Type::ui64 || b.t == Type::ui64)
-                  push(Value::Bool(std::get<uint64>(a.v) < std::get<uint64>(b.v)));
-                else if (a.t == Type::i64 || b.t == Type::i64)
-                  push(Value::Bool(std::get<int64>(a.v) < std::get<int64>(b.v)));
-                else if (a.t == Type::ui32 || b.t == Type::ui32)
-                  push(Value::Bool(std::get<uint32>(a.v) < std::get<uint32>(b.v)));
-                else if (a.t == Type::i32 || b.t == Type::i32)
-                  push(Value::Bool(std::get<int32>(a.v) < std::get<int32>(b.v)));
-                else
+                if (a.t == Type::Float)
                   push(Value::Bool(std::get<double>(a.v) < std::get<double>(b.v)));
+                else if (a.t == Type::i8 || a.t == Type::i16 || a.t == Type::i32 || a.t == Type::i64)
+                  push(Value::Bool(std::get<int64>(a.v) < std::get<int64>(b.v)));
+                else
+                  push(Value::Bool(std::get<uint64>(a.v) < std::get<uint64>(b.v)));
               } break;
               case static_cast<uint8>(Logic::NOT_EQUAL): {
                 Value a = pop(), b = pop();
