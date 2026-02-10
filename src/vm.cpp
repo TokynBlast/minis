@@ -803,8 +803,6 @@ namespace minis {
                   push(Value::Bool(std::get<uint32>(a.v) <= std::get<uint32>(b.v)));
                 else if (a.t == Type::i32 || b.t == Type::i32)
                   push(Value::Bool(std::get<int32>(a.v) <= std::get<int32>(b.v)));
-                else
-                  push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
               } break;
 
               case static_cast<uint8>(Logic::LESS_THAN): {
