@@ -12,6 +12,7 @@
 #include <array>
 #if _WIN32
 #include <conio.h> // Provides Windows _getch()
+#endif
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
 #include "../include/value.hpp"
