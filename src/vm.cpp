@@ -495,6 +495,13 @@ namespace minis {
     };
     std::unordered_map<std::string, FnMeta> fnEntry;
 
+    struct DebugInfo {
+      std::string filename;
+      std::map<uint64, uint32> offset_to_line;
+      std::map<uint64, std::string> offset_to_function;
+    };
+    DebugInfo debug_info;
+
     explicit VMEngine() {}
     ~VMEngine() { if (f) fclose(f); }
 
@@ -612,6 +619,51 @@ namespace minis {
         std::exit(1);
       }
       stack.pop_back();
+    }
+
+    inline const char* type_name(Type t) {
+      switch (t) {
+        case Type::Float:   return "float";
+        case Type::Str:     return "str";
+        case Type::Bool:    return "bool";
+        case Type::List:    return "list";
+        case Type::Null:    return "null";
+        case Type::Dict:    return "dict";
+        case Type::i8:      return "i8";
+        case Type::i16:     return "i16";
+        case Type::i32:     return "i32";
+        case Type::i64:     return "i64";
+        case Type::ui8:     return "ui8";
+        case Type::ui16:    return "ui16";
+        case Type::ui32:    return "ui32";
+        case Type::ui64:    return "ui64";
+        case Type::Range:   return "range";
+        case Type::Void:    return "void";
+        case Type::TriBool: return "tribool";
+        default:            return "unknown";
+      }
+    }
+
+    inline std::string get_debug_location() {
+      if (debug_info.offset_to_line.empty()) {
+        return "unknown location";
+      }
+
+      auto it = debug_info.offset_to_line.upper_bound(ip);
+      if (it != debug_info.offset_to_line.begin()) {
+        --it;
+        std::string loc = debug_info.filename + ":" + std::to_string(it->second);
+
+        auto fn_it = debug_info.offset_to_function.upper_bound(ip);
+        if (fn_it != debug_info.offset_to_function.begin()) {
+          --fn_it;
+          loc += " in " + fn_it->second + "()";
+        }
+
+        return loc;
+      }
+
+      return debug_info.filename + ":?";
     }
 
     static std::set<std::string> loaded_plugins;
@@ -753,11 +805,26 @@ namespace minis {
         }
       }
 
-      // TODO: Load debug table if present
-      // if (debug_table_off > 0) {
-      //   fseek(file, (uint64)debug_table_off, SEEK_SET);
-      //   // Read debug info
-      // }
+      // Load debug table if present
+      if (debug_table_off > 0) {
+        fseek(file, (uint64)debug_table_off, SEEK_SET);
+
+        debug_info.filename = GETstr();
+
+        uint64 line_map_count = GETu64();
+        for (uint64 i = 0; i < line_map_count; i++) {
+          uint64 offset = GETu64();
+          uint32 line = GETu32();
+          debug_info.offset_to_line[offset] = line;
+        }
+
+        uint64 fn_map_count = GETu64();
+        for (uint64 i = 0; i < fn_map_count; i++) {
+          uint64 offset = GETu64();
+          std::string fn_name = GETstr();
+          debug_info.offset_to_function[offset] = fn_name;
+        }
+      }
 
       fclose(file);
 
