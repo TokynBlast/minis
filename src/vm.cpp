@@ -793,7 +793,7 @@ namespace minis {
               } break;
               case static_cast<uint8>(Logic::LESS_OR_EQUAL): {
                 Value a = pop(), b = pop();
-                if (a.t == Type::Float || b.t == Type::Float)
+                if (a.t == Type::Float)
                   push(Value::Bool(std::get<double>(a.v) <= std::get<double>(b.v)));
                 else
                   push(Value::Bool(std::get<uint64>(a.v) <= std::get<uint64>(b.v)));
