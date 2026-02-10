@@ -107,5 +107,12 @@ run("circuit variables", circuit, "one!two!three!four!five!aww :(", True)
 del circuit
 
 run("increment", '1++;', "2")
+run("neg", "neg(34)", "-34")
+run("abs", "abs(-34)", "34")
+run("max", "max([1,3])", "3")
+run("min", "min([1,3])", "1")
+run("sort", "sort([1,5,3,2,4])", "[1,2,3,4,5]")
+run("reverse", "reverse([1,2])", "[2,1]")
+run("len", "len([0,0,0])", "3")
 
 print('PASS' if passed else 'FAIL')
