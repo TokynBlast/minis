@@ -10,6 +10,7 @@
 #include <cmath>
 #include <set>
 #include <array>
+#if _WIN32
 #include <conio.h> // Provides Windows _getch()
 #include "../include/bytecode.hpp"
 #include "../include/types.hpp"
