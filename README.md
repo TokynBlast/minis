@@ -4,39 +4,16 @@
 > [!WARNING]
 > There is no related compiler, to compile for the MVME yet.
 > That is being developed.
+> This project is undergoing a conversion of compilers.
 
 # Minis
-### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.<br>
-In terms of "good", it doesn't mean it's perfect or the best at what it does. Just highly efficent.
-
-## How is it so good?
-Minis is a GCC project, which means it combines multiple languages to do one thing.<br>
-Why multiple languages?<br>
-Glad you asked, it's not about support. It's about efficency.<br>
-For example, using the LinAlg plugin:
-```
-list arrayOne = [24, 53, 52];
-list arrayTwo = [57, 73, 12];
-print(linAlg::arrayAdd(arrayOne, arrayTwo))
-```
-To the dev, you just did a simple equation of adding two arrays.<br>
-Internally, the math we just did is being accelerated.<br>
-How? By having (most of) the math powered by Fortran!<br>
-Fortran is DESIGNED to be good at math!<br><br>
-Another example of where math is better, is:
-```
-u32 x = 1 + 1 + 42432 + 422 + 13 + 8420 + 492 - 492 + 20492 + 9204 + 2492 + 4920 + 2902 + 24902;
-```
-Fortran takes over, and starts adding them together, multiple at a time!
-> [!NOTE] Due to current structure and limitations, it gets split at the subtraction.
-<br><br>
-Minis is built on multiple languages, where each gets to shine where they shine best!<br>
-While still being fast AND memory safe!
+### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.
+In terms of "good," it doesn't mean it's perfect or the best at what it does. Just highly efficent.<br>
 
 # Plugins & Libraries
 ## Math
 ### linAlg - Fast linear algebra support
-```linAlg``` - Linear algebra (```Fortran``` and ```Julia```)<br>
+```linAlg``` - Linear algebra (```LLVM```)<br>
 
 ## Networking
 ### Sysnet - Used for thousands of connections to a single place
