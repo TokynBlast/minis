@@ -102,6 +102,8 @@ logical_not = { "!" }
 increment = { "++" }
 decrement = { "--" }
 
+bits = { "<<" | ">>" | "|" | "&" }
+
 // Consume anything that isn't a semicolon, then the semicolon itself
 error_recovery = { (!";" ~ ANY)* ~ ";" }
 block_recovery = { (!"}" ~ ANY)* ~ "}" }
