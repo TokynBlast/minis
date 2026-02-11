@@ -37,6 +37,8 @@ Find a way to implement unsigned bits into Fortran...
 
 "for" keyword
 
+Replace Fortran with LLVM
+
 Rather than error on wandering values, optomize away
 
 Add program-wide destructor
