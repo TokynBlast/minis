@@ -1,4 +1,3 @@
-Garunteed:
 inline functions
 Make a dev file for making Mini libraries
   Provide low-level functions such as:
@@ -23,6 +22,19 @@ int y = {
 }
 ```
 
+add `sync` to pair with `with`
+  `sync` will make it so operations between each will be updated
+  ex:
+  ```
+  int one = 32;
+  sync with {
+    one++;
+  } and {
+    one++;
+  }
+  ```
+  This should also use atomics :)
+
 Add the split kw
   Split will generate code for multiple types
   split<u8, i8, i16, u16> add(split<u8, i8> one, split<u8, i8> two) {
@@ -46,7 +58,6 @@ Make Var only take Value
    variables currently hold a Value AND a Type
    we can use Value to determin Type
 
-Maybe:
 Use deque over vector (Or seperate types)
 Add compiler grouping
 Add personal scopes
