@@ -80,8 +80,6 @@ def run(test_name, code, expected_output, no_add=False):
         except:
             pass
 
-    return test
-
 # Example tests
 
 run("printing", 'Hello', "Hello")
