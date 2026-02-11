@@ -1,4 +1,0 @@
--- Verify the math input and output :3
--- This file is pure compile time, it prevents mistakes in the ingoing math, that's it
--- and hypothetically should not be included in the final source.
--- the Ada part just ensures less mistakes :)
