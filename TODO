@@ -23,6 +23,14 @@ int y = {
 }
 ```
 
+Add the split kw
+  Split will generate code for multiple types
+  split<u8, i8, i16, u16> add(split<u8, i8> one, split<u8, i8> two) {
+    return (smallest)(one + two)
+  }
+  will generate code for each possible type
+  if compiler can prove that any won't be used, or aren't used, then remove them
+
 Add hive variant of list (like std::hive)
 
 Add program-wide destructor
@@ -32,9 +40,6 @@ Standardize fail and pass return
 Use explicit wrappers instead of a variant, to get full compile-time converions.
 
 Remove unnecesarry bloat from io_fast
-
-Implement 256-bit integers?
-
 
 Make Var only take Value
    Value holds Type and the actual value
@@ -46,12 +51,10 @@ Use deque over vector (Or seperate types)
 Add compiler grouping
 Add personal scopes
 
-AOT pre-linking for imports (cache held in ~/.minis/cache/)
-64KB sized packets for custom TCP (delete after use)
+64KB sized packets for custom TCP
 
 More keywords
 class
-as
 case
 struct
 enum
