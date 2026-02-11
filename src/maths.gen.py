@@ -33,6 +33,6 @@ def ll_mult_gen() -> str:
   return "\n".join(chunks)
 
 output = ll_mult_gen()
-with open("./maths.ll", "w") as mathf:
+with open("src/maths.ll", "w") as mathf:
   mathf.write(output)
-print("Generated maths.ll successfully")
+  mathf.close()
