@@ -13,8 +13,6 @@ class Test:
         self.actual_output = ""
 
 def run(test_name, code, expected_output, no_add=False):
-    global passed
-
     print(f"[?] Testing {test_name}...", end="\r")
 
     test = Test(test_name, code, expected_output)
