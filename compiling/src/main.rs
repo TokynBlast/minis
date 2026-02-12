@@ -3,6 +3,7 @@ use std::fs;
 use std::io::{self, Read, IsTerminal};
 use std::process::{Command, Stdio};
 use std::collections::{HashMap, HashSet};
+use std::sync::Once;
 use std::path::PathBuf;
 
 use pest::Parser;
@@ -30,11 +31,24 @@ fn main() {
 
   // Step 1: Read and preprocess
   let (input, source_name) = read_input(options.input_path.clone());
-  let preprocessed = preprocess_macros(&input);
+  let base_dir = source_name.as_deref().and_then(|p| PathBuf::from(p).parent().map(|d| d.to_path_buf()));
+  let (included, extra_objects) = match expand_includes(&input, base_dir) {
+    Ok(result) => result,
+    Err(err) => {
+      eprintln!("Error: {err}");
+      std::process::exit(1);
+    }
+  };
+  let preprocessed = preprocess_macros(&included);
 
   // Step 2: Parse
   match MiniParser::parse(Rule::program, &preprocessed) {
     Ok(pairs) => {
+      if !has_user_main(pairs.clone()) {
+        eprintln!("Error: no main function defined");
+        std::process::exit(1);
+      }
+
       // Step 3: Generate unoptimized LLVM IR
       let unopt_ir = emit_llvm_ir(pairs, source_name.as_deref().unwrap_or("<stdin>"), &target_triple);
 
@@ -124,7 +138,7 @@ fn main() {
           // Default: compile and link to binary
           let output_path = resolve_binary_output_path(options.output_path.as_deref(), options.input_path.as_deref(), options.output_format.as_deref());
           if let Some(path) = output_path {
-            if let Err(err) = compile_to_binary(&ir, &path, &target_triple) {
+            if let Err(err) = compile_to_binary(&ir, &path, &target_triple, &extra_objects) {
               eprintln!("Error: failed to compile to binary: {err}");
               std::process::exit(1);
             }
@@ -305,6 +319,82 @@ fn read_input(path: Option<String>) -> (String, Option<String>) {
   }
 }
 
+fn expand_includes(input: &str, base_dir: Option<PathBuf>) -> Result<(String, Vec<String>), String> {
+  let mut visited: HashSet<PathBuf> = HashSet::new();
+  let mut objects: Vec<String> = Vec::new();
+  let expanded = expand_includes_inner(input, base_dir, &mut visited, &mut objects)?;
+  Ok((expanded, objects))
+}
+
+fn expand_includes_inner(
+  input: &str,
+  base_dir: Option<PathBuf>,
+  visited: &mut HashSet<PathBuf>,
+  objects: &mut Vec<String>,
+) -> Result<String, String> {
+  let mut output = String::new();
+  for line in input.lines() {
+    let trimmed = line.trim_start();
+    if trimmed.starts_with("include ") {
+      let end = trimmed.rfind(';').ok_or_else(|| "include statement must end with ';'".to_string())?;
+      let content = trimmed[..end].trim_start_matches("include").trim();
+      let (path_text, is_string) = parse_include_path(content)?;
+      if !is_string {
+        return Err("include path must be a string literal".to_string());
+      }
+
+      let include_path = resolve_include_path(&path_text, base_dir.as_ref())?;
+      let ext = include_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+      if ext.eq_ignore_ascii_case("mi") {
+        if visited.contains(&include_path) {
+          continue;
+        }
+        visited.insert(include_path.clone());
+        let text = fs::read_to_string(&include_path)
+          .map_err(|err| format!("failed to read include file {}: {err}", include_path.display()))?;
+        let next_base = include_path.parent().map(|p| p.to_path_buf());
+        let expanded = expand_includes_inner(&text, next_base, visited, objects)?;
+        output.push_str(&expanded);
+        output.push('\n');
+        continue;
+      }
+
+      if ext.eq_ignore_ascii_case("o") || ext.eq_ignore_ascii_case("obj") {
+        objects.push(include_path.to_string_lossy().to_string());
+        continue;
+      }
+
+      return Err(format!("unsupported include file type: {}", include_path.display()));
+    }
+
+    output.push_str(line);
+    output.push('\n');
+  }
+
+  Ok(output)
+}
+
+fn parse_include_path(text: &str) -> Result<(String, bool), String> {
+  let trimmed = text.trim();
+  if let Some(rest) = trimmed.strip_prefix('"') {
+    if let Some(end) = rest.rfind('"') {
+      return Ok((rest[..end].to_string(), true));
+    }
+  }
+  Ok((trimmed.to_string(), false))
+}
+
+fn resolve_include_path(path_text: &str, base_dir: Option<&PathBuf>) -> Result<PathBuf, String> {
+  let path = PathBuf::from(path_text);
+  if path.is_absolute() {
+    return Ok(path);
+  }
+  if let Some(dir) = base_dir {
+    return Ok(dir.join(path));
+  }
+  Ok(path)
+}
+
 fn run_opt(ir: &str, level: &str) -> Result<String, String> {
   let mut child = Command::new("opt")
     .arg(level)
@@ -406,17 +496,17 @@ fn compile_to_object(ir: &str, output_path: &str) -> Result<(), String> {
   run_llc(ir, output_path, "obj")
 }
 
-fn compile_to_binary(ir: &str, output_path: &str, _target_triple: &str) -> Result<(), String> {
+fn compile_to_binary(ir: &str, output_path: &str, _target_triple: &str, extra_objects: &[String]) -> Result<(), String> {
   let obj_path = PathBuf::from(output_path)
     .with_extension("o")
     .to_string_lossy()
     .to_string();
 
   compile_to_object(ir, &obj_path)?;
-  link_object(&obj_path, output_path)
+  link_object(&obj_path, output_path, extra_objects)
 }
 
-fn link_object(obj_path: &str, output_path: &str) -> Result<(), String> {
+fn link_object(obj_path: &str, output_path: &str, extra_objects: &[String]) -> Result<(), String> {
   let mut candidates: Vec<&str> = vec!["cc", "clang", "gcc"];
   if cfg!(target_os = "windows") {
     candidates = vec!["clang", "gcc", "cc"];
@@ -428,6 +518,9 @@ fn link_object(obj_path: &str, output_path: &str) -> Result<(), String> {
     cmd.arg(obj_path)
       .arg("-o")
       .arg(output_path);
+    for obj in extra_objects {
+      cmd.arg(obj);
+    }
     if cfg!(target_os = "linux") {
       cmd.arg("-no-pie");
     }
@@ -454,8 +547,10 @@ fn link_object(obj_path: &str, output_path: &str) -> Result<(), String> {
 #[derive(Debug, Clone)]
 enum TypeChoice {
   Single(String),
-  Variant(Vec<String>),
+  Variant(Vec<String>, bool),
 }
+
+static VARIANT_WARN_ONCE: Once = Once::new();
 
 #[derive(Debug, Clone)]
 struct FuncTemplate {
@@ -470,11 +565,15 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
   let mut templates: Vec<FuncTemplate> = Vec::new();
   let mut module = ModuleContext::new();
   let mut defined_names: HashSet<String> = HashSet::new();
-  let top_level_statements = collect_top_level_statements(pairs.clone());
 
   for pair in pairs.clone() {
     collect_functions(pair.clone(), &mut templates);
     collect_classes(pair, &mut module);
+  }
+
+  if let Err(err) = collect_global_vars(pairs.clone(), &mut module) {
+    eprintln!("Error: {err}");
+    std::process::exit(1);
   }
 
   let mut functions: Vec<String> = Vec::new();
@@ -491,11 +590,6 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
     for method in &class_def.methods {
       defined_names.insert(mangle_method_name(&class_def.name, &method.name));
     }
-  }
-
-  let should_emit_main = !top_level_statements.is_empty() && !defined_names.contains("main");
-  if should_emit_main {
-    defined_names.insert("main".to_string());
   }
 
   module.defined_funcs = defined_names.clone();
@@ -538,9 +632,6 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
     }
   }
 
-  if should_emit_main {
-    functions.push(emit_main_ir(top_level_statements, &mut module));
-  }
 
   if !module.externs.is_empty() {
     let mut to_remove: Vec<String> = Vec::new();
@@ -584,78 +675,6 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
   out
 }
 
-fn collect_top_level_statements(pairs: Pairs<Rule>) -> Vec<pest::iterators::Pair<Rule>> {
-  let mut statements = Vec::new();
-  fn push_if_statement<'a>(statements: &mut Vec<pest::iterators::Pair<'a, Rule>>, stmt: pest::iterators::Pair<'a, Rule>) {
-    let inner_rule = if stmt.as_rule() == Rule::statement {
-      stmt.clone().into_inner().next().map(|p| p.as_rule())
-    } else {
-      Some(stmt.as_rule())
-    };
-
-    if matches!(inner_rule, Some(Rule::func_decl | Rule::class_decl | Rule::macro_def | Rule::macro_simple_def)) {
-      return;
-    }
-
-    statements.push(stmt);
-  }
-
-  for pair in pairs {
-    match pair.as_rule() {
-      Rule::program => {
-        for top in pair.into_inner() {
-          if top.as_rule() == Rule::top_statement {
-            if let Some(stmt) = top.into_inner().next() {
-              push_if_statement(&mut statements, stmt);
-            }
-          } else if top.as_rule() == Rule::statement {
-            push_if_statement(&mut statements, top);
-          }
-        }
-      }
-      Rule::top_statement => {
-        if let Some(stmt) = pair.into_inner().next() {
-          push_if_statement(&mut statements, stmt);
-        }
-      }
-      Rule::statement => {
-        push_if_statement(&mut statements, pair);
-      }
-      _ => {}
-    }
-  }
-  statements
-}
-
-fn emit_main_ir(stmts: Vec<pest::iterators::Pair<Rule>>, module: &mut ModuleContext) -> String {
-  let ret_ty = "i32".to_string();
-  let mut func = FunctionContext::new(ret_ty.clone(), None, None);
-  let mut terminated = false;
-
-  for stmt in stmts {
-    if emit_statement_ir_with_return(stmt, &ret_ty, &mut func, module, false) {
-      terminated = true;
-      break;
-    }
-  }
-
-  if !terminated {
-    func.emit(default_return(&ret_ty));
-  }
-
-  let mut body = String::new();
-  for line in func.lines {
-    if line.ends_with(':') {
-      body.push_str(&line);
-    } else {
-      body.push_str("  ");
-      body.push_str(&line);
-    }
-    body.push('\n');
-  }
-
-  format!("define {} @main() {{\n{}\n}}\n", ret_ty, body.trim_end())
-}
 
 #[derive(Debug, Clone)]
 struct FuncInstance {
@@ -671,6 +690,13 @@ struct StringConst {
   name: String,
   value: String,
   len: usize,
+}
+
+#[derive(Debug, Clone)]
+struct GlobalVar {
+  name: String,
+  ty: String,
+  init: String,
 }
 
 #[derive(Debug, Clone)]
@@ -701,6 +727,8 @@ struct ModuleContext {
   externs: HashSet<String>,
   classes: HashMap<String, ClassDef>,
   defined_funcs: HashSet<String>,
+  global_vars: Vec<GlobalVar>,
+  global_map: HashMap<String, String>,
 }
 
 impl ModuleContext {
@@ -711,14 +739,20 @@ impl ModuleContext {
       externs: HashSet::new(),
       classes: HashMap::new(),
       defined_funcs: HashSet::new(),
+      global_vars: Vec::new(),
+      global_map: HashMap::new(),
     }
   }
 
   fn render_globals(&self) -> Vec<String> {
-    self.strings
+    let mut out: Vec<String> = self.strings
       .iter()
       .map(|s| format!("@{} = private unnamed_addr constant [{} x i8] c\"{}\"", s.name, s.len, s.value))
-      .collect()
+      .collect();
+    for g in &self.global_vars {
+      out.push(format!("@{} = global {} {}", g.name, g.ty, g.init));
+    }
+    out
   }
 
   fn render_externs(&self) -> Vec<String> {
@@ -765,6 +799,18 @@ impl ModuleContext {
     });
     self.string_map.insert(text.to_string(), name.clone());
     gep_for_string(&name, len)
+  }
+
+  fn add_global(&mut self, name: String, ty: String, init: String) {
+    if self.global_map.contains_key(&name) {
+      return;
+    }
+    self.global_vars.push(GlobalVar { name: name.clone(), ty: ty.clone(), init });
+    self.global_map.insert(name, ty);
+  }
+
+  fn get_global_type(&self, name: &str) -> Option<String> {
+    self.global_map.get(name).cloned()
   }
 }
 
@@ -914,6 +960,241 @@ fn collect_classes(pair: pest::iterators::Pair<Rule>, module: &mut ModuleContext
   }
 }
 
+fn has_user_main(pairs: Pairs<Rule>) -> bool {
+  fn search(pair: pest::iterators::Pair<Rule>) -> bool {
+    if pair.as_rule() == Rule::func_decl {
+      if let Some(func) = parse_func_decl(pair) {
+        return func.name == "main";
+      }
+      return false;
+    }
+
+    for inner in pair.into_inner() {
+      if search(inner) {
+        return true;
+      }
+    }
+    false
+  }
+
+  for pair in pairs {
+    if search(pair) {
+      return true;
+    }
+  }
+  false
+}
+
+fn collect_global_vars(pairs: Pairs<Rule>, module: &mut ModuleContext) -> Result<(), String> {
+  for pair in pairs {
+    if pair.as_rule() != Rule::program {
+      continue;
+    }
+    for top in pair.into_inner() {
+      let stmt = if top.as_rule() == Rule::top_statement {
+        top.into_inner().next()
+      } else if top.as_rule() == Rule::statement {
+        Some(top)
+      } else {
+        None
+      };
+
+      let Some(stmt) = stmt else { continue; };
+      let inner = if stmt.as_rule() == Rule::statement {
+        stmt.clone().into_inner().next()
+      } else {
+        Some(stmt.clone())
+      };
+      let Some(inner) = inner else { continue; };
+
+      if inner.as_rule() == Rule::var_decl {
+        add_global_from_var_decl(inner, module)?;
+      }
+    }
+  }
+  Ok(())
+}
+
+fn add_global_from_var_decl(pair: pest::iterators::Pair<Rule>, module: &mut ModuleContext) -> Result<(), String> {
+  let mut inner = pair.into_inner();
+  let mut type_name: Option<String> = None;
+  let mut entries: Vec<(String, Option<pest::iterators::Pair<Rule>>)> = Vec::new();
+
+  while let Some(next) = inner.next() {
+    match next.as_rule() {
+      Rule::type_spec | Rule::type_ref | Rule::class_name => {
+        type_name = parse_type_name(next);
+      }
+      Rule::identifier => {
+        entries.push((next.as_str().to_string(), None));
+      }
+      Rule::expr => {
+        if let Some(last) = entries.last_mut() {
+          last.1 = Some(next);
+        }
+      }
+      _ => {}
+    }
+  }
+
+  let type_name = type_name.ok_or_else(|| "global declaration missing type".to_string())?;
+  if matches!(type_name.as_str(), "str" | "list" | "dict") {
+    return Err("global string/list/dict values are not supported".to_string());
+  }
+
+  let llvm_ty = llvm_type(&type_name);
+  for (name, expr) in entries {
+    let init = if let Some(expr) = expr {
+      eval_global_const(expr, &type_name, &llvm_ty)?
+    } else {
+      default_global_init(&llvm_ty)
+    };
+    module.add_global(name, llvm_ty.clone(), init);
+  }
+  Ok(())
+}
+
+fn default_global_init(llvm_ty: &str) -> String {
+  if llvm_ty == "double" {
+    "0.0".to_string()
+  } else if llvm_ty.ends_with('*') {
+    "null".to_string()
+  } else {
+    "0".to_string()
+  }
+}
+
+fn is_unsigned_type(type_name: &str) -> bool {
+  matches!(type_name, "u8" | "u16" | "u32" | "u64" | "ui8" | "ui16" | "ui32" | "ui64")
+}
+
+fn eval_global_const(pair: pest::iterators::Pair<Rule>, type_name: &str, llvm_ty: &str) -> Result<String, String> {
+  let lit = eval_const_literal(pair).ok_or_else(|| "global initializer must be a constant literal".to_string())?;
+
+  match lit {
+    ConstLiteral::Int { text, radix, negative } => format_int_literal(&text, radix, negative, type_name, llvm_ty),
+    ConstLiteral::Bool(b) => {
+      let text = if b { "1" } else { "0" };
+      format_int_literal(text, 10, false, type_name, llvm_ty)
+    }
+    ConstLiteral::Tribool(v) => {
+      let text = v.to_string();
+      format_int_literal(&text, 10, false, type_name, llvm_ty)
+    }
+    ConstLiteral::Float(text) => {
+      if llvm_ty == "double" {
+        Ok(text)
+      } else {
+        Err("global float initializer requires float type".to_string())
+      }
+    }
+  }
+}
+
+fn format_int_literal(text: &str, radix: u32, negative: bool, type_name: &str, llvm_ty: &str) -> Result<String, String> {
+  let width = int_width(llvm_ty).ok_or_else(|| "global integer initializer requires integer type".to_string())?;
+
+  if type_name == "bool" {
+    if negative {
+      return Err("bool global initializer cannot be negative".to_string());
+    }
+    let value = parse_modulo(text, radix, width)?;
+    if value == 0 || value == 1 {
+      return Ok(value.to_string());
+    }
+    return Err("bool global initializer must be 0 or 1".to_string());
+  }
+
+  if type_name == "tribool" {
+    if negative {
+      return Err("tribool global initializer cannot be negative".to_string());
+    }
+    let value = parse_modulo(text, radix, width)?;
+    if value <= 2 {
+      return Ok(value.to_string());
+    }
+    return Err("tribool global initializer must be 0, 1, or 2".to_string());
+  }
+
+  let mut value = parse_modulo(text, radix, width)?;
+  if negative {
+    let modulus = 1_u128 << width;
+    value = (modulus - (value % modulus)) % modulus;
+  }
+
+  if is_unsigned_type(type_name) {
+    return Ok(value.to_string());
+  }
+
+  // For signed types, emit the wrapped bit pattern as unsigned decimal.
+  Ok(value.to_string())
+}
+
+fn parse_modulo(text: &str, radix: u32, width: u32) -> Result<u128, String> {
+  let modulus: u128 = 1_u128 << width;
+  let mut acc: u128 = 0;
+  for ch in text.chars() {
+    let digit = ch.to_digit(radix).ok_or_else(|| "invalid digit in integer literal".to_string())? as u128;
+    acc = (acc * radix as u128 + digit) % modulus;
+  }
+  Ok(acc)
+}
+
+enum ConstLiteral {
+  Int { text: String, radix: u32, negative: bool },
+  Float(String),
+  Bool(bool),
+  Tribool(i8),
+}
+
+fn eval_const_literal(pair: pest::iterators::Pair<Rule>) -> Option<ConstLiteral> {
+  match pair.as_rule() {
+    Rule::number => {
+      let text = pair.as_str();
+      if let Some(stripped) = text.strip_prefix('-') {
+        Some(ConstLiteral::Int { text: stripped.to_string(), radix: 10, negative: true })
+      } else {
+        Some(ConstLiteral::Int { text: text.to_string(), radix: 10, negative: false })
+      }
+    }
+    Rule::hex_number => {
+      let text = pair.as_str().trim_start_matches("0x");
+      Some(ConstLiteral::Int { text: text.to_string(), radix: 16, negative: false })
+    }
+    Rule::binary_number => {
+      let text = pair.as_str().trim_start_matches("0b");
+      Some(ConstLiteral::Int { text: text.to_string(), radix: 2, negative: false })
+    }
+    Rule::float => Some(ConstLiteral::Float(pair.as_str().to_string())),
+    Rule::bool => Some(ConstLiteral::Bool(pair.as_str() == "true")),
+    Rule::tribool_val => {
+      let v = match pair.as_str() {
+        "true" => 0,
+        "false" => 1,
+        _ => 2,
+      };
+      Some(ConstLiteral::Tribool(v))
+    }
+    Rule::expr |
+    Rule::logical_expr |
+    Rule::logical_and_expr |
+    Rule::comparison |
+    Rule::arith_expr |
+    Rule::term |
+    Rule::primary |
+    Rule::primary_base => {
+      let mut inner = pair.into_inner();
+      let first = inner.next()?;
+      if inner.next().is_none() {
+        eval_const_literal(first)
+      } else {
+        None
+      }
+    }
+    _ => None,
+  }
+}
+
 fn parse_class_decl(pair: pest::iterators::Pair<Rule>) -> Option<ClassDef> {
   let mut inner = pair.into_inner();
   let class_name = inner.next()?.as_str().to_string();
@@ -1011,7 +1292,7 @@ fn parse_class_method(pair: pest::iterators::Pair<Rule>) -> Option<ClassMethod> 
         params = parsed.into_iter().map(|(ty, name)| {
           let ty_str = match ty {
             TypeChoice::Single(s) => s,
-            TypeChoice::Variant(_) => "i64".to_string(), // Fallback for variants
+            TypeChoice::Variant(_, _) => "i64".to_string(), // Fallback for variants
           };
           (ty_str, name)
         }).collect();
@@ -1090,11 +1371,25 @@ fn parse_type_choice(pair: pest::iterators::Pair<Rule>) -> Option<TypeChoice> {
     Rule::type_spec => {
       let mut inner = pair.into_inner();
       while let Some(next) = inner.next() {
-        if matches!(next.as_rule(), Rule::base_type | Rule::variant_type) {
+        if matches!(next.as_rule(), Rule::base_type | Rule::variant_type | Rule::experimental_variant_type) {
           return parse_type_choice(next);
         }
       }
       None
+    }
+    Rule::experimental_variant_type => {
+      let mut inner = pair.into_inner();
+      let variant = inner.next()?;
+      let types = variant
+        .into_inner()
+        .filter(|p| p.as_rule() == Rule::base_type)
+        .map(|p| p.as_str().to_string())
+        .collect::<Vec<_>>();
+      if types.is_empty() {
+        None
+      } else {
+        Some(TypeChoice::Variant(types, true))
+      }
     }
     Rule::variant_type => {
       let types = pair
@@ -1105,7 +1400,10 @@ fn parse_type_choice(pair: pest::iterators::Pair<Rule>) -> Option<TypeChoice> {
       if types.is_empty() {
         None
       } else {
-        Some(TypeChoice::Variant(types))
+        VARIANT_WARN_ONCE.call_once(|| {
+          eprintln!("warning: variant<> is experimental; use !variant<> to accept experimental behavior");
+        });
+        Some(TypeChoice::Variant(types, false))
       }
     }
     Rule::base_type => Some(TypeChoice::Single(pair.as_str().to_string())),
@@ -1115,7 +1413,7 @@ fn parse_type_choice(pair: pest::iterators::Pair<Rule>) -> Option<TypeChoice> {
 }
 
 fn has_variant_type(choice: &TypeChoice) -> bool {
-  matches!(choice, TypeChoice::Variant(_))
+  matches!(choice, TypeChoice::Variant(_, _))
 }
 
 fn instantiate_variants(template: &FuncTemplate) -> Vec<FuncInstance> {
@@ -1157,6 +1455,57 @@ fn instantiate_variants(template: &FuncTemplate) -> Vec<FuncInstance> {
 struct ValueIR {
   ty: String,
   val: String,
+}
+
+fn int_width(ty: &str) -> Option<u32> {
+  match ty {
+    "i1" => Some(1),
+    "i8" => Some(8),
+    "i16" => Some(16),
+    "i32" => Some(32),
+    "i64" => Some(64),
+    _ => None,
+  }
+}
+
+fn coerce_value_to_type(value: ValueIR, target_ty: &str, func: &mut FunctionContext) -> Option<ValueIR> {
+  if value.ty == target_ty {
+    return Some(value);
+  }
+
+  if let (Some(from_w), Some(to_w)) = (int_width(&value.ty), int_width(target_ty)) {
+    let tmp = func.new_temp();
+    if to_w > from_w {
+      func.emit(format!("{} = sext {} {} to {}", tmp, value.ty, value.val, target_ty));
+    } else if to_w < from_w {
+      func.emit(format!("{} = trunc {} {} to {}", tmp, value.ty, value.val, target_ty));
+    } else {
+      return Some(ValueIR { ty: target_ty.to_string(), val: value.val });
+    }
+    return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+  }
+
+  if target_ty == "double" {
+    if int_width(&value.ty).is_some() {
+      let tmp = func.new_temp();
+      func.emit(format!("{} = sitofp {} {} to {}", tmp, value.ty, value.val, target_ty));
+      return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+    }
+  }
+
+  if int_width(target_ty).is_some() && value.ty == "double" {
+    let tmp = func.new_temp();
+    func.emit(format!("{} = fptosi {} {} to {}", tmp, value.ty, value.val, target_ty));
+    return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+  }
+
+  if value.ty.ends_with('*') && target_ty.ends_with('*') {
+    let tmp = func.new_temp();
+    func.emit(format!("{} = bitcast {} {} to {}", tmp, value.ty, value.val, target_ty));
+    return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+  }
+
+  Some(value)
 }
 
 fn emit_block_ir(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
@@ -1211,8 +1560,10 @@ fn emit_statement_ir_with_return(
       }
       if let Some(expr) = inner.next() {
         if let Some(value) = emit_expr_value(expr, func, module) {
-          func.emit(format!("ret {} {}", value.ty, value.val));
-          return true;
+          if let Some(coerced) = coerce_value_to_type(value, ret_ty, func) {
+            func.emit(format!("ret {} {}", coerced.ty, coerced.val));
+            return true;
+          }
         }
       }
       func.emit(default_return(ret_ty));
@@ -1228,12 +1579,18 @@ fn emit_statement_ir_with_return(
             if emit_self_field_store(&name, &value, func, module) {
               return false;
             }
+            if let Some(global_ty) = module.get_global_type(&name) {
+              let stored = coerce_value_to_type(value, &global_ty, func).unwrap_or_else(|| ValueIR { ty: global_ty.clone(), val: "0".to_string() });
+              func.emit(format!("store {} {}, {}* @{}", stored.ty, stored.val, global_ty, name));
+              return false;
+            }
             let slot = func.new_temp();
             func.emit(format!("{} = alloca {}", slot, value.ty));
             func.locals.insert(name.clone(), (value.ty.clone(), slot));
           }
           let slot = func.locals.get(&name).unwrap().clone();
-          func.emit(format!("store {} {}, {}* {}", value.ty, value.val, slot.0, slot.1));
+          let stored = coerce_value_to_type(value, &slot.0, func).unwrap_or_else(|| ValueIR { ty: slot.0.clone(), val: "0".to_string() });
+          func.emit(format!("store {} {}, {}* {}", stored.ty, stored.val, slot.0, slot.1));
         }
       }
       false
@@ -1258,7 +1615,8 @@ fn emit_statement_ir_with_return(
           Rule::expr => {
             if let Some(value) = emit_expr_value(next, func, module) {
               if let Some((ty, slot)) = last_slot.clone() {
-                func.emit(format!("store {} {}, {}* {}", value.ty, value.val, ty, slot));
+                let stored = coerce_value_to_type(value, &ty, func).unwrap_or_else(|| ValueIR { ty: ty.clone(), val: "0".to_string() });
+                func.emit(format!("store {} {}, {}* {}", stored.ty, stored.val, ty, slot));
               }
             }
           }
@@ -1666,6 +2024,10 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
       } else {
         if let Some(val) = emit_self_field_load(pair.as_str(), func, module) {
           Some(val)
+        } else if let Some(global_ty) = module.get_global_type(pair.as_str()) {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = load {}, {}* @{}", tmp, global_ty, global_ty, pair.as_str()));
+          Some(ValueIR { ty: global_ty, val: tmp })
         } else {
           Some(ValueIR { ty: "i64".to_string(), val: "0".to_string() })
         }
@@ -1935,7 +2297,7 @@ fn expand_type_choices(choices: &[TypeChoice]) -> Vec<Vec<String>> {
         expand_at(idx + 1, choices, current, out);
         current.pop();
       }
-      TypeChoice::Variant(list) => {
+      TypeChoice::Variant(list, _) => {
         for t in list {
           current.push(t.clone());
           expand_at(idx + 1, choices, current, out);
