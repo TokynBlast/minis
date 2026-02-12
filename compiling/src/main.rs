@@ -586,34 +586,42 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
 
 fn collect_top_level_statements(pairs: Pairs<Rule>) -> Vec<pest::iterators::Pair<Rule>> {
   let mut statements = Vec::new();
-  for pair in pairs {
-    if pair.as_rule() != Rule::program {
-      continue;
+  fn push_if_statement<'a>(statements: &mut Vec<pest::iterators::Pair<'a, Rule>>, stmt: pest::iterators::Pair<'a, Rule>) {
+    let inner_rule = if stmt.as_rule() == Rule::statement {
+      stmt.clone().into_inner().next().map(|p| p.as_rule())
+    } else {
+      Some(stmt.as_rule())
+    };
+
+    if matches!(inner_rule, Some(Rule::func_decl | Rule::class_decl | Rule::macro_def | Rule::macro_simple_def)) {
+      return;
     }
 
-    for top in pair.into_inner() {
-      let stmt = if top.as_rule() == Rule::top_statement {
-        match top.into_inner().next() {
-          Some(p) => p,
-          None => continue,
+    statements.push(stmt);
+  }
+
+  for pair in pairs {
+    match pair.as_rule() {
+      Rule::program => {
+        for top in pair.into_inner() {
+          if top.as_rule() == Rule::top_statement {
+            if let Some(stmt) = top.into_inner().next() {
+              push_if_statement(&mut statements, stmt);
+            }
+          } else if top.as_rule() == Rule::statement {
+            push_if_statement(&mut statements, top);
+          }
         }
-      } else if top.as_rule() == Rule::statement {
-        top
-      } else {
-        continue;
-      };
-
-      let inner_rule = if stmt.as_rule() == Rule::statement {
-        stmt.clone().into_inner().next().map(|p| p.as_rule())
-      } else {
-        Some(stmt.as_rule())
-      };
-
-      if matches!(inner_rule, Some(Rule::func_decl | Rule::class_decl | Rule::macro_def | Rule::macro_simple_def)) {
-        continue;
       }
-
-      statements.push(stmt);
+      Rule::top_statement => {
+        if let Some(stmt) = pair.into_inner().next() {
+          push_if_statement(&mut statements, stmt);
+        }
+      }
+      Rule::statement => {
+        push_if_statement(&mut statements, pair);
+      }
+      _ => {}
     }
   }
   statements
