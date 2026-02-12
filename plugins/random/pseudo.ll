@@ -1,21 +1,21 @@
 ; This was generated via compiling Fortran code.
 ; It used pdeudo.f08
 
-@_QMrandomECi64 = constant i32 8
-@_QMrandomEClower_mask = constant i64 2147483647
-@_QMrandomECm = constant i32 397
-@_QMrandomECmatrix_a = constant i64 2567483615
-@_QMrandomEmt = global [624 x i64] zeroinitializer
-@_QMrandomEmti = global i32 625
-@_QMrandomECn = constant i32 624
-@_QMrandomECupper_mask = constant i64 2147483648
-@_QMrandomFmersene_twisterEmag01 = internal global [2 x i64] [i64 0, i64 2567483615]
+@i64_bytes = constant i32 8
+@mt_lower_mask = constant i64 2147483647
+@mt_m = constant i32 397
+@mt_matrix_a = constant i64 2567483615
+@mt_state = global [624 x i64] zeroinitializer
+@mt_index = global i32 625
+@mt_n = constant i32 624
+@mt_upper_mask = constant i64 2147483648
+@mt_mag01 = internal global [2 x i64] [i64 0, i64 2567483615]
 
-define void @_QMrandomPmt_init(ptr noalias %0) {
+define void @mt_init(ptr noalias %0) {
   %2 = alloca i32, i64 1, align 4
   %3 = load i64, ptr %0, align 8
   %4 = and i64 %3, 4294967295
-  store i64 %4, ptr @_QMrandomEmt, align 8
+  store i64 %4, ptr @mt_state, align 8
   br label %5
 
 5:
@@ -33,7 +33,7 @@ define void @_QMrandomPmt_init(ptr noalias %0) {
   %14 = mul nsw i64 %13, 1
   %15 = mul nsw i64 %14, 1
   %16 = add nsw i64 %15, 0
-  %17 = getelementptr i64, ptr @_QMrandomEmt, i64 %16
+  %17 = getelementptr i64, ptr @mt_state, i64 %16
   %18 = load i64, ptr %17, align 8
   %19 = shl i64 %18, 30
   %20 = lshr i64 %18, 30
@@ -49,7 +49,7 @@ define void @_QMrandomPmt_init(ptr noalias %0) {
   %30 = mul nsw i64 %29, 1
   %31 = mul nsw i64 %30, 1
   %32 = add nsw i64 %31, 0
-  %33 = getelementptr i64, ptr @_QMrandomEmt, i64 %32
+  %33 = getelementptr i64, ptr @mt_state, i64 %32
   store i64 %28, ptr %33, align 8
   %34 = load i32, ptr %2, align 4
   %35 = add nsw i32 %34, 1
@@ -58,24 +58,24 @@ define void @_QMrandomPmt_init(ptr noalias %0) {
 
 37:
   store i32 %6, ptr %2, align 4
-  store i32 624, ptr @_QMrandomEmti, align 4
+  store i32 624, ptr @mt_index, align 4
   ret void
 }
 
-define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
+define i64 @mersenne_twister(ptr noalias %0) {
   %2 = alloca i64, i64 1, align 8
   %3 = alloca i64, i64 1, align 8
   %4 = alloca i32, i64 1, align 4
-  %5 = load i32, ptr @_QMrandomEmti, align 4
+  %5 = load i32, ptr @mt_index, align 4
   %6 = icmp sge i32 %5, 624
   br i1 %6, label %7, label %8
 
 7:
-  call void @_QMrandomPmt_init(ptr %0)
+  call void @mt_init(ptr %0)
   br label %8
 
 8:
-  %9 = load i32, ptr @_QMrandomEmti, align 4
+  %9 = load i32, ptr @mt_index, align 4
   %10 = icmp sge i32 %9, 624
   br i1 %10, label %11, label %149
 
@@ -96,7 +96,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %20 = mul nsw i64 %19, 1
   %21 = mul nsw i64 %20, 1
   %22 = add nsw i64 %21, 0
-  %23 = getelementptr i64, ptr @_QMrandomEmt, i64 %22
+  %23 = getelementptr i64, ptr @mt_state, i64 %22
   %24 = load i64, ptr %23, align 8
   %25 = and i64 %24, 2147483648
   %26 = add nsw i32 %17, 1
@@ -105,7 +105,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %29 = mul nsw i64 %28, 1
   %30 = mul nsw i64 %29, 1
   %31 = add nsw i64 %30, 0
-  %32 = getelementptr i64, ptr @_QMrandomEmt, i64 %31
+  %32 = getelementptr i64, ptr @mt_state, i64 %31
   %33 = load i64, ptr %32, align 8
   %34 = and i64 %33, 2147483647
   %35 = or i64 %25, %34
@@ -117,7 +117,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %40 = mul nsw i64 %39, 1
   %41 = mul nsw i64 %40, 1
   %42 = add nsw i64 %41, 0
-  %43 = getelementptr i64, ptr @_QMrandomEmt, i64 %42
+  %43 = getelementptr i64, ptr @mt_state, i64 %42
   %44 = load i64, ptr %2, align 8
   %45 = shl i64 %44, 1
   %46 = lshr i64 %44, 1
@@ -131,7 +131,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %54 = mul nsw i64 %53, 1
   %55 = mul nsw i64 %54, 1
   %56 = add nsw i64 %55, 0
-  %57 = getelementptr i64, ptr @_QMrandomFmersene_twisterEmag01, i64 %56
+  %57 = getelementptr i64, ptr @mt_mag01, i64 %56
   %58 = load i64, ptr %57, align 8
   %59 = xor i64 %50, %58
   %60 = sext i32 %36 to i64
@@ -139,7 +139,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %62 = mul nsw i64 %61, 1
   %63 = mul nsw i64 %62, 1
   %64 = add nsw i64 %63, 0
-  %65 = getelementptr i64, ptr @_QMrandomEmt, i64 %64
+  %65 = getelementptr i64, ptr @mt_state, i64 %64
   store i64 %59, ptr %65, align 8
   %66 = load i32, ptr %4, align 4
   %67 = add nsw i32 %66, 1
@@ -164,7 +164,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %78 = mul nsw i64 %77, 1
   %79 = mul nsw i64 %78, 1
   %80 = add nsw i64 %79, 0
-  %81 = getelementptr i64, ptr @_QMrandomEmt, i64 %80
+  %81 = getelementptr i64, ptr @mt_state, i64 %80
   %82 = load i64, ptr %81, align 8
   %83 = and i64 %82, 2147483648
   %84 = add nsw i32 %75, 1
@@ -173,7 +173,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %87 = mul nsw i64 %86, 1
   %88 = mul nsw i64 %87, 1
   %89 = add nsw i64 %88, 0
-  %90 = getelementptr i64, ptr @_QMrandomEmt, i64 %89
+  %90 = getelementptr i64, ptr @mt_state, i64 %89
   %91 = load i64, ptr %90, align 8
   %92 = and i64 %91, 2147483647
   %93 = or i64 %83, %92
@@ -185,7 +185,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %98 = mul nsw i64 %97, 1
   %99 = mul nsw i64 %98, 1
   %100 = add nsw i64 %99, 0
-  %101 = getelementptr i64, ptr @_QMrandomEmt, i64 %100
+  %101 = getelementptr i64, ptr @mt_state, i64 %100
   %102 = load i64, ptr %2, align 8
   %103 = shl i64 %102, 1
   %104 = lshr i64 %102, 1
@@ -199,7 +199,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %112 = mul nsw i64 %111, 1
   %113 = mul nsw i64 %112, 1
   %114 = add nsw i64 %113, 0
-  %115 = getelementptr i64, ptr @_QMrandomFmersene_twisterEmag01, i64 %114
+  %115 = getelementptr i64, ptr @mt_mag01, i64 %114
   %116 = load i64, ptr %115, align 8
   %117 = xor i64 %108, %116
   %118 = sext i32 %94 to i64
@@ -207,7 +207,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %120 = mul nsw i64 %119, 1
   %121 = mul nsw i64 %120, 1
   %122 = add nsw i64 %121, 0
-  %123 = getelementptr i64, ptr @_QMrandomEmt, i64 %122
+  %123 = getelementptr i64, ptr @mt_state, i64 %122
   store i64 %117, ptr %123, align 8
   %124 = load i32, ptr %4, align 4
   %125 = add nsw i32 %124, 1
@@ -216,9 +216,9 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
 
 127:
   store i32 %71, ptr %4, align 4
-  %128 = load i64, ptr getelementptr inbounds nuw (i8, ptr @_QMrandomEmt, i64 4984), align 8
+  %128 = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
   %129 = and i64 %128, 2147483648
-  %130 = load i64, ptr @_QMrandomEmt, align 8
+  %130 = load i64, ptr @mt_state, align 8
   %131 = and i64 %130, 2147483647
   %132 = or i64 %129, %131
   store i64 %132, ptr %2, align 8
@@ -227,7 +227,7 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %135 = lshr i64 %133, 1
   %136 = select i1 true, i64 %135, i64 %134
   %137 = select i1 false, i64 0, i64 %136
-  %138 = load i64, ptr getelementptr inbounds nuw (i8, ptr @_QMrandomEmt, i64 3168), align 8
+  %138 = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 3168), align 8
   %139 = xor i64 %138, %137
   %140 = and i64 %133, 1
   %141 = add nsw i64 %140, 1
@@ -235,26 +235,26 @@ define i64 @_QMrandomPmersene_twister(ptr noalias %0) {
   %143 = mul nsw i64 %142, 1
   %144 = mul nsw i64 %143, 1
   %145 = add nsw i64 %144, 0
-  %146 = getelementptr i64, ptr @_QMrandomFmersene_twisterEmag01, i64 %145
+  %146 = getelementptr i64, ptr @mt_mag01, i64 %145
   %147 = load i64, ptr %146, align 8
   %148 = xor i64 %139, %147
-  store i64 %148, ptr getelementptr inbounds nuw (i8, ptr @_QMrandomEmt, i64 4984), align 8
-  store i32 1, ptr @_QMrandomEmti, align 4
+  store i64 %148, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
+  store i32 1, ptr @mt_index, align 4
   br label %149
 
 149:
-  %150 = load i32, ptr @_QMrandomEmti, align 4
+  %150 = load i32, ptr @mt_index, align 4
   %151 = sext i32 %150 to i64
   %152 = sub nsw i64 %151, 1
   %153 = mul nsw i64 %152, 1
   %154 = mul nsw i64 %153, 1
   %155 = add nsw i64 %154, 0
-  %156 = getelementptr i64, ptr @_QMrandomEmt, i64 %155
+  %156 = getelementptr i64, ptr @mt_state, i64 %155
   %157 = load i64, ptr %156, align 8
   store i64 %157, ptr %2, align 8
-  %158 = load i32, ptr @_QMrandomEmti, align 4
+  %158 = load i32, ptr @mt_index, align 4
   %159 = add i32 %158, 1
-  store i32 %159, ptr @_QMrandomEmti, align 4
+  store i32 %159, ptr @mt_index, align 4
   %160 = load i64, ptr %2, align 8
   %161 = shl i64 %160, 11
   %162 = lshr i64 %160, 11
