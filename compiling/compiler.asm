@@ -226,7 +226,3 @@
   push "prog_end\n"
   call "print" 1
   halt
-
-; hey
-
-"; hey"
