@@ -1,9 +1,7 @@
 // Variadic error macro
 #def error($$*) \
-  for i as 0..len($$*) { \
     print($$*[i]); \
-  } \
-  exit(1);
+    exit(1);
 
 // Generic clamp with any_num
 ui64 clamp(ui64 num, ui64 min, ui64 max) {
