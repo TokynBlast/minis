@@ -11,283 +11,283 @@
 @mt_upper_mask = constant i64 2147483648
 @mt_mag01 = internal global [2 x i64] [i64 0, i64 2567483615]
 
-define void @mt_init(ptr noalias %0) {
-  %2 = alloca i32, i64 1, align 4
-  %3 = load i64, ptr %0, align 8
-  %4 = and i64 %3, 4294967295
-  store i64 %4, ptr @mt_state, align 8
+define void @mt_init(ptr noalias %seed_ptr) {
+  %i_ptr = alloca i32, i64 1, align 4
+  %seed_val = load i64, ptr %seed_ptr, align 8
+  %seed_masked = and i64 %seed_val, 4294967295
+  store i64 %seed_masked, ptr @mt_state, align 8
   br label %5
 
 5:
-  %6 = phi i32 [ %35, %9 ], [ 2, %1 ]
-  %7 = phi i64 [ %36, %9 ], [ 623, %1 ]
-  %8 = icmp sgt i64 %7, 0
-  br i1 %8, label %9, label %37
+  %i = phi i32 [ %i_next, %9 ], [ 2, %1 ]
+  %remaining = phi i64 [ %remaining_next, %9 ], [ 623, %1 ]
+  %has_remaining = icmp sgt i64 %remaining, 0
+  br i1 %has_remaining, label %9, label %37
 
 9:
-  store i32 %6, ptr %2, align 4
-  %10 = load i32, ptr %2, align 4
-  %11 = sub nsw i32 %10, 1
-  %12 = sext i32 %11 to i64
-  %13 = sub nsw i64 %12, 1
-  %14 = mul nsw i64 %13, 1
-  %15 = mul nsw i64 %14, 1
-  %16 = add nsw i64 %15, 0
-  %17 = getelementptr i64, ptr @mt_state, i64 %16
-  %18 = load i64, ptr %17, align 8
-  %19 = shl i64 %18, 30
-  %20 = lshr i64 %18, 30
-  %21 = select i1 true, i64 %20, i64 %19
-  %22 = select i1 false, i64 0, i64 %21
-  %23 = xor i64 %18, %22
-  %24 = mul i64 %23, 1812433253
-  %25 = sext i32 %10 to i64
-  %26 = add i64 %24, %25
-  %27 = sub i64 %26, 1
-  %28 = and i64 %27, 4294967295
-  %29 = sub nsw i64 %25, 1
-  %30 = mul nsw i64 %29, 1
-  %31 = mul nsw i64 %30, 1
-  %32 = add nsw i64 %31, 0
-  %33 = getelementptr i64, ptr @mt_state, i64 %32
-  store i64 %28, ptr %33, align 8
-  %34 = load i32, ptr %2, align 4
-  %35 = add nsw i32 %34, 1
-  %36 = sub i64 %7, 1
+  store i32 %i, ptr %i_ptr, align 4
+  %i_val = load i32, ptr %i_ptr, align 4
+  %i_minus1 = sub nsw i32 %i_val, 1
+  %i_minus1_i64 = sext i32 %i_minus1 to i64
+  %mt_idx_base = sub nsw i64 %i_minus1_i64, 1
+  %mt_idx_mul1 = mul nsw i64 %mt_idx_base, 1
+  %mt_idx_mul2 = mul nsw i64 %mt_idx_mul1, 1
+  %mt_idx = add nsw i64 %mt_idx_mul2, 0
+  %mt_ptr = getelementptr i64, ptr @mt_state, i64 %mt_idx
+  %mt_prev = load i64, ptr %mt_ptr, align 8
+  %mt_prev_shl30 = shl i64 %mt_prev, 30
+  %mt_prev_shr30 = lshr i64 %mt_prev, 30
+  %mt_prev_shift = select i1 true, i64 %mt_prev_shr30, i64 %mt_prev_shl30
+  %mt_prev_shift_mask = select i1 false, i64 0, i64 %mt_prev_shift
+  %mt_prev_xor = xor i64 %mt_prev, %mt_prev_shift_mask
+  %mul = mul i64 %mt_prev_xor, 1812433253
+  %i_val_i64 = sext i32 %i_val to i64
+  %seed_add = add i64 %mul, %i_val_i64
+  %seed_add_minus1 = sub i64 %seed_add, 1
+  %seed_masked2 = and i64 %seed_add_minus1, 4294967295
+  %i_val_minus1_i64 = sub nsw i64 %i_val_i64, 1
+  %mt_idx2_mul1 = mul nsw i64 %i_val_minus1_i64, 1
+  %mt_idx2_mul2 = mul nsw i64 %mt_idx2_mul1, 1
+  %mt_idx2 = add nsw i64 %mt_idx2_mul2, 0
+  %mt_ptr2 = getelementptr i64, ptr @mt_state, i64 %mt_idx2
+  store i64 %seed_masked2, ptr %mt_ptr2, align 8
+  %i_loaded = load i32, ptr %i_ptr, align 4
+  %i_next = add nsw i32 %i_loaded, 1
+  %remaining_next = sub i64 %remaining, 1
   br label %5
 
 37:
-  store i32 %6, ptr %2, align 4
+  store i32 %i, ptr %i_ptr, align 4
   store i32 624, ptr @mt_index, align 4
   ret void
 }
 
-define i64 @mersenne_twister(ptr noalias %0) {
-  %2 = alloca i64, i64 1, align 8
-  %3 = alloca i64, i64 1, align 8
-  %4 = alloca i32, i64 1, align 4
-  %5 = load i32, ptr @mt_index, align 4
-  %6 = icmp sge i32 %5, 624
-  br i1 %6, label %7, label %8
+define i64 @mersenne_twister(ptr noalias %seed_ptr) {
+  %y_ptr = alloca i64, i64 1, align 8
+  %result_ptr = alloca i64, i64 1, align 8
+  %kk_ptr = alloca i32, i64 1, align 4
+  %index_val = load i32, ptr @mt_index, align 4
+  %need_init = icmp sge i32 %index_val, 624
+  br i1 %need_init, label %7, label %8
 
 7:
-  call void @mt_init(ptr %0)
+  call void @mt_init(ptr %seed_ptr)
   br label %8
 
 8:
-  %9 = load i32, ptr @mt_index, align 4
-  %10 = icmp sge i32 %9, 624
-  br i1 %10, label %11, label %149
+  %index_val2 = load i32, ptr @mt_index, align 4
+  %need_twist = icmp sge i32 %index_val2, 624
+  br i1 %need_twist, label %11, label %149
 
 11:
   br label %12
 
 12:
-  %13 = phi i32 [ %67, %16 ], [ 1, %11 ]
-  %14 = phi i64 [ %68, %16 ], [ 227, %11 ]
-  %15 = icmp sgt i64 %14, 0
-  br i1 %15, label %16, label %69
+  %kk = phi i32 [ %kk_next, %16 ], [ 1, %11 ]
+  %remaining1 = phi i64 [ %remaining1_next, %16 ], [ 227, %11 ]
+  %has_remaining1 = icmp sgt i64 %remaining1, 0
+  br i1 %has_remaining1, label %16, label %69
 
 16:
-  store i32 %13, ptr %4, align 4
-  %17 = load i32, ptr %4, align 4
-  %18 = sext i32 %17 to i64
-  %19 = sub nsw i64 %18, 1
-  %20 = mul nsw i64 %19, 1
-  %21 = mul nsw i64 %20, 1
-  %22 = add nsw i64 %21, 0
-  %23 = getelementptr i64, ptr @mt_state, i64 %22
-  %24 = load i64, ptr %23, align 8
-  %25 = and i64 %24, 2147483648
-  %26 = add nsw i32 %17, 1
-  %27 = sext i32 %26 to i64
-  %28 = sub nsw i64 %27, 1
-  %29 = mul nsw i64 %28, 1
-  %30 = mul nsw i64 %29, 1
-  %31 = add nsw i64 %30, 0
-  %32 = getelementptr i64, ptr @mt_state, i64 %31
-  %33 = load i64, ptr %32, align 8
-  %34 = and i64 %33, 2147483647
-  %35 = or i64 %25, %34
-  store i64 %35, ptr %2, align 8
-  %36 = load i32, ptr %4, align 4
-  %37 = add nsw i32 %36, 397
-  %38 = sext i32 %37 to i64
-  %39 = sub nsw i64 %38, 1
-  %40 = mul nsw i64 %39, 1
-  %41 = mul nsw i64 %40, 1
-  %42 = add nsw i64 %41, 0
-  %43 = getelementptr i64, ptr @mt_state, i64 %42
-  %44 = load i64, ptr %2, align 8
-  %45 = shl i64 %44, 1
-  %46 = lshr i64 %44, 1
-  %47 = select i1 true, i64 %46, i64 %45
-  %48 = select i1 false, i64 0, i64 %47
-  %49 = load i64, ptr %43, align 8
-  %50 = xor i64 %49, %48
-  %51 = and i64 %44, 1
-  %52 = add nsw i64 %51, 1
-  %53 = sub nsw i64 %52, 1
-  %54 = mul nsw i64 %53, 1
-  %55 = mul nsw i64 %54, 1
-  %56 = add nsw i64 %55, 0
-  %57 = getelementptr i64, ptr @mt_mag01, i64 %56
-  %58 = load i64, ptr %57, align 8
-  %59 = xor i64 %50, %58
-  %60 = sext i32 %36 to i64
-  %61 = sub nsw i64 %60, 1
-  %62 = mul nsw i64 %61, 1
-  %63 = mul nsw i64 %62, 1
-  %64 = add nsw i64 %63, 0
-  %65 = getelementptr i64, ptr @mt_state, i64 %64
-  store i64 %59, ptr %65, align 8
-  %66 = load i32, ptr %4, align 4
-  %67 = add nsw i32 %66, 1
-  %68 = sub i64 %14, 1
+  store i32 %kk, ptr %kk_ptr, align 4
+  %kk_val = load i32, ptr %kk_ptr, align 4
+  %kk_i64 = sext i32 %kk_val to i64
+  %kk_minus1 = sub nsw i64 %kk_i64, 1
+  %idx_mul1 = mul nsw i64 %kk_minus1, 1
+  %idx_mul2 = mul nsw i64 %idx_mul1, 1
+  %idx = add nsw i64 %idx_mul2, 0
+  %mt_ptr = getelementptr i64, ptr @mt_state, i64 %idx
+  %mt_val = load i64, ptr %mt_ptr, align 8
+  %upper = and i64 %mt_val, 2147483648
+  %kk_plus1 = add nsw i32 %kk_val, 1
+  %kk_plus1_i64 = sext i32 %kk_plus1 to i64
+  %kk_plus1_minus1 = sub nsw i64 %kk_plus1_i64, 1
+  %idx2_mul1 = mul nsw i64 %kk_plus1_minus1, 1
+  %idx2_mul2 = mul nsw i64 %idx2_mul1, 1
+  %idx2 = add nsw i64 %idx2_mul2, 0
+  %mt_ptr2 = getelementptr i64, ptr @mt_state, i64 %idx2
+  %mt_val2 = load i64, ptr %mt_ptr2, align 8
+  %lower = and i64 %mt_val2, 2147483647
+  %y = or i64 %upper, %lower
+  store i64 %y, ptr %y_ptr, align 8
+  %kk_val2 = load i32, ptr %kk_ptr, align 4
+  %kk_plus_m = add nsw i32 %kk_val2, 397
+  %kk_plus_m_i64 = sext i32 %kk_plus_m to i64
+  %kk_plus_m_minus1 = sub nsw i64 %kk_plus_m_i64, 1
+  %idx3_mul1 = mul nsw i64 %kk_plus_m_minus1, 1
+  %idx3_mul2 = mul nsw i64 %idx3_mul1, 1
+  %idx3 = add nsw i64 %idx3_mul2, 0
+  %mt_ptr3 = getelementptr i64, ptr @mt_state, i64 %idx3
+  %y_loaded = load i64, ptr %y_ptr, align 8
+  %y_shl1 = shl i64 %y_loaded, 1
+  %y_shr1 = lshr i64 %y_loaded, 1
+  %y_shift = select i1 true, i64 %y_shr1, i64 %y_shl1
+  %y_shift_mask = select i1 false, i64 0, i64 %y_shift
+  %mt_val3 = load i64, ptr %mt_ptr3, align 8
+  %twist_xor = xor i64 %mt_val3, %y_shift_mask
+  %y_lsb = and i64 %y_loaded, 1
+  %mag_idx = add nsw i64 %y_lsb, 1
+  %mag_idx_minus1 = sub nsw i64 %mag_idx, 1
+  %mag_idx_mul1 = mul nsw i64 %mag_idx_minus1, 1
+  %mag_idx_mul2 = mul nsw i64 %mag_idx_mul1, 1
+  %mag_idx0 = add nsw i64 %mag_idx_mul2, 0
+  %mag_ptr = getelementptr i64, ptr @mt_mag01, i64 %mag_idx0
+  %mag_val = load i64, ptr %mag_ptr, align 8
+  %twisted = xor i64 %twist_xor, %mag_val
+  %kk_val3 = sext i32 %kk_val2 to i64
+  %kk_val3_minus1 = sub nsw i64 %kk_val3, 1
+  %idx4_mul1 = mul nsw i64 %kk_val3_minus1, 1
+  %idx4_mul2 = mul nsw i64 %idx4_mul1, 1
+  %idx4 = add nsw i64 %idx4_mul2, 0
+  %mt_ptr4 = getelementptr i64, ptr @mt_state, i64 %idx4
+  store i64 %twisted, ptr %mt_ptr4, align 8
+  %kk_loaded = load i32, ptr %kk_ptr, align 4
+  %kk_next = add nsw i32 %kk_loaded, 1
+  %remaining1_next = sub i64 %remaining1, 1
   br label %12
 
 69:
-  store i32 %13, ptr %4, align 4
+  store i32 %kk, ptr %kk_ptr, align 4
   br label %70
 
 70:
-  %71 = phi i32 [ %125, %74 ], [ 228, %69 ]
-  %72 = phi i64 [ %126, %74 ], [ 396, %69 ]
-  %73 = icmp sgt i64 %72, 0
-  br i1 %73, label %74, label %127
+  %kk2 = phi i32 [ %kk2_next, %74 ], [ 228, %69 ]
+  %remaining2 = phi i64 [ %remaining2_next, %74 ], [ 396, %69 ]
+  %has_remaining2 = icmp sgt i64 %remaining2, 0
+  br i1 %has_remaining2, label %74, label %127
 
 74:
-  store i32 %71, ptr %4, align 4
-  %75 = load i32, ptr %4, align 4
-  %76 = sext i32 %75 to i64
-  %77 = sub nsw i64 %76, 1
-  %78 = mul nsw i64 %77, 1
-  %79 = mul nsw i64 %78, 1
-  %80 = add nsw i64 %79, 0
-  %81 = getelementptr i64, ptr @mt_state, i64 %80
-  %82 = load i64, ptr %81, align 8
-  %83 = and i64 %82, 2147483648
-  %84 = add nsw i32 %75, 1
-  %85 = sext i32 %84 to i64
-  %86 = sub nsw i64 %85, 1
-  %87 = mul nsw i64 %86, 1
-  %88 = mul nsw i64 %87, 1
-  %89 = add nsw i64 %88, 0
-  %90 = getelementptr i64, ptr @mt_state, i64 %89
-  %91 = load i64, ptr %90, align 8
-  %92 = and i64 %91, 2147483647
-  %93 = or i64 %83, %92
-  store i64 %93, ptr %2, align 8
-  %94 = load i32, ptr %4, align 4
-  %95 = add i32 %94, -227
-  %96 = sext i32 %95 to i64
-  %97 = sub nsw i64 %96, 1
-  %98 = mul nsw i64 %97, 1
-  %99 = mul nsw i64 %98, 1
-  %100 = add nsw i64 %99, 0
-  %101 = getelementptr i64, ptr @mt_state, i64 %100
-  %102 = load i64, ptr %2, align 8
-  %103 = shl i64 %102, 1
-  %104 = lshr i64 %102, 1
-  %105 = select i1 true, i64 %104, i64 %103
-  %106 = select i1 false, i64 0, i64 %105
-  %107 = load i64, ptr %101, align 8
-  %108 = xor i64 %107, %106
-  %109 = and i64 %102, 1
-  %110 = add nsw i64 %109, 1
-  %111 = sub nsw i64 %110, 1
-  %112 = mul nsw i64 %111, 1
-  %113 = mul nsw i64 %112, 1
-  %114 = add nsw i64 %113, 0
-  %115 = getelementptr i64, ptr @mt_mag01, i64 %114
-  %116 = load i64, ptr %115, align 8
-  %117 = xor i64 %108, %116
-  %118 = sext i32 %94 to i64
-  %119 = sub nsw i64 %118, 1
-  %120 = mul nsw i64 %119, 1
-  %121 = mul nsw i64 %120, 1
-  %122 = add nsw i64 %121, 0
-  %123 = getelementptr i64, ptr @mt_state, i64 %122
-  store i64 %117, ptr %123, align 8
-  %124 = load i32, ptr %4, align 4
-  %125 = add nsw i32 %124, 1
-  %126 = sub i64 %72, 1
+  store i32 %kk2, ptr %kk_ptr, align 4
+  %kk2_val = load i32, ptr %kk_ptr, align 4
+  %kk2_i64 = sext i32 %kk2_val to i64
+  %kk2_minus1 = sub nsw i64 %kk2_i64, 1
+  %idx5_mul1 = mul nsw i64 %kk2_minus1, 1
+  %idx5_mul2 = mul nsw i64 %idx5_mul1, 1
+  %idx5 = add nsw i64 %idx5_mul2, 0
+  %mt_ptr5 = getelementptr i64, ptr @mt_state, i64 %idx5
+  %mt_val5 = load i64, ptr %mt_ptr5, align 8
+  %upper2 = and i64 %mt_val5, 2147483648
+  %kk2_plus1 = add nsw i32 %kk2_val, 1
+  %kk2_plus1_i64 = sext i32 %kk2_plus1 to i64
+  %kk2_plus1_minus1 = sub nsw i64 %kk2_plus1_i64, 1
+  %idx6_mul1 = mul nsw i64 %kk2_plus1_minus1, 1
+  %idx6_mul2 = mul nsw i64 %idx6_mul1, 1
+  %idx6 = add nsw i64 %idx6_mul2, 0
+  %mt_ptr6 = getelementptr i64, ptr @mt_state, i64 %idx6
+  %mt_val6 = load i64, ptr %mt_ptr6, align 8
+  %lower2 = and i64 %mt_val6, 2147483647
+  %y2 = or i64 %upper2, %lower2
+  store i64 %y2, ptr %y_ptr, align 8
+  %kk2_val2 = load i32, ptr %kk_ptr, align 4
+  %kk2_minus_m = add i32 %kk2_val2, -227
+  %kk2_minus_m_i64 = sext i32 %kk2_minus_m to i64
+  %kk2_minus_m_minus1 = sub nsw i64 %kk2_minus_m_i64, 1
+  %idx7_mul1 = mul nsw i64 %kk2_minus_m_minus1, 1
+  %idx7_mul2 = mul nsw i64 %idx7_mul1, 1
+  %idx7 = add nsw i64 %idx7_mul2, 0
+  %mt_ptr7 = getelementptr i64, ptr @mt_state, i64 %idx7
+  %y2_loaded = load i64, ptr %y_ptr, align 8
+  %y2_shl1 = shl i64 %y2_loaded, 1
+  %y2_shr1 = lshr i64 %y2_loaded, 1
+  %y2_shift = select i1 true, i64 %y2_shr1, i64 %y2_shl1
+  %y2_shift_mask = select i1 false, i64 0, i64 %y2_shift
+  %mt_val7 = load i64, ptr %mt_ptr7, align 8
+  %twist2_xor = xor i64 %mt_val7, %y2_shift_mask
+  %y2_lsb = and i64 %y2_loaded, 1
+  %mag2_idx = add nsw i64 %y2_lsb, 1
+  %mag2_idx_minus1 = sub nsw i64 %mag2_idx, 1
+  %mag2_idx_mul1 = mul nsw i64 %mag2_idx_minus1, 1
+  %mag2_idx_mul2 = mul nsw i64 %mag2_idx_mul1, 1
+  %mag2_idx0 = add nsw i64 %mag2_idx_mul2, 0
+  %mag2_ptr = getelementptr i64, ptr @mt_mag01, i64 %mag2_idx0
+  %mag2_val = load i64, ptr %mag2_ptr, align 8
+  %twisted2 = xor i64 %twist2_xor, %mag2_val
+  %kk2_val3 = sext i32 %kk2_val2 to i64
+  %kk2_val3_minus1 = sub nsw i64 %kk2_val3, 1
+  %idx8_mul1 = mul nsw i64 %kk2_val3_minus1, 1
+  %idx8_mul2 = mul nsw i64 %idx8_mul1, 1
+  %idx8 = add nsw i64 %idx8_mul2, 0
+  %mt_ptr8 = getelementptr i64, ptr @mt_state, i64 %idx8
+  store i64 %twisted2, ptr %mt_ptr8, align 8
+  %kk2_loaded = load i32, ptr %kk_ptr, align 4
+  %kk2_next = add nsw i32 %kk2_loaded, 1
+  %remaining2_next = sub i64 %remaining2, 1
   br label %70
 
 127:
-  store i32 %71, ptr %4, align 4
-  %128 = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
-  %129 = and i64 %128, 2147483648
-  %130 = load i64, ptr @mt_state, align 8
-  %131 = and i64 %130, 2147483647
-  %132 = or i64 %129, %131
-  store i64 %132, ptr %2, align 8
-  %133 = load i64, ptr %2, align 8
-  %134 = shl i64 %133, 1
-  %135 = lshr i64 %133, 1
-  %136 = select i1 true, i64 %135, i64 %134
-  %137 = select i1 false, i64 0, i64 %136
-  %138 = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 3168), align 8
-  %139 = xor i64 %138, %137
-  %140 = and i64 %133, 1
-  %141 = add nsw i64 %140, 1
-  %142 = sub nsw i64 %141, 1
-  %143 = mul nsw i64 %142, 1
-  %144 = mul nsw i64 %143, 1
-  %145 = add nsw i64 %144, 0
-  %146 = getelementptr i64, ptr @mt_mag01, i64 %145
-  %147 = load i64, ptr %146, align 8
-  %148 = xor i64 %139, %147
-  store i64 %148, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
+  store i32 %kk2, ptr %kk_ptr, align 4
+  %last_mt_val = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
+  %last_upper = and i64 %last_mt_val, 2147483648
+  %first_mt_val = load i64, ptr @mt_state, align 8
+  %first_lower = and i64 %first_mt_val, 2147483647
+  %y_last = or i64 %last_upper, %first_lower
+  store i64 %y_last, ptr %y_ptr, align 8
+  %y_last_loaded = load i64, ptr %y_ptr, align 8
+  %y_last_shl1 = shl i64 %y_last_loaded, 1
+  %y_last_shr1 = lshr i64 %y_last_loaded, 1
+  %y_last_shift = select i1 true, i64 %y_last_shr1, i64 %y_last_shl1
+  %y_last_shift_mask = select i1 false, i64 0, i64 %y_last_shift
+  %mt_val_m = load i64, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 3168), align 8
+  %twist_last_xor = xor i64 %mt_val_m, %y_last_shift_mask
+  %y_last_lsb = and i64 %y_last_loaded, 1
+  %mag_last_idx = add nsw i64 %y_last_lsb, 1
+  %mag_last_idx_minus1 = sub nsw i64 %mag_last_idx, 1
+  %mag_last_idx_mul1 = mul nsw i64 %mag_last_idx_minus1, 1
+  %mag_last_idx_mul2 = mul nsw i64 %mag_last_idx_mul1, 1
+  %mag_last_idx0 = add nsw i64 %mag_last_idx_mul2, 0
+  %mag_last_ptr = getelementptr i64, ptr @mt_mag01, i64 %mag_last_idx0
+  %mag_last_val = load i64, ptr %mag_last_ptr, align 8
+  %twisted_last = xor i64 %twist_last_xor, %mag_last_val
+  store i64 %twisted_last, ptr getelementptr inbounds nuw (i8, ptr @mt_state, i64 4984), align 8
   store i32 1, ptr @mt_index, align 4
   br label %149
 
 149:
-  %150 = load i32, ptr @mt_index, align 4
-  %151 = sext i32 %150 to i64
-  %152 = sub nsw i64 %151, 1
-  %153 = mul nsw i64 %152, 1
-  %154 = mul nsw i64 %153, 1
-  %155 = add nsw i64 %154, 0
-  %156 = getelementptr i64, ptr @mt_state, i64 %155
-  %157 = load i64, ptr %156, align 8
-  store i64 %157, ptr %2, align 8
-  %158 = load i32, ptr @mt_index, align 4
-  %159 = add i32 %158, 1
-  store i32 %159, ptr @mt_index, align 4
-  %160 = load i64, ptr %2, align 8
-  %161 = shl i64 %160, 11
-  %162 = lshr i64 %160, 11
-  %163 = select i1 true, i64 %162, i64 %161
-  %164 = select i1 false, i64 0, i64 %163
-  %165 = xor i64 %160, %164
-  store i64 %165, ptr %2, align 8
-  %166 = load i64, ptr %2, align 8
-  %167 = shl i64 %166, 7
-  %168 = lshr i64 %166, 7
-  %169 = select i1 false, i64 %168, i64 %167
-  %170 = select i1 false, i64 0, i64 %169
-  %171 = and i64 %170, 2636928640
-  %172 = xor i64 %166, %171
-  store i64 %172, ptr %2, align 8
-  %173 = load i64, ptr %2, align 8
-  %174 = shl i64 %173, 15
-  %175 = lshr i64 %173, 15
-  %176 = select i1 false, i64 %175, i64 %174
-  %177 = select i1 false, i64 0, i64 %176
-  %178 = and i64 %177, 4022730752
-  %179 = xor i64 %173, %178
-  store i64 %179, ptr %2, align 8
-  %180 = load i64, ptr %2, align 8
-  %181 = shl i64 %180, 18
-  %182 = lshr i64 %180, 18
-  %183 = select i1 true, i64 %182, i64 %181
-  %184 = select i1 false, i64 0, i64 %183
-  %185 = xor i64 %180, %184
-  store i64 %185, ptr %2, align 8
-  %186 = load i64, ptr %2, align 8
-  %187 = and i64 %186, 4294967295
-  store i64 %187, ptr %3, align 8
-  %188 = load i64, ptr %3, align 8
-  ret i64 %188
+  %index_val3 = load i32, ptr @mt_index, align 4
+  %index_i64 = sext i32 %index_val3 to i64
+  %index_minus1 = sub nsw i64 %index_i64, 1
+  %idx9_mul1 = mul nsw i64 %index_minus1, 1
+  %idx9_mul2 = mul nsw i64 %idx9_mul1, 1
+  %idx9 = add nsw i64 %idx9_mul2, 0
+  %mt_ptr9 = getelementptr i64, ptr @mt_state, i64 %idx9
+  %y_out = load i64, ptr %mt_ptr9, align 8
+  store i64 %y_out, ptr %y_ptr, align 8
+  %index_val4 = load i32, ptr @mt_index, align 4
+  %index_next = add i32 %index_val4, 1
+  store i32 %index_next, ptr @mt_index, align 4
+  %y0 = load i64, ptr %y_ptr, align 8
+  %y0_shl11 = shl i64 %y0, 11
+  %y0_shr11 = lshr i64 %y0, 11
+  %y0_shift11 = select i1 true, i64 %y0_shr11, i64 %y0_shl11
+  %y0_shift11_mask = select i1 false, i64 0, i64 %y0_shift11
+  %y1 = xor i64 %y0, %y0_shift11_mask
+  store i64 %y1, ptr %y_ptr, align 8
+  %y2_temp = load i64, ptr %y_ptr, align 8
+  %y2_shl7 = shl i64 %y2_temp, 7
+  %y2_shr7 = lshr i64 %y2_temp, 7
+  %y2_shift7 = select i1 false, i64 %y2_shr7, i64 %y2_shl7
+  %y2_shift7_mask = select i1 false, i64 0, i64 %y2_shift7
+  %y2_masked = and i64 %y2_shift7_mask, 2636928640
+  %y2 = xor i64 %y2_temp, %y2_masked
+  store i64 %y2, ptr %y_ptr, align 8
+  %y3_temp = load i64, ptr %y_ptr, align 8
+  %y3_shl15 = shl i64 %y3_temp, 15
+  %y3_shr15 = lshr i64 %y3_temp, 15
+  %y3_shift15 = select i1 false, i64 %y3_shr15, i64 %y3_shl15
+  %y3_shift15_mask = select i1 false, i64 0, i64 %y3_shift15
+  %y3_masked = and i64 %y3_shift15_mask, 4022730752
+  %y3 = xor i64 %y3_temp, %y3_masked
+  store i64 %y3, ptr %y_ptr, align 8
+  %y4_temp = load i64, ptr %y_ptr, align 8
+  %y4_shl18 = shl i64 %y4_temp, 18
+  %y4_shr18 = lshr i64 %y4_temp, 18
+  %y4_shift18 = select i1 true, i64 %y4_shr18, i64 %y4_shl18
+  %y4_shift18_mask = select i1 false, i64 0, i64 %y4_shift18
+  %y4 = xor i64 %y4_temp, %y4_shift18_mask
+  store i64 %y4, ptr %y_ptr, align 8
+  %y_final = load i64, ptr %y_ptr, align 8
+  %y_final_masked = and i64 %y_final, 4294967295
+  store i64 %y_final_masked, ptr %result_ptr, align 8
+  %result = load i64, ptr %result_ptr, align 8
+  ret i64 %result
 }
