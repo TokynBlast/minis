@@ -38,8 +38,9 @@ base_type = {
   | "void" | "auto"
 }
 variant_type = { "variant" ~ "<" ~ base_type ~ ("," ~ base_type)* ~ ">" }
+experimental_variant_type = { "!" ~ variant_type }
 modifier = { "const" | "static" }
-type_spec = { modifier? ~ (base_type | variant_type) }
+type_spec = { modifier? ~ (base_type | variant_type | experimental_variant_type) }
 // Type reference: built-in or user-defined (from imports/aliases)
 type_ref = { type_spec | class_name }
 
@@ -59,7 +60,7 @@ access_modifier = { "public" | "private" }
 keyword = @{
   ( "if" | "else" | "elif"
   | "while" | "for" | "with" | "and"
-  | "table" | "use" | "class" | "new"
+  | "table" | "use" | "include" | "class" | "new"
   | "public" | "private"
   | "exit"
   | "i8" | "i16" | "i32" | "i64"
@@ -214,6 +215,7 @@ class_decl = { "class" ~ class_name ~ "{" ~ access_section+ ~ "}" }
 use_feature = { identifier ~ "::" ~ identifier }
 use_item = { use_feature | identifier }
 use_stmt = { "use" ~ use_item ~ ("," ~ use_item)* ~ ";" }
+include_stmt = { "include" ~ string ~ ";" }
 
 // Assignment (can assign circuit variable too!)
 assignment = { identifier ~ "=" ~ expr ~ ";" }
@@ -239,6 +241,7 @@ with_stmt = { "with" ~ with_block ~ ("and" ~ with_block)+ }
 statement = {
   macro_simple_def
   | macro_def
+  | include_stmt
   | use_stmt
   | class_decl
   | constexpr_decl
