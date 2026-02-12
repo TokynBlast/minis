@@ -104,9 +104,6 @@ decrement = { "--" }
 
 bits = { "<<" | ">>" | "|" | "&" }
 
-// Consume anything that isn't a semicolon, then the semicolon itself
-error_recovery = { (!";" ~ ANY)* ~ ";" }
-block_recovery = { (!"}" ~ ANY)* ~ "}" }
 
 // Type casting/conversion
 type_cast = { "(" ~ (base_type | class_name) ~ ")" ~ &primary }
@@ -259,15 +256,11 @@ statement = {
   | for_loop
 }
 
-// Top-level statements (includes recovery)
-top_statement = {
-  statement
-  | block_recovery
-  | error_recovery
-}
+// Top-level statements
+top_statement = { statement }
 
 block = { "{" ~ statement* ~ "}" }
 if_stmt = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (("elif" ~ "(" ~ expr ~ ")" ~ block)* ~ ("else" ~ block)?)? }
 while_stmt = { "while" ~ "(" ~ expr ~ ")" ~ block }
 return_stmt = { "return" ~ expr? ~ ";" }
-program = { SOI ~ (top_statement | error_recovery)* ~ EOI }
+program = { SOI ~ top_statement* ~ EOI }
