@@ -58,3 +58,11 @@ class player {
 player p = new player;
 p::move(10, 20);
 p::setHealth(150);  // Clamps to 100
+
+if (p::health == 32) {
+  error("Error...", "\n", "i don know D:");
+} else {
+  if (p::health == 10) {
+    error("arf");
+  }
+}
