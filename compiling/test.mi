@@ -1,24 +1,21 @@
-use typeExtend::any_num;
-use math::max;
-
 // Variadic error macro
 #def error($$*) \
   for i as 0..len($$*) { \
     print($$*[i]); \
   } \
-  exit();
+  exit(1);
 
 // Generic clamp with any_num
-any_num clamp(any_num num, any_num min, any_num max) {
+ui64 clamp(ui64 num, ui64 min, ui64 max) {
   if (min > max) {
     error("Min cannot be greater than max!");
   }
   num = {
     (num < min) -> {
-        return min;
+      min;
     };
     (num > max) -> {
-        return max;
+      max;
     };
     _ -> num;
   };
@@ -26,7 +23,8 @@ any_num clamp(any_num num, any_num min, any_num max) {
 }
 
 // Allow overflow for s pecial case
-over i64 bigCounter = 99999999999999999999999999999999;
+i64 bigCounter = 99999999999999999999999999999999;
+print(bigCounter);
 
 class player {
   public {
@@ -34,13 +32,17 @@ class player {
     int x = 0;
     int y = 0;
 
+    // other = between seen and not seen
+    // false/true = seen or unseen
+    tribool seen = other;
+
     void setHealth(int h) {
       health = {
         (h > 100) -> {
           print("Max health!");
           return 100;
       };
-        (h < 0) -> {
+        (h <= 0) -> {
           print("Player died!");
           return 0;
         };
@@ -52,17 +54,24 @@ class player {
       x = clamp(x + dx, 0, 100);
       y = clamp(y + dy, 0, 100);
     }
+
+    void invPrint() {
+      print(inventory);
+    }
+  }
+  private {
+    list inventory;
   }
 }
 
 player p = new player;
-p::move(10, 20);
-p::setHealth(150);  // Clamps to 100
+p.move(10, 20);
+p.setHealth(150);  // Clamps to 100
 
-if (p::health == 32) {
+if (p.health == 32) {
   error("Error...", "\n", "i don know D:");
 } else {
-  if (p::health == 10) {
+  if (p.health == 10) {
     error("arf");
   }
 }
