@@ -1,4 +1,4 @@
-! Implement the fast pseudo random numbers :)
+! For reference only !
 
 module random
   implicit none
