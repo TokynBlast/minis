@@ -37,8 +37,9 @@ base_type = {
   | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
   | "void" | "auto"
 }
-modifier = { "const" | "static" | "over" }
-type_spec = { modifier? ~ base_type }
+variant_type = { "variant" ~ "<" ~ base_type ~ ("," ~ base_type)* ~ ">" }
+modifier = { "const" | "static" }
+type_spec = { modifier? ~ (base_type | variant_type) }
 // Type reference: built-in or user-defined (from imports/aliases)
 type_ref = { type_spec | class_name }
 
@@ -60,13 +61,13 @@ keyword = @{
   | "while" | "for" | "with" | "and"
   | "table" | "use" | "class" | "new"
   | "public" | "private"
-  | "exit" | "over"
+  | "exit"
   | "i8" | "i16" | "i32" | "i64"
   | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
   | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
   | "void" | "auto"
-  | "const" | "static"
+  | "const" | "static" | "variant"
   | "true" | "false" | "global" | "unknown"
   | "constexpr"
   | "return" | "in" | "as"
@@ -95,7 +96,7 @@ subtract = { "-" }
 multiply = { "*" }
 divide = { "/" }
 modulo = { "%" }
-comparator = { "<" | ">" | "<=" | "!=" | "==" | ">=" }
+comparator = { "<=" | ">=" | "!=" | "==" | "<" | ">" }
 logical_and = { "&&" }
 logical_or = { "||" }
 logical_not = { "!" }
@@ -108,20 +109,21 @@ bits = { "<<" | ">>" | "|" | "&" }
 // Type casting/conversion
 type_cast = { "(" ~ (base_type | class_name) ~ ")" ~ &primary }
 
-// Array/list indexing
-index_access = { identifier ~ "[" ~ expr ~ "]" }
-
 // Class instantiation
 class_instantiation = { "new" ~ class_name }
 
 // Expressions with precedence
-primary = {
+primary = { primary_base ~ postfix* }
+postfix = { index_tail | method_tail | member_tail }
+index_tail = { "[" ~ expr ~ "]" }
+method_tail = { "." ~ identifier ~ "(" ~ expr_list? ~ ")" }
+member_tail = { "." ~ identifier }
+
+primary_base = {
   "(" ~ expr ~ ")"
   | type_cast
   | class_instantiation
   | function_call
-  | method_call
-  | index_access
   | hex_number
   | binary_number
   | float
@@ -162,7 +164,7 @@ circuit_value = { block | expr }
 circuit_arm = { ("_" | ("(" ~ expr ~ ")")) ~ "->" ~ circuit_value ~ ";" }
 circuit_var = { "{" ~ circuit_arm+ ~ "}" }
 
-range = { number ~ ".." ~ number ~ (".." ~ number)? }
+range = { expr ~ ".." ~ expr ~ (".." ~ expr)? }
 
 // for x as 1..4 {}
 for_dot_dot = { identifier ~ "as" ~ range }
@@ -221,7 +223,7 @@ property_assignment = { identifier ~ "." ~ identifier ~ "=" ~ expr ~ ";" }
 inc_dec_stmt = { val_manipulate ~ ";" }
 
 // Exit statement
-exit_stmt = { "exit" ~ "(" ~ ")" ~ ";" }
+exit_stmt = { "exit" ~ "(" ~ ASCII_DIGIT ~ ")" ~ ";" }
 
 // Table (match) statement - simplified (no == key needed)
 table_name = { identifier ~ ":" }
@@ -250,8 +252,8 @@ statement = {
   | property_assignment
   | inc_dec_stmt
   | exit_stmt
-  | method_call ~ ";"
   | function_call ~ ";"
+  | expr ~ ";"
   | while_stmt
   | for_loop
 }
