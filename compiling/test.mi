@@ -1,5 +1,3 @@
-print("hoi :3\n");
-
 // Variadic error macro
 #def error($$*) \
     print($$*); \
@@ -21,14 +19,6 @@ ui64 clamp(ui64 num, ui64 min, ui64 max) {
   };
   return num;
 }
-
-print("big number\n");
-
-// Allow overflow for s pecial case
-i64 bigCounter = 99999999999999999999999999999999;
-print(bigCounter);
-
-print("\nboig noomber\n");
 
 class player {
   public {
@@ -68,14 +58,27 @@ class player {
   }
 }
 
-player p = new player;
-p.move(10, 20);
-p.setHealth(10);  // Clamps to 100
+i8 main() {
+  print("hoi :3\n");
 
-if (p.health == 32) {
-  error("Error...", "\n", "i don know D:");
-} else {
-  if (p.health == 10) {
-    error("arf");
+  print("big number\n");
+
+  // Allow overflow for s pecial case
+  i64 bigCounter = 99999999999999999999999999999999;
+  print(bigCounter);
+
+  print("\nboig noomber\n");
+
+  player p = new player;
+  p.move(10, 20);
+  p.setHealth(10);  // Clamps to 100
+
+  if (p.health == 32) {
+    error("Error...", "\n", "i don know D:");
+  } else {
+    if (p.health == 10) {
+      error("arf");
+    }
   }
+  return 0;
 }
