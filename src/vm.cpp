@@ -285,7 +285,7 @@ namespace minis {
         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
       }},
 
-      // Implement via Fortran and C++
+      // Implement via C++
       // {"random", [](std::vector<Value> &args) -> Value {
       //   // use random lib instead
       //   if (args.empty()) {
