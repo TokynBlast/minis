@@ -1,6 +1,6 @@
 // Variadic error macro
-#def error($$*) \
-    print($$*); \
+#def error(**kwargs vals) \
+    print(vals); \
     exit(1);
 
 // Generic clamp with any_num

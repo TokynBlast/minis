@@ -72,6 +72,7 @@ keyword = @{
   | "true" | "false" | "global" | "unknown"
   | "constexpr"
   | "return" | "in" | "as"
+  | "try" | "catch"
   | "not")
   ~ !ASCII_ALPHANUMERIC
 }
@@ -151,7 +152,6 @@ arith_expr = { term ~ ((add | subtract) ~ term)* }
 expr = { logical_expr }
 
 function_call = { identifier ~ "(" ~ expr_list? ~ ")" }
-method_call = { identifier ~ "::" ~ identifier ~ "(" ~ expr_list? ~ ")" }
 expr_list = { expr ~ ("," ~ expr)* }
 list_literal = { "[" ~ expr_list? ~ "]" }
 
@@ -182,7 +182,8 @@ for_c = { "(" ~ (( type_spec ~ identifier ~ "=" ~ any_num ~ ";" ~ identifier ~ c
 for_loop = { "for" ~ ( for_dot_dot | for_c ) ~ block }
 
 // Function parameters
-param = { type_ref ~ identifier }
+kwargs_prefix = { "**" }
+param = { kwargs_prefix? ~ type_ref ~ identifier }
 param_list = { param ~ ("," ~ param)* }
 
 // Auto type inference: Replace 'auto' with inferred type based on the expression
@@ -215,7 +216,7 @@ class_decl = { "class" ~ class_name ~ "{" ~ access_section+ ~ "}" }
 use_feature = { identifier ~ "::" ~ identifier }
 use_item = { use_feature | identifier }
 use_stmt = { "use" ~ use_item ~ ("," ~ use_item)* ~ ";" }
-include_stmt = { "include" ~ string ~ ";" }
+include_stmt = { "include" ~ string ~ ("as" ~ identifier)? ~ ";" }
 
 // Assignment (can assign circuit variable too!)
 assignment = { identifier ~ "=" ~ expr ~ ";" }
@@ -246,6 +247,7 @@ statement = {
   | class_decl
   | constexpr_decl
   | if_stmt
+  | try_stmt
   | func_decl
   | return_stmt
   | var_decl
@@ -255,11 +257,16 @@ statement = {
   | property_assignment
   | inc_dec_stmt
   | exit_stmt
+ | namespace_call ~ ";"
   | function_call ~ ";"
   | expr ~ ";"
   | while_stmt
   | for_loop
 }
+
+try_stmt = { "try" ~ block ~ "catch" ~ block }
+
+namespace_call = { identifier ~ "::" ~ identifier ~ "(" ~ expr_list? ~ ")" }
 
 // Top-level statements
 top_statement = { statement }
