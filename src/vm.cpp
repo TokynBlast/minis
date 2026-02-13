@@ -254,8 +254,7 @@ namespace minis {
          }
          return Value::Null();
        }},
-      {"split", [](std::vector<Value> &args) -> Value
-       {
+      {"split", [](std::vector<Value> &args) -> Value {
          const std::string &str = std::get<std::string>(args[0].v);
          const std::string &delim = std::get<std::string>(args[1].v);
 
@@ -264,8 +263,7 @@ namespace minis {
          std::string delimiter(delim);
 
          size_t pos = 0;
-         while ((pos = s.find(delimiter)) != std::string::npos)
-         {
+        while ((pos = s.find(delimiter)) != std::string::npos) {
            result.push_back(Value::Str(s.substr(0, pos).c_str()));
            s.erase(0, pos + delimiter.length());
          }
@@ -273,21 +271,18 @@ namespace minis {
 
          return Value::List(std::move(result));
        }},
-      {"upper", [](std::vector<Value> &args) -> Value
-       {
+      {"upper", [](std::vector<Value> &args) -> Value {
          // >> 30 :) // ANSI only
          std::string result = std::get<std::string>(args[0].v);
          std::transform(result.begin(), result.end(), result.begin(), ::toupper);
          return Value::Str(std::move(result));
        }},
-      {"lower", [](std::vector<Value> &args) -> Value
-       {
+      {"lower", [](std::vector<Value> &args) -> Value {
          std::string result = std::get<std::string>(args[0].v);
          std::transform(result.begin(), result.end(), result.begin(), ::tolower);
          return Value::Str(std::move(result));
        }},
-      {"round", [](std::vector<Value> &args) -> Value
-       {
+      {"round", [](std::vector<Value> &args) -> Value {
          return Value::I64((int64)std::round(std::get<double>(args[0].v)));
        }},
 
