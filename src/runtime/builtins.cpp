@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Plan to slowly upgrade when needed
+// ! WARNING !
+// SKIP C11 FOR C17/C18!
 /* Minis I/O Runtime - C99 compatible */
 
 typedef enum {
