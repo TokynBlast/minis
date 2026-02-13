@@ -116,42 +116,42 @@ namespace minis {
             case Type::ui64:  print(std::get<uint64>(val.v)); break;
             case Type::List: {
               const auto& list = std::get<std::vector<Value>>(val.v);
-              print("[");
+             print("[");
               for (size_t j = 0; j < list.size(); ++j) {
-                print_value_ref(list[j], print_value_ref);
+               print_value_ref(list[j], print_value_ref);
                 if (j + 1 < list.size()) print(", ");
-              }
-              print("]");
-              break;
-            }
+             }
+             print("]");
+             break;
+           }
             case Type::Dict: print("[Dict]"); break; // TODO: pretty print dicts
             case Type::Void: print("Error :(\nThis is mostly placeholder :3"); exit(1);
             case Type::TriBool: /* TODO: handle tribool */ break;
             default: print("FATAL ERROR: Unknown type ", (uint8)val.t); exit(1);
-          }
-        };
+           }
+         };
 
-        size_t arg_amnt = args.size();
+         size_t arg_amnt = args.size();
         for (size_t i = 0; i < arg_amnt; i++) {
-          print_value(args[i], print_value);
+           print_value(args[i], print_value);
           if (i + 1 < arg_amnt) print(" ");
-        }
-        // FIXME: print should return nothing
-        return Value::Void();
-      }},
+         }
+         // FIXME: print should return nothing
+         return Value::Void();
+       }},
       {"abs", [](std::vector<Value> &args) {
-        auto val = args[0];
-        if (val.t == Type::Float)
-          return Value::Float(std::abs(std::get<double>(val.v)));
-        return Value::I64(std::abs(std::get<int64>(val.v)));
-      }},
+         auto val = args[0];
+         if (val.t == Type::Float)
+           return Value::Float(std::abs(std::get<double>(val.v)));
+         return Value::I64(std::abs(std::get<int64>(val.v)));
+       }},
       {"neg", [](std::vector<Value> &args) {
-        auto &arg = args[0];
-        if (arg.t == Type::Float)
-          return Value::Float(-std::get<double>(arg.v));
-        // FIXME: Should return same size
-        return Value::I64(-std::get<int64>(arg.v));
-      }},
+         auto &arg = args[0];
+         if (arg.t == Type::Float)
+           return Value::Float(-std::get<double>(arg.v));
+         // FIXME: Should return same size
+         return Value::I64(-std::get<int64>(arg.v));
+       }},
 
       // FIXME: [comment expansion]
       /* Range Becoming A Type
@@ -197,13 +197,13 @@ namespace minis {
          return max;
        }},
       {"min", [](std::vector<Value> &args) -> Value {
-        Value min = args[0];
+         Value min = args[0];
         for (size_t i = 1; i < args.size(); i++) {
-          if (args[i] < min)
-            min = args[i];
-        }
-        return min;
-      }},
+           if (args[i] < min)
+             min = args[i];
+         }
+         return min;
+       }},
       {"sort", [](std::vector<Value> &args) {
          std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
          std::sort(list.begin(), list.end(),
@@ -213,16 +213,16 @@ namespace minis {
        }},
       {"reverse", [](std::vector<Value> &args) -> Value {
         if (args[0].t == Type::List) {
-          std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
-          std::reverse(list.begin(), list.end());
-          return Value::List(list);
+           std::vector<Value> list = std::get<std::vector<Value>>(args[0].v);
+           std::reverse(list.begin(), list.end());
+           return Value::List(list);
         } else if (args[0].t == Type::Str) {
-          std::string reversed = std::get<std::string>(args[0].v);
-          std::reverse(reversed.begin(), reversed.end());
-          return Value::Str(std::move(reversed));
-        }
-        exit(1);
-      }},
+           std::string reversed = std::get<std::string>(args[0].v);
+           std::reverse(reversed.begin(), reversed.end());
+           return Value::Str(std::move(reversed));
+         }
+         exit(1);
+       }},
       // FIXME:Use Fortran backend instead of C++s
       {"sum", [](std::vector<Value> &args) {
          const auto &list = std::get<std::vector<Value>>(args[0].v);
@@ -237,54 +237,59 @@ namespace minis {
        }},
       // Print like print, using all values
       {"input", [](std::vector<Value> &args) -> Value {
-        std::string input;
+         std::string input;
         if (!args.empty()) {
-          print(""); // print the values in here :)
-                     // maybe run built-in print function?
-        }
-        scan(input);
-        return Value::Str(std::move(input));
-      }},
-      {"len", [](std::vector<Value> &args) -> Value {
-        const auto &arg = args[0];
-        if (arg.t == Type::List) {
-          return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
-        } else if (arg.t == Type::Str) {
-          return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
-        }
-        return Value::Null();
+           print(""); // print the values in here :)
+                      // maybe run built-in print function?
+         }
+         scan(input);
+         return Value::Str(std::move(input));
        }},
-      {"split", [](std::vector<Value> &args) -> Value {
-        const std::string &str = std::get<std::string>(args[0].v);
-        const std::string &delim = std::get<std::string>(args[1].v);
+      {"len", [](std::vector<Value> &args) -> Value {
+         const auto &arg = args[0];
+        if (arg.t == Type::List) {
+           return Value::UI64(static_cast<uint64>(std::get<std::vector<Value>>(arg.v).size()));
+        } else if (arg.t == Type::Str) {
+           return Value::UI64(static_cast<uint64>(std::get<std::string>(arg.v).length()));
+         }
+         return Value::Null();
+       }},
+      {"split", [](std::vector<Value> &args) -> Value
+       {
+         const std::string &str = std::get<std::string>(args[0].v);
+         const std::string &delim = std::get<std::string>(args[1].v);
 
-        std::vector<Value> result;
-        std::string s(str);
-        std::string delimiter(delim);
+         std::vector<Value> result;
+         std::string s(str);
+         std::string delimiter(delim);
 
-        size_t pos = 0;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-          result.push_back(Value::Str(s.substr(0, pos).c_str()));
-          s.erase(0, pos + delimiter.length());
-        }
-        result.push_back(Value::Str(s.c_str()));
+         size_t pos = 0;
+         while ((pos = s.find(delimiter)) != std::string::npos)
+         {
+           result.push_back(Value::Str(s.substr(0, pos).c_str()));
+           s.erase(0, pos + delimiter.length());
+         }
+         result.push_back(Value::Str(s.c_str()));
 
-        return Value::List(std::move(result));
-      }},
-      {"upper", [](std::vector<Value> &args) -> Value {
-        // >> 30 :) // ANSI only
-        std::string result = std::get<std::string>(args[0].v);
-        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-        return Value::Str(std::move(result));
-      }},
-      {"lower", [](std::vector<Value> &args) -> Value {
-        std::string result = std::get<std::string>(args[0].v);
-        std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-        return Value::Str(std::move(result));
-      }},
-      {"round", [](std::vector<Value> &args) -> Value {
-        return Value::I64((int64)std::round(std::get<double>(args[0].v)));
-      }},
+         return Value::List(std::move(result));
+       }},
+      {"upper", [](std::vector<Value> &args) -> Value
+       {
+         // >> 30 :) // ANSI only
+         std::string result = std::get<std::string>(args[0].v);
+         std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+         return Value::Str(std::move(result));
+       }},
+      {"lower", [](std::vector<Value> &args) -> Value
+       {
+         std::string result = std::get<std::string>(args[0].v);
+         std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+         return Value::Str(std::move(result));
+       }},
+      {"round", [](std::vector<Value> &args) -> Value
+       {
+         return Value::I64((int64)std::round(std::get<double>(args[0].v)));
+       }},
 
       // Implement via C++
       // {"random", [](std::vector<Value> &args) -> Value {
@@ -319,10 +324,10 @@ namespace minis {
             case Type::Void:    return Value::Str("void"); // Safety
             case Type::TriBool: return Value::Str("tribool");
             default: {
-              print("Unknown type\n");
-              std::exit(1);
-            }
-          }
+           print("Unknown type\n");
+           std::exit(1);
+         }
+         }
        }},
   };
 
@@ -1624,6 +1629,7 @@ namespace minis {
   void VM::run() {
     if (engine) {
       engine->run();
+      check_open_handles_or_exit();
     }
   }
 
@@ -1632,6 +1638,7 @@ namespace minis {
     VMEngine vm;
     vm.load(path);
     vm.run();
+    check_open_handles_or_exit();
   }
 }
 
