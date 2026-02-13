@@ -338,10 +338,10 @@ fn expand_includes_inner(
     if trimmed.starts_with("include ") {
       let end = trimmed.rfind(';').ok_or_else(|| "include statement must end with ';'".to_string())?;
       let content = trimmed[..end].trim_start_matches("include").trim();
-      let (path_text, is_string) = parse_include_path(content)?;
-      if !is_string {
-        return Err("include path must be a string literal".to_string());
-      }
+
+      // Parse: "path.mi" or "path.mi" as alias_name
+      let (_path_text, _alias) = parse_include_path_with_alias(content)?;
+      let (path_text, _is_string) = parse_include_path(content)?;
 
       let include_path = resolve_include_path(&path_text, base_dir.as_ref())?;
       let ext = include_path.extension().and_then(|e| e.to_str()).unwrap_or("");
@@ -382,6 +382,34 @@ fn parse_include_path(text: &str) -> Result<(String, bool), String> {
     }
   }
   Ok((trimmed.to_string(), false))
+}
+
+fn parse_include_path_with_alias(text: &str) -> Result<(String, Option<String>), String> {
+  let trimmed = text.trim();
+
+  // Extract the string literal
+  if !trimmed.starts_with('"') {
+    return Err("include path must be a string literal".to_string());
+  }
+
+  let rest = &trimmed[1..];
+  let end_quote = rest.find('"')
+    .ok_or_else(|| "unclosed string in include path".to_string())?;
+  let path = rest[..end_quote].to_string();
+
+  // Check if there's an alias after the string
+  let after_string = rest[end_quote + 1..].trim();
+  let alias = if after_string.starts_with("as") {
+    let after_as = after_string[2..].trim();
+    // Extract identifier (stop at whitespace or end)
+    let alias_end = after_as.find(|c: char| !c.is_alphanumeric() && c != '_')
+      .unwrap_or(after_as.len());
+    Some(after_as[..alias_end].to_string())
+  } else {
+    None
+  };
+
+  Ok((path, alias))
 }
 
 fn resolve_include_path(path_text: &str, base_dir: Option<&PathBuf>) -> Result<PathBuf, String> {
@@ -503,7 +531,56 @@ fn compile_to_binary(ir: &str, output_path: &str, _target_triple: &str, extra_ob
     .to_string();
 
   compile_to_object(ir, &obj_path)?;
-  link_object(&obj_path, output_path, extra_objects)
+  let mut objects: Vec<String> = extra_objects.to_vec();
+  if let Some(runtime_obj) = build_runtime_object(output_path)? {
+    objects.push(runtime_obj);
+  }
+  link_object(&obj_path, output_path, &objects)
+}
+
+fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
+  let cwd = env::current_dir().map_err(|err| format!("failed to get cwd: {err}"))?;
+  let runtime_src = cwd.join("src").join("runtime").join("builtins.cpp");
+  if !runtime_src.exists() {
+    return Ok(None);
+  }
+
+  let runtime_obj = PathBuf::from(output_path)
+    .with_extension("runtime.o")
+    .to_string_lossy()
+    .to_string();
+
+  let mut candidates: Vec<&str> = vec!["cc", "clang", "gcc"];
+  if cfg!(target_os = "windows") {
+    candidates = vec!["clang", "gcc", "cc"];
+  }
+
+  let mut last_err: Option<String> = None;
+  for tool in candidates {
+    let output = Command::new(tool)
+      .arg("-c")
+      .arg(runtime_src.as_os_str())
+      .arg("-o")
+      .arg(&runtime_obj)
+      .arg("-std=c99")
+      .stdout(Stdio::piped())
+      .stderr(Stdio::piped())
+      .output();
+
+    match output {
+      Ok(out) if out.status.success() => return Ok(Some(runtime_obj)),
+      Ok(out) => {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        last_err = Some(format!("{tool}: {stderr}"));
+      }
+      Err(err) => {
+        last_err = Some(format!("{tool}: failed to start compiler: {err}"));
+      }
+    }
+  }
+
+  // Silently skip if compilation fails (runtime optional)
+  Ok(None)
 }
 
 fn link_object(obj_path: &str, output_path: &str, extra_objects: &[String]) -> Result<(), String> {
@@ -729,6 +806,8 @@ struct ModuleContext {
   defined_funcs: HashSet<String>,
   global_vars: Vec<GlobalVar>,
   global_map: HashMap<String, String>,
+  /// Maps module alias to set of function names
+  modules: HashMap<String, HashSet<String>>,
 }
 
 impl ModuleContext {
@@ -741,6 +820,7 @@ impl ModuleContext {
       defined_funcs: HashSet::new(),
       global_vars: Vec::new(),
       global_map: HashMap::new(),
+      modules: HashMap::new(),
     }
   }
 
@@ -822,10 +902,11 @@ struct FunctionContext {
   ret_ty: String,
   class_name: Option<String>,
   self_name: Option<String>,
+  is_main: bool,
 }
 
 impl FunctionContext {
-  fn new(ret_ty: String, class_name: Option<String>, self_name: Option<String>) -> Self {
+  fn new(ret_ty: String, class_name: Option<String>, self_name: Option<String>, is_main: bool) -> Self {
     Self {
       locals: HashMap::new(),
       temp_idx: 0,
@@ -834,6 +915,7 @@ impl FunctionContext {
       ret_ty,
       class_name,
       self_name,
+      is_main,
     }
   }
 
@@ -864,7 +946,8 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
     .join(", ");
 
   let self_name = inst.class_name.as_ref().map(|_| "__self".to_string());
-  let mut func = FunctionContext::new(ret_ty.clone(), inst.class_name.clone(), self_name);
+  let is_main = inst.name == "main";
+  let mut func = FunctionContext::new(ret_ty.clone(), inst.class_name.clone(), self_name, is_main);
   for (ty, name) in &inst.params {
     let llvm_ty = llvm_type(ty);
     let slot = func.new_temp();
@@ -881,6 +964,9 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
   }
 
   if !terminated {
+    if func.is_main {
+      emit_leak_check(&mut func, module);
+    }
     func.emit(default_return(&ret_ty));
   }
 
@@ -902,6 +988,11 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
     params,
     body.trim_end()
   )
+}
+
+fn emit_leak_check(func: &mut FunctionContext, module: &mut ModuleContext) {
+  module.externs.insert("declare void @minis_check_leaks()".to_string());
+  func.emit("call void @minis_check_leaks()".to_string());
 }
 
 fn default_return(llvm_ty: &str) -> String {
@@ -1016,13 +1107,25 @@ fn collect_global_vars(pairs: Pairs<Rule>, module: &mut ModuleContext) -> Result
 }
 
 fn add_global_from_var_decl(pair: pest::iterators::Pair<Rule>, module: &mut ModuleContext) -> Result<(), String> {
-  let mut inner = pair.into_inner();
   let mut type_name: Option<String> = None;
   let mut entries: Vec<(String, Option<pest::iterators::Pair<Rule>>)> = Vec::new();
+  let all_pairs: Vec<_> = pair.into_inner().collect();
 
-  while let Some(next) = inner.next() {
+  for next in all_pairs {
     match next.as_rule() {
-      Rule::type_spec | Rule::type_ref | Rule::class_name => {
+      Rule::type_spec => {
+        type_name = parse_type_name(next);
+      }
+      Rule::base_type => {
+        type_name = Some(next.as_str().to_string());
+      }
+      Rule::type_ref => {
+        type_name = parse_type_name(next);
+      }
+      Rule::inferred_type => {
+        type_name = Some("int".to_string());
+      }
+      Rule::class_name => {
         type_name = parse_type_name(next);
       }
       Rule::identifier => {
@@ -1037,7 +1140,7 @@ fn add_global_from_var_decl(pair: pest::iterators::Pair<Rule>, module: &mut Modu
     }
   }
 
-  let type_name = type_name.ok_or_else(|| "global declaration missing type".to_string())?;
+  let type_name = type_name.unwrap_or_else(|| "i64".to_string());
   if matches!(type_name.as_str(), "str" | "list" | "dict") {
     return Err("global string/list/dict values are not supported".to_string());
   }
@@ -1351,10 +1454,23 @@ fn parse_param_list(pair: pest::iterators::Pair<Rule>) -> Vec<(TypeChoice, Strin
       continue;
     }
     let mut inner = param.into_inner();
-    let type_pair = inner.next();
+    let mut is_variadic = false;
+    let mut first_pair = inner.next();
+
+    // Check if first pair is kwargs_prefix
+    if let Some(ref p) = first_pair {
+      if p.as_rule() == Rule::kwargs_prefix {
+        is_variadic = true;
+        first_pair = inner.next();
+      }
+    }
+
+    let type_pair = first_pair;
     let name_pair = inner.next();
     if let (Some(t), Some(n)) = (type_pair, name_pair) {
       if let Some(choice) = parse_type_choice(t) {
+        // For now, we'll just track the parameter normally
+        // **kwargs becomes a parameter that collects remaining args
         params.push((choice, n.as_str().to_string()));
       }
     }
@@ -1561,10 +1677,16 @@ fn emit_statement_ir_with_return(
       if let Some(expr) = inner.next() {
         if let Some(value) = emit_expr_value(expr, func, module) {
           if let Some(coerced) = coerce_value_to_type(value, ret_ty, func) {
+            if func.is_main {
+              emit_leak_check(func, module);
+            }
             func.emit(format!("ret {} {}", coerced.ty, coerced.val));
             return true;
           }
         }
+      }
+      if func.is_main {
+        emit_leak_check(func, module);
       }
       func.emit(default_return(ret_ty));
       return true;
@@ -1629,12 +1751,19 @@ fn emit_statement_ir_with_return(
       emit_call(inner_pair, func, module);
       false
     }
+    Rule::namespace_call => {
+      emit_namespace_call(inner_pair, func, module);
+      false
+    }
     Rule::expr => {
       let _ = emit_expr_value(inner_pair, func, module);
       false
     }
     Rule::if_stmt => {
       emit_if(inner_pair, ret_ty, func, module)
+    }
+    Rule::try_stmt => {
+      emit_try_catch(inner_pair, ret_ty, func, module)
     }
     Rule::block => {
       emit_block_ir_with_return(inner_pair, ret_ty, func, module, allow_return)
@@ -1683,6 +1812,29 @@ fn emit_if(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionC
   func.emit(format!("{}:", end_label));
   then_term && else_term
 }
+
+fn emit_try_catch(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
+  let mut inner = pair.into_inner();
+  let try_block = inner.next();
+  let catch_block = inner.next();
+
+  if try_block.is_none() || catch_block.is_none() {
+    return false;
+  }
+
+  // For now, just execute the try block and skip the catch
+  // A full implementation would need exception handling infrastructure
+  let try_term = emit_block_ir(try_block.unwrap(), ret_ty, func, module);
+
+  // If try didn't terminate (return/throw), execute catch
+  if !try_term {
+    let catch_term = emit_block_ir(catch_block.unwrap(), ret_ty, func, module);
+    return catch_term;
+  }
+
+  try_term
+}
+
 
 fn emit_print(args: Vec<ValueIR>, func: &mut FunctionContext, module: &mut ModuleContext) {
   if args.is_empty() {
@@ -1762,9 +1914,81 @@ fn emit_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, modu
       None
     }
     "exit" => {
+      emit_leak_check(func, module);
       module.externs.insert("declare void @exit(i64)".to_string());
       let arg = args.get(0).map(|v| format!("{} {}", v.ty, v.val)).unwrap_or("i64 0".to_string());
       func.emit(format!("call void @exit({})", arg));
+      None
+    }
+    "open" => {
+      if args.len() >= 2 {
+        module.externs.insert("declare i64 @minis_open(i8*, i8*)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i64 @minis_open(i8* {}, i8* {})", tmp, args[0].val, args[1].val));
+        return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+      }
+      None
+    }
+    "mem_open" => {
+      if args.len() >= 2 {
+        module.externs.insert("declare i64 @minis_mem_open(i8*, i8*)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i64 @minis_mem_open(i8* {}, i8* {})", tmp, args[0].val, args[1].val));
+        return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+      }
+      None
+    }
+    "mem_get" => {
+      if !args.is_empty() {
+        let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
+        module.externs.insert("declare i8* @minis_mem_get(i64)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i8* @minis_mem_get(i64 {})", tmp, handle.val));
+        return Some(ValueIR { ty: "i8*".to_string(), val: tmp });
+      }
+      None
+    }
+    "read" => {
+      if args.is_empty() {
+        return None;
+      }
+      if args[0].ty == "i8*" {
+        module.externs.insert("declare i8* @minis_read_file(i8*)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i8* @minis_read_file(i8* {})", tmp, args[0].val));
+        return Some(ValueIR { ty: "i8*".to_string(), val: tmp });
+      }
+
+      let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
+      let count = if args.len() >= 2 {
+        coerce_value_to_type(args[1].clone(), "i64", func).unwrap_or(args[1].clone())
+      } else {
+        ValueIR { ty: "i64".to_string(), val: "0".to_string() }
+      };
+
+      module.externs.insert("declare i8* @minis_read_handle(i64, i64)".to_string());
+      let tmp = func.new_temp();
+      func.emit(format!("{} = call i8* @minis_read_handle(i64 {}, i64 {})", tmp, handle.val, count.val));
+      Some(ValueIR { ty: "i8*".to_string(), val: tmp })
+    }
+    "write" => {
+      if args.len() >= 2 {
+        let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
+        module.externs.insert("declare i64 @minis_write(i64, i8*)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i64 @minis_write(i64 {}, i8* {})", tmp, handle.val, args[1].val));
+        return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+      }
+      None
+    }
+    "close" => {
+      if !args.is_empty() {
+        let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
+        module.externs.insert("declare i64 @minis_close(i64)".to_string());
+        let tmp = func.new_temp();
+        func.emit(format!("{} = call i64 @minis_close(i64 {})", tmp, handle.val));
+        return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+      }
       None
     }
     _ => {
@@ -1810,6 +2034,58 @@ fn emit_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, modu
       Some(ValueIR { ty: "i64".to_string(), val: tmp })
     }
   }
+}
+
+fn emit_namespace_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  // This handles: moduleName :: functionName ( args )
+  let mut inner = pair.into_inner();
+  let _module_name = inner.next().map(|p| p.as_str().to_string());
+  let func_name = inner.next().map(|p| p.as_str().to_string()).unwrap_or_default();
+  let mut args: Vec<ValueIR> = Vec::new();
+  if let Some(list) = inner.next() {
+    for expr in list.into_inner() {
+      if let Some(val) = emit_expr_value(expr, func, module) {
+        args.push(val);
+      }
+    }
+  }
+
+  if !module.defined_funcs.contains(&func_name) {
+    module.externs.insert(format!("declare i64 @{}(...)", func_name));
+  }
+  let args_str = args
+    .iter()
+    .map(|v| format!("{} {}", v.ty, v.val))
+    .collect::<Vec<_>>()
+    .join(", ");
+  func.emit(format!("call i64 @{}({})", func_name, args_str));
+}
+
+fn emit_module_tail_call(pair: pest::iterators::Pair<Rule>, _obj: ValueIR, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  // This handles: identifier :: functionName ( args ) as an expression (though we'll likely not use this)
+  // The obj is ignored since this is a function call, not a method call
+  let mut inner = pair.into_inner();
+  let func_name = inner.next()?.as_str().to_string();
+  let mut args: Vec<ValueIR> = Vec::new();
+  if let Some(list) = inner.next() {
+    for expr in list.into_inner() {
+      if let Some(val) = emit_expr_value(expr, func, module) {
+        args.push(val);
+      }
+    }
+  }
+
+  if !module.defined_funcs.contains(&func_name) {
+    module.externs.insert(format!("declare i64 @{}(...)", func_name));
+  }
+  let args_str = args
+    .iter()
+    .map(|v| format!("{} {}", v.ty, v.val))
+    .collect::<Vec<_>>()
+    .join(", ");
+  let tmp = func.new_temp();
+  func.emit(format!("{} = call i64 @{}({})", tmp, func_name, args_str));
+  Some(ValueIR { ty: "i64".to_string(), val: tmp })
 }
 
 fn emit_class_new(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
