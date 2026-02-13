@@ -124,7 +124,7 @@ namespace minis {
               break;
             }
             case Type::Dict: print("[Dict]"); break; // TODO: pretty print dicts
-            case Type::Void: print("Error :("); exit(1);
+            case Type::Void: print("Error :(\nThis is mostly placeholder :3"); exit(1);
             case Type::TriBool: /* TODO: handle tribool */ break;
             default: print("FATAL ERROR: Unknown type ", (uint8)val.t); exit(1);
           }
