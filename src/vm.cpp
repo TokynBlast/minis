@@ -1346,8 +1346,7 @@ namespace minis {
             switch (op & 0x1F) {
               case static_cast<uint8>(Variable::PUSH): {
                 // Read type byte after opcode (not encoded in opcode due to bit conflicts)
-                uint8 typeByte = GETu8();
-                switch (typeByte) {
+                switch (GETu8()) {
                   case 0x00: {  // Numeric types - meta byte follows
                     unsigned char meta = GETu8();
                     uint8 type = meta >> 4;
