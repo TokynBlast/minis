@@ -1,1 +1,2 @@
-src/maths.gen.py linguist-language=llvm # This file generates LLVM boilerplate :)
+# This file generates LLVM boilerplate :)
+src/maths.gen.py linguist-language=llvm
