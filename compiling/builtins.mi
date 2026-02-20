@@ -74,3 +74,28 @@ bool isAlpha(variant<char*, str*> c) {
     return true;
   #endif
 }
+
+// If we do...
+// return (isAlpha || isNumeric)
+// something like "hey!" would work, but "hey1", would not.
+// isAlpha would work till the 1, and isNumeric would fail on "h"
+bool isAlphanumeric(variant<char*, str*> c) {
+  #if c type is char
+    // check if c is a letter (upper or lower), or a number
+    if (c in 48..57 || c in 65..90 || c in 97..122) {
+      // return true if it passes any
+      return true
+    }
+    // fall through; if not true, must be false
+    return false
+
+  #elif c type is str
+    // check every char to see if it's a letter or number
+    for char in 0..len(c) {
+      if (c[char] in 48..57 || c[char] in 65..90 || c[char] in 97..122) {
+        continue;
+      } else { return false; }
+    }
+    return true;
+  #endif
+}
