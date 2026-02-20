@@ -52,6 +52,10 @@ fn skipWS(filePos, fileContent){
   return filePos
 }
 
+u8 pack(u8 reg, u8 op) -> constexpr {
+  return ((reg << 4) | op);
+}
+
 u8 IMPORTED_FUNC  = 0x01
 u8 IMPORTED_LOAD = 0x02
 u8 IMPORTED_STORE = 0x03
