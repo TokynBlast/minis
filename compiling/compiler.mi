@@ -255,3 +255,15 @@ elif (check("bool ", POS, fileContent)) {
 while (POS <= len(code)) {
   compile(POS, code, fileContent)
 }
+
+int main(u16 argc, list argv) {
+  unordered dict flags = {
+    bool debug:false,
+  }
+
+  for arg in 1..argc {
+    // If debug is true, skip :)
+    debug ? continue : argv[arg] == "-g" ? debug = true : continue
+
+  }
+}
