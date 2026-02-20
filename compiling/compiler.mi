@@ -1,9 +1,8 @@
 import dev
 
 // Open input file (read as string)
-let code = open("mini.mi", "r")
+FILE* code = open("mini.mi", "r")
 code = read(code)
-let out = dev.openFile("testing.mbc")
 POS = skipWS(0, code)
 
 
@@ -16,7 +15,6 @@ fn expect(pos, filePos, fileContent) {
     x += 1
   }
   return true
-  del x
 }
 
 fn check(looking, filePos, fileContent) {
@@ -25,11 +23,9 @@ fn check(looking, filePos, fileContent) {
     // x = x+1
     filePos = filePos + 1
     if (looking[x] != fileContent[filePos]) {
-      del x
       return false
     }
   }
-  del x
   return true
 }
 
@@ -56,45 +52,45 @@ fn skipWS(filePos, fileContent){
   return filePos
 }
 
-let IMPORTED_FUNC  = 0x01
-let IMPORTED_LOAD = 0x02
-let IMPORTED_STORE = 0x03
-let NOP = 0x04
-let PUSH_I = 0x05
-let PUSH_F = 0x06
-let PUSH_B = 0x07
-let PUSH_S = 0x08
-let PUSH_C = 0x09
-let PUSH_N = 0x0A
-let MAKE_LIST = 0x0B
-let GET = 0x0C
-let SET = 0x0D
-let DECL = 0x0E
-let POP = 0x0F
-let ADD = 0x10
-let SUB = 0x11
-let MUL = 0x12
-let DIV = 0x13
-let NEG = 0x14
-let EQ = 0x15
-let NE = 0x16
-let LT = 0x17
-let LE = 0x18
-let AND = 0x19
-let OR = 0x1A
-let JMP = 0x1B
-let JF = 0x1C
-let CALL = 0x1D
-let RET = 0x1E
-let RET_VOID = 0x1F
-let HALT = 0x20
-let UNSET = 0x21
-let SLICE = 0x22
-let INDEX = 0x23
-let SET_INDEX = 0x24
-let TAIL = 0x25
-let YIELD = 0x26
-let NOT = 0x27
+u8 IMPORTED_FUNC  = 0x01
+u8 IMPORTED_LOAD = 0x02
+u8 IMPORTED_STORE = 0x03
+u8 NOP = 0x04
+u8 PUSH_I = 0x05
+u8 PUSH_F = 0x06
+u8 PUSH_B = 0x07
+u8 PUSH_S = 0x08
+u8 PUSH_C = 0x09
+u8 PUSH_N = 0x0A
+u8 MAKE_LIST = 0x0B
+u8 GET = 0x0C
+u8 SET = 0x0D
+u8 DECL = 0x0E
+u8 POP = 0x0F
+u8 ADD = 0x10
+u8 SUB = 0x11
+u8 MUL = 0x12
+u8 DIV = 0x13
+u8 NEG = 0x14
+u8 EQ = 0x15
+u8 NE = 0x16
+u8 LT = 0x17
+u8 LE = 0x18
+u8 AND = 0x19
+u8 OR = 0x1A
+u8 JMP = 0x1B
+u8 JF = 0x1C
+u8 CALL = 0x1D
+u8 RET = 0x1E
+u8 RET_VOID = 0x1F
+u8 HALT = 0x20
+u8 UNSET = 0x21
+u8 SLICE = 0x22
+u8 INDEX = 0x23
+u8 SET_INDEX = 0x24
+u8 TAIL = 0x25
+u8 YIELD = 0x26
+u8 NOT = 0x27
 
 fn isDigit(c) {
   if (c >= "0" && c <= "9") {
@@ -163,7 +159,6 @@ elif (check("list ", POS, fileContent)) {
           }
         }
       }
-      del y
     }
     if (isDigit(fileContent[x])) {
       let y = x
