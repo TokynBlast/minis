@@ -22,6 +22,8 @@ int y = {
 }
 ```
 
+Prune text in strings afer null escape "\0"
+
 add `sync` to pair with `with`
   `sync` will make it so operations between each will be updated
   ex:
