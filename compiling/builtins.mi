@@ -1,13 +1,16 @@
+// FIXME: Could be simplified by storing the length with the container instead?
 variant<ui8, ui16, ui32, ui64> len(variant<list, str> to_count) {
   ui64 length = 0;
   ui64 i = 0;
   // Go till null terminator
   while (to_count[i] != '\0') {
-      i++;
-      length++;
+    i++;
+    length++;
   }
 }
 
+// FIXME: This should print more efficiently?
+//        Or atleast better formatting
 void println(**kwargs vals) {
   print(vals, "\n");
 }
