@@ -96,21 +96,38 @@ u8 TAIL = 0x25
 u8 YIELD = 0x26
 u8 NOT = 0x27
 
-fn isDigit(c) {
-  if (c >= "0" && c <= "9") {
-    return true
+bool isNumeric(variant<char*, str*> c) {
+  #if c type is char
+    if (c in 48..57) {
+      return true
+    }
+    return false
+  #elif c type is str
+    for char in 0..len(c) {
+      if (c[char] in 48..57) {
+        continue;
+      } else { return false; }
+    }
+    return true;
+  #endif
   }
-  return false
-}
 
-fn isAlpha(c) {
-  if (c == "a" |= "b" |= "c" |= "d" |= "e" |= "f"|= "g"|= "h"|= "i"|= "j"|= "k"|= "l"|= "m"|= "n"|= "o"|= "p"|= "q"|= "r"|= "s"|= "t" |= "u"|= "v" |= "w" |= "x" |= "y" |= "z") {
-    return true
-  }
-  if (c == "A" |= "B" |= "C" |= "D" |= "E" |= "F"|= "G"|= "H"|= "I"|= "J"|= "K"|= "L"|= "M"|= "N"|= "O"|= "P"|= "Q"|= "R"|= "S"|= "T"|= "U"|= "V" |= "W" |= "X" |= "Y" |= "Z") {
-    return true
-  }
-  return false
+bool isAlpha(variant<char*, str*> c) {
+  #if c type is char
+    if (c in 65..90 || c in 97..122) {
+      return true;
+    }
+    return false;
+  #elif c type is str
+    for char in 0..len(c) {
+      if (c[char] in 65..90 || c[char] in 97..122) {
+        continue;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  #endif
 }
 
 fn parseType(POS, fileContent) {
