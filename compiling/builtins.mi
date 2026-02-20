@@ -1,12 +1,28 @@
-// FIXME: Could be simplified by storing the length with the container instead?
+// First item in list or string
+struct chainHeader {
+  u64 start*;
+  u64 length*;
+}
+
+// Every other item :)
+struct chainLink {
+  u64 next*;
+  // Since the value could be any type, we use auto to let the compiler
+  // generate the use case :3
+  auto value*;
+}
+
+// FIXME: Make it get the chainHeader length value instead
 variant<ui8, ui16, ui32, ui64> len(variant<list, str> to_count) {
-  ui64 length = 0;
-  ui64 i = 0;
+  u64 length = 0,
+      i = 0;
+
   // Go till null terminator
   while (to_count[i] != '\0') {
     i++;
     length++;
   }
+  return length;
 }
 
 // FIXME: This should print more efficiently?
