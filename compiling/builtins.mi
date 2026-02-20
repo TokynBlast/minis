@@ -1,14 +1,10 @@
 variant<ui8, ui16, ui32, ui64> len(variant<list, str> to_count) {
   ui64 length = 0;
   ui64 i = 0;
-  try {
-    while (true) {
-      to_count[i];
+  // Go till null terminator
+  while (to_count[i] != '\0') {
       i++;
       length++;
-    }
-  } catch {
-    return length;
   }
 }
 
