@@ -1,0 +1,5 @@
+import fs;
+import flags;
+
+u8 main()
+FILE* code =
