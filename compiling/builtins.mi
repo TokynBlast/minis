@@ -9,7 +9,7 @@ struct chainLink {
   u64 next*;
   // Since the value could be any type, we use auto to let the compiler
   // generate the use case :3
-  auto value*;
+  variant<list, value*;
 }
 
 // FIXME: Make it get the chainHeader length value instead
@@ -80,6 +80,65 @@ bool isAlpha(variant<char*, str*> c) {
 // something like "hey!" would work, but "hey1", would not.
 // isAlpha would work till the 1, and isNumeric would fail on "h"
 bool isAlphanumeric(variant<char*, str*> c) {
+  #if c type is char
+    // check if c is a letter (upper or lower), or a number
+    if (c in 48..57 || c in 65..90 || c in 97..122) {
+      // return true if it passes any
+      return true
+    }
+    // fall through; if not true, must be false
+    return false
+
+  #elif c type is str
+    // check every char to see if it's a letter or number
+    for char in 0..len(c) {
+      if (c[char] in 48..57 || c[char] in 65..90 || c[char] in 97..122) {
+        continue;
+      } else { return false; }
+    }
+    return true;
+  #endif
+}
+
+// This is large incomplete, and is expensive to check every single character.
+// Community contributions are greatly appreciated!
+
+bool isLangChar(variant<char*, str*> char) {
+  [[compile::warn]] "The funciton isLangChar is experimental and incomplete.";
+  // FIXME: These need to be verified for correctness :)
+  list characters = {
+    0x41..0x5A,   // upper alpha
+    0x61..0x7A,   // lower alpha
+    0xC0..0xD6,   // latin part 1
+    0xDB..0xF6,   // latin part 2
+    0xF8..0x2B8,  // latin part 3
+    0x370..0x373, // greek part 1
+    0x376..0x377, // greek part 1
+    0x37B..0x37D, // greek part 2
+    0x37F..0x37F, // greek part 3
+    0x386..0x386, // greek part 4
+    0x388..0x38A, // greek part 5
+    0x38C..0x38C, // greek part 6
+    0x38E..0x3a1, // greek part 7
+    0x3A3..0x481, // greek part 8, coptic, cyllric part 1
+    0x48A..0x52F, // cylric part 2
+    0x531..0x556, // armenian part 1
+    0x560..0x588, // armenian part 2
+    0x5D0..0x5EA, // hebrew
+    0x620..0x64A, // arabic part 1
+    0x66E..0x6D3, // arabic part 2
+    0x6EE..0x6EF, // arabic part 3
+    0x6FA..0x6FF, // arabic part 4
+    0x710..0x72F, // syriac part 1
+    0x74D..0x7A5, // syriac part 2
+    0x7B1..0x7B1, // thana
+    0x7CA..0X7EA, // nko
+    0x800..0x815, // samaritan
+    0x840..0x858, // mandic
+    0x870..0x882, // arabic part 5
+    0x8A0..0x8C7, // arabic part 6
+    0x904..0x393, // devanagari
+  }
   #if c type is char
     // check if c is a letter (upper or lower), or a number
     if (c in 48..57 || c in 65..90 || c in 97..122) {
