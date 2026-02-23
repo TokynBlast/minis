@@ -39,3 +39,44 @@ In terms of "good," it doesn't mean it's perfect or the best at what it does. Ju
 
 ```physic``` - Accurate and fast physics math (```Ada``` & ```Fortran```)
 ### Fast physics calculations with run time verification
+
+
+## Minis Library Gen File
+
+Minis has a generation file type, which is a bit complex, but allows repetetive things, to be simplified and expanded upon compile.<br>
+This makes it much, much easier to maintain repetetive code that spans large areas, and makes it more dense.
+
+### Use of ```[[]]```
+In a MILG file, [[]] is "repeat x times."<br>
+If you have...
+```
+str x = "Hello, World!"
+print([[x]])
+```
+It will expand to...
+```
+for i in 0..len(x) {
+  print(i);
+}
+```
+
+Sometimes, having the for loop expanded is useful.<br>
+In some cases, you may have different paths for different things.<br>
+This is the same reason that ```#if var is type``` exist.<br>
+It's the same affect a JIT has... But AOT instead.<br>
+
+### Dictionaries
+
+Something that is simplified to allow defaulting, is dictionaries.
+If you have...
+```
+dict of float prices = { "vanilla", "chocolate", "circuit" } -> 4.64
+```
+it expands to...
+```
+dict prices = {
+  "vanilla": 4.64,
+  "chocolate": 4.64,
+  "circuit": 4.64
+};
+```
