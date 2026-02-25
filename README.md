@@ -8,7 +8,7 @@
 
 # Minis
 ### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.
-In terms of "good," it doesn't mean it's perfect or the best at what it does. Just highly efficent.<br>
+In terms of "good," it doesn't mean it's perfect or the best at what it does. Just highly efficent, with an aim for efficiency.<br>
 
 # Plugins & Libraries
 ## Math
