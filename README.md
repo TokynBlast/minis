@@ -41,42 +41,41 @@ In terms of "good," it doesn't mean it's perfect or the best at what it does. Ju
 ### Fast physics calculations with run time verification
 
 
-## Minis Library Gen File
+# Macros
 
-Minis has a generation file type, which is a bit complex, but allows repetetive things, to be simplified and expanded upon compile.<br>
-This makes it much, much easier to maintain repetetive code that spans large areas, and makes it more dense.
+## #roll
+> [!WARN]
+> The #roll macro is experimental, and may change.
 
-### Use of ```[[]]```
-In a MILG file, [[]] is "repeat x times."<br>
-If you have...
-```
-str x = "Hello, World!"
-print([[x]])
-```
-It will expand to...
-```
-for i in 0..len(x) {
-  print(i);
-}
+Minis has something called the rolling macro.
+It allows repetetive code to 
+```minis
+#roll (int var1 , str var2) for [
+  (32, "hi"),
+  (75, "no")
+] in "print({var1}, {var2});"
+#endroll
 ```
 
-Sometimes, having the for loop expanded is useful.<br>
-In some cases, you may have different paths for different things.<br>
-This is the same reason that ```#if var is type``` exist.<br>
-It's the same affect a JIT has... But AOT instead.<br>
+# Special Scopes
 
-### Dictionaries
+Minis has the ability, to make scopes like actual inline functions, that you can operate on like a variable or something.<br>
+They can also be used like a regular scope.
+```
+(str){return 3;}
+```
+This will become ```"3"```.<br>
+There are other purposes, such as using it for testing.<br>
+They act as functions, but you can access outside variables from inside there.
 
-Something that is simplified to allow defaulting, is dictionaries.
-If you have...
-```
-dict of float prices = { "vanilla", "chocolate", "circuit" } -> 4.64
-```
-it expands to...
-```
-dict prices = {
-  "vanilla": 4.64,
-  "chocolate": 4.64,
-  "circuit": 4.64
+# Circuit Variables
+In Minis, a circuit variable is logic, that becomes a variable.<br>
+Take the following if else:
+```minis
+import fs;
+FILE* file = {
+  fs::exist("text.txt") -> fs::open("text.txt"),
+  fs::exist("config.toml") -> fs::open("config.toml")
 };
 ```
+You can even embed logic within the circuit! Just make another scope :)
