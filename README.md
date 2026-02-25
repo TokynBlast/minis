@@ -2,8 +2,11 @@
 > The compiler is being developed!
 
 # Minis
-### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.
-In terms of "good," it doesn't mean it's perfect or the best at what it does. Just highly efficent, with an aim for efficiency.<br>
+### What is Minis?
+Minis is a language, designed to be low-level, but also high level.<br>
+Along with expanding and adding many features to aaccelrate building.<br>
+Things like a tribool, variable circuits, personal, variableless for loops, and much more!<br>
+Like a toolbox, you don't pull out everything in there. You only pull out what you need.<br>
 
 # Plugins & Libraries
 ## Math
