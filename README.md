@@ -1,10 +1,5 @@
 > [!WARNING]
-> This refrences things not fully implemented yet.
-
-> [!WARNING]
-> There is no related compiler, to compile for the MVME yet.
-> That is being developed.
-> This project is undergoing a conversion of compilers.
+> The compiler is being developed!
 
 # Minis
 ### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.
