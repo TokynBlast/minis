@@ -1,82 +1,99 @@
 > [!WARNING]
-> This refrences things not fully implemented yet.
-
-> [!WARNING]
-> There is no related compiler, to compile for the MVME yet.
-> That is being developed.
-> This project is undergoing a conversion of compilers.
+> The compiler is being developed!
 
 # Minis
-### Minis is a general purpose programming language, designed to be "good" at whatever you make it do.
-In terms of "good," it doesn't mean it's perfect or the best at what it does. Just highly efficent.<br>
+## What is Minis?
+Minis is a language, designed to be low-level, but also high level.<br>
+Along with expanding and adding many features to aaccelrate building.<br>
+Things like a tribool, variable circuits, personal, variableless for loops, and much more!<br>
+Like a toolbox, you don't pull out everything in there. You only pull out what you need.<br>
 
-# Plugins & Libraries
-## Math
-### linAlg - Fast linear algebra support
-```linAlg``` - Linear algebra (```LLVM```)<br>
+## Contributions
+To contribute, make a branch, make the changes, and make a pull request explainging what you changed.
 
-## Networking
-### Sysnet - Used for thousands of connections to a single place
-```sysNet``` - Networking for large systems (```Go```)<br>
-```sysNet::start(str port, )``` - Start up a server<br>
-```sysNet::send(str port, str ip)``` - Send data to an ip
+# Macros
 
-<br>
+## #roll
+> [!WARN]
+> The #roll macro is experimental, and may change.
 
-```goNet``` - Fast networking for small systems (```C++```)<br>
-### Fewer connections, where speed is an absolute need
-```goNet::start(str port, )``` - Start up a server<br>
-```goNet::send(str port, str ip)``` - Send data to an ip
-
-```random``` - PRNG & TRNG random generators (```C++``` & ```Fortran```)<br>
-### True and pseudo randomness, with extreme speed
-```random::trn(min=0, max)``` - Generate a true random number from min to max<br>
-```random::prn::mersene(min=0, max)``` - Generate a number with the mersene twister<br>
-```random::prn::``` -
-
-```time``` - Time formatting ()
-
-
-```physic``` - Accurate and fast physics math (```Ada``` & ```Fortran```)
-### Fast physics calculations with run time verification
-
-
-## Minis Library Gen File
-
-Minis has a generation file type, which is a bit complex, but allows repetetive things, to be simplified and expanded upon compile.<br>
-This makes it much, much easier to maintain repetetive code that spans large areas, and makes it more dense.
-
-### Use of ```[[]]```
-In a MILG file, [[]] is "repeat x times."<br>
-If you have...
-```
-str x = "Hello, World!"
-print([[x]])
-```
-It will expand to...
-```
-for i in 0..len(x) {
-  print(i);
-}
+Minis has something called the rolling macro.
+It allows repetetive code to 
+```minis
+#roll (int var1 , str var2) for [
+  (32, "hi"),
+  (75, "no")
+] in "print({var1}, {var2});"
+#endroll
 ```
 
-Sometimes, having the for loop expanded is useful.<br>
-In some cases, you may have different paths for different things.<br>
-This is the same reason that ```#if var is type``` exist.<br>
-It's the same affect a JIT has... But AOT instead.<br>
+## #if and #if variants
 
-### Dictionaries
+### #if
+```#if``` is a compile-time if statement. It is evaluated while compiling.<br>
+Unlike ```constexpr```, it is not explicitly related to a variable. But rather, a block of code.<br>
+You can use it to do different things based on the CPU, OS, etc.<br>
 
-Something that is simplified to allow defaulting, is dictionaries.
-If you have...
+### #ifdef
+This one works with other macros, and is generally used more often for targeting things based on CPU, OS, etc.<br>
+It doesn't care about a value, only that it exist.<br>
+You can use it in pair with things like #def
+
+# Special Scopes
+
+Minis has the ability, to make scopes like actual inline functions, that you can operate on like a variable or something.<br>
+They can also be used like a regular scope.
 ```
-dict of float prices = { "vanilla", "chocolate", "circuit" } -> 4.64
+(str){return 3;}
 ```
-it expands to...
-```
-dict prices = {
-  "vanilla": 4.64,
-  "chocolate": 4.64,
-  "circuit": 4.64
+This will become ```"3"```.<br>
+There are other purposes, such as using it for testing.<br>
+They act as functions, but you can access outside variables from inside there.
+
+# Circuit Variables
+In Minis, a circuit variable is logic, that becomes a variable.<br>
+Take the following if else:
+```minis
+import fs;
+FILE* file = {
+  fs::exist("text.txt") -> fs::open("text.txt"),
+  fs::exist("config.toml") -> fs::open("config.toml")
 };
+print(file.fs::read(0));
 ```
+You can even embed logic within the circuit! Just make another scope :)
+
+# Variable Types
+Minis introduces a few more variables types.<br>
+Here is their guide:
+```minis
+u8 - unsigned 8-bit integer
+u16 - unsigned 16-bit integer
+u32 - unsigned 32-bit integer
+u64 - unsigned 64-bit int
+u128 - unsigned 128-bit integer
+u256 - uinsigned 256-bit integer
+
+i8 - signed 8-bit integer
+i6 - signed 16-bit integer
+i32 - signed 32-bit integer
+i64 - signed 64-bit int
+i128 - signed 128-bit integer
+i256 - signed 256-bit integer
+
+int - signed 32-bit int, or 64-bit int; determined by CPU
+<size> float - a float, where <size> is size of bit to store it in
+
+__<u|i><size>__ - a custom size integer of either signdness
+
+bool - true or false
+tribool - true, false, or nil
+
+list - list of values
+dict - map of key and value pairs
+
+str - string of characters
+char - single character
+```
+> [!NOTE]
+> If you do a custom size integer, the larger you go, the longer it may take to compile...
