@@ -63,7 +63,6 @@ i8 main() {
 
   print("big number\n");
 
-  // Allow overflow for s pecial case
   i64 bigCounter = 99999999999999999999999999999999;
   print(bigCounter);
 
