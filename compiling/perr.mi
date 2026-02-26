@@ -1,0 +1,16 @@
+class error {
+  public {
+    // This is not 0, because lines start at 1, not 0 :)
+    u128 num_of_nl = 1;
+    // This is only a helper, the main compiler handles the actual exiting part
+    bool perror(str msg) {
+      error ? continue : error = true;
+      // char_ to avoid kw conflict
+      // FIXME: This should be more advanced?
+      print("Error at {}:{}, {}", num_of_nl, char_, msg)
+    }
+    private {
+      bool error = false;
+    }
+  }
+}
