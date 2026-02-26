@@ -1,6 +1,10 @@
 > [!WARNING]
 > The compiler is being developed!
 
+# Aknowledgements
+There are some projects that Minis relies on, and should be noted.<br>
+For all I/O (printing, file operation, etc.), (fast io)[] was used.
+
 # Minis
 ## What is Minis?
 Minis is a language, designed to be low-level, but also high level.<br>
@@ -18,7 +22,7 @@ To contribute, make a branch, make the changes, and make a pull request explaing
 > The #roll macro is experimental, and may change.
 
 Minis has something called the rolling macro.
-It allows repetetive code to 
+It allows repetetive code to
 ```minis
 #roll (int var1 , str var2) for [
   (32, "hi"),
@@ -84,7 +88,7 @@ i256 - signed 256-bit integer
 int - signed 32-bit int, or 64-bit int; determined by CPU
 <size> float - a float, where <size> is size of bit to store it in
 
-__<u|i><size>__ - a custom size integer of either signdness
+__<u|i><size>__ - a custom size integer of either signdness (WARNING: working with extern is not garunteed)
 
 bool - true or false
 tribool - true, false, or nil
