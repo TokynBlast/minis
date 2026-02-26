@@ -1,0 +1,18 @@
+// all of the variables :)
+class info {
+  public {
+    // stored in form of...
+    // {"name":{"var name":"type"}}
+    dict functions = {};
+    u128 functions_amnt = 0;
+
+    // stored in form of...
+    // {"name":["type","value"]}
+    dict variables = {};
+  }
+}
+
+// functions for info
+class info {
+  public {}
+}
