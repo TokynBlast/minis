@@ -1,34 +1,26 @@
-// This is a Minis Lib Gen file.
-// It is stored like this, because it contains
-// a lot of repetetive things that we can simplify
 dict get_flags(**kwargs args) {
-  dict of bool flags {debug, wall, wextra, ewarn} -> false
-  dict of str files {file, output} -> ""
-
-  for arg in 1..len(args) {
-    flags[ [[flags]] ] ? continue : args[arg] == [["-" + ["g", "Wall", "Wextra", "Ewarn"]]] ? flags[ [[flags]] ] == true : continue;
-
-    // FIXME: Input files could be arranged in more complex ways...
-    args[arg] == "-o" ? continue : { files[file] == args[arg-1]; files[output] == args[arg+1] };
-  }
-}
-
-// For reference
-/*
-dict get_flags() {
   unordered dict flags = {
     bool debug:false,
-    str file:"",
+    list files:[],
     str output:"",
     bool wall:false,
     bool wextra:false,
     bool ewarn:false,
   };
 
-  for arg in 1..argc {
+  // FIXME: Using pointers would be better
+  for arg in 1..len(args) {
     // If debug is true, skip :)
-    flags[debug] ? continue : argv[arg] == "-g" ? flags[debug] = true : continue;
-    flags[wall] ? continue : argv[arg] == "-Wall" ? flags[wall] = true : continue;
+    args[arg][0] == "-" ? continue : {
+      [[compile::expand]] flags[debug] ? continue : args[arg] == "-g" ? flags[debug] = true : continue;
+      // warn on all
+      flags[wall] ? continue : args[arg] == "-Wall" ? flags[wall] = true : continue;
+    }
+
+    u64 pos = arg;
+    while (args[arg] != "-o") {
+      flags[files] += args[arg];
+      len(args) == pos ? error(1, "ERROR: Missing \"-o\", make sure you didn't misspell it or forget it.\n") : continue;
+    }
   }
 }
-/*
