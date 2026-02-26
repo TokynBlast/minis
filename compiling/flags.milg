@@ -1,20 +1,24 @@
 dict get_flags(**kwargs args) {
   unordered dict flags = {
-    bool debug:false,
+    #roll (name) for
+    ["debug", "wall", "wextra", "ewarn"] in
+      bool {name}:false,
+    #endroll
     list files:[],
-    str output:"",
-    bool wall:false,
-    bool wextra:false,
-    bool ewarn:false,
+    str output:""
   };
 
   // FIXME: Using pointers would be better
   for arg in 1..len(args) {
     // If debug is true, skip :)
     args[arg][0] == "-" ? continue : {
-      [[compile::expand]] flags[debug] ? continue : args[arg] == "-g" ? flags[debug] = true : continue;
-      // warn on all
-      flags[wall] ? continue : args[arg] == "-Wall" ? flags[wall] = true : continue;
+      #roll (flag, arg) for
+      [("wall", "Wall"),
+       ("debug", "g"),
+       ("wany", "Wany")] in
+
+      flags[{flag}] ? continue : args[arg] == "-{arg}" ? flags[{flag}] = true : continue;
+      #endroll
     }
 
     u64 pos = arg;
