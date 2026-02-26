@@ -1,5 +1,44 @@
 import fs;
 import flags;
+import comp_info;
 
-u8 main()
-FILE* code =
+using comp_info;
+
+bool import_impl(str import_path, str place_to_go*) {
+  // get import path,  and append to top, using pointer instead of copying
+}
+
+u8 main(u16 argc, list argv) {
+  // all of code, mostly for error checking :3
+  list code;
+
+  dict flag = flags::get_flags(argc, argv);
+
+  files = flag["files"];
+  // Since we use this more than once,
+  // and we cannot garuntee it will be O(1) in the future.
+  u16 file_amnt = len(files);
+
+  // the stuff in here is for collection.
+  // after that, the variables are useless
+  {
+    list files = flags["files"];
+    for i in 0..file_amnt {
+      // circuit variable :)
+      // FIXME: This needs to check for multiple files, not just die on the first one...
+      str file_cont = {
+        fs::exist(file[i] -> fs::open(files[i]).read()),
+        _ -> {
+          print("File {} does not exist", file[i]);
+          exit(1);
+        }
+      };
+
+      file_cont
+
+    }
+  }
+
+  // go through each, grab data, error on things that need errors, and then turn to LLVM, and let LLVM handle the rest :3
+  info program = new info;
+}
