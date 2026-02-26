@@ -1,7 +1,7 @@
 dict get_flags(**kwargs args) {
   unordered dict flags = {
     #roll (name) for
-    ["debug", "wall", "wextra", "ewarn"] in
+    ["debug", "wall", "wextra", "werror", "fNoWarnExternSize"] in
       bool {name}:false,
     #endroll
     list files:[],
@@ -15,7 +15,9 @@ dict get_flags(**kwargs args) {
       #roll (flag, arg) for
       [("wall", "Wall"),
        ("debug", "g"),
-       ("wany", "Wany")] in
+       // warn on anything
+       ("wall", "Wall"),
+       ("werror", "Werr")] in
 
       flags[{flag}] ? continue : args[arg] == "-{arg}" ? flags[{flag}] = true : continue;
       #endroll
