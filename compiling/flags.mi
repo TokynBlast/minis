@@ -1,5 +1,5 @@
-dict get_flags(**kwargs args) {
-  unordered dict flags = {
+dict get_flags(u16 argc*, list argv*) {
+  dict flags = {
     #roll (name) for
     ["debug", "wall", "wextra", "werror"] in
       bool {name}:false,
@@ -9,7 +9,7 @@ dict get_flags(**kwargs args) {
   };
 
   // FIXME: Using pointers would be better
-  for arg in 1..len(args) {
+  for arg in 1..argc {
     // If debug is true, skip :)
     args[arg][0] == "-" ? continue : {
       #roll (flag, arg) for
