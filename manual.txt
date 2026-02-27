@@ -381,3 +381,25 @@ class Apple {
   }
 }
 ```
+
+
+  ____        _ _ _   _         ______                _   _
+ |  _ \      (_) | | (_)       |  ____|              | | (_)
+ | |_) |_   _ _| | |_ _ _ __   | |__ _   _ _ __   ___| |_ _  ___  _ __  ___
+ |  _ <| | | | | | __| | '_ \  |  __| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ | |_) | |_| | | | |_| | | | | | |  | |_| | | | | (__| |_| | (_) | | | \__ \
+ |____/ \__,_|_|_|\__|_|_| |_| |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+
+pre-defined functions... Nothing too special about them :)
+
+       ▘    ▗
+ ▛▌ ▛▘ ▌ ▛▌ ▜▘
+ ▙▌ ▌  ▌ ▌▌ ▐▖
+ ▌
+
+Print will output values to the console. It takes any type, and can be formatted like so:
+```
+u8 x = 3;
+print("x is {}", x);
+```
+This will output 3.
