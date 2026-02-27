@@ -40,6 +40,7 @@ The order the macros are searched for is defined as so...
 1. #def
 2. #ifdef
 3. #if
+4. #embed
 The order was chosen specifically so as to minimize workload, and also via logic.
 
 
@@ -49,11 +50,6 @@ The order was chosen specifically so as to minimize workload, and also via logic
 
 The def macro defines things. Either for use in ifdef, if, or other various places.
 Minis has it's own set of definitions, depending on the version.
-
-
- ▘ ▐▘
- ▌ ▜▘
- ▌ ▐
 
 
 
@@ -73,9 +69,35 @@ They can also be used like a regular scope.
 (str){return 3;}
 ```
 This will become ```"3"```.<br>
-There are other purposes, such as using it for testing.<br>
+eThere are other purposes, such as using it for testing.<br>
 They act as functions, but you can access outside variables from inside there.
 
+
+
+ ▘ ▐▘
+ ▌ ▜▘
+ ▌ ▐
+
+The if macro is
+
+
+        ▌      ▌
+ █▌ ▛▛▌ ▛▌ █▌ ▛▌
+ ▙▖ ▌▌▌ ▙▌ ▙▖ ▙▌
+
+The embed macro is used to embed the contents of another file within the code.
+This can be a file within a string, an image in an array, and so on.
+
+It is used like so:
+```
+str names = "
+#embed "names.txt"
+"
+
+char array image = [
+  #embed "img.png"
+]
+```
 
  __      __        _       _     _
  \ \    / /       (_)     | |   | |
