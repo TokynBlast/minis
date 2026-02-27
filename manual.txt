@@ -264,3 +264,120 @@ while (true) {
   if (kb::getKey() == "q") { break; }
 }
 ```
+
+
+   _____ _
+  / ____| |
+ | |    | | __ _ ___ ___  ___  ___
+ | |    | |/ _` / __/ __|/ _ \/ __|
+ | |____| | (_| \__ \__ \  __/\__ \
+  \_____|_|\__,_|___/___/\___||___/
+
+Classes are simple. A class is used, to create simple objects, which inherit values.
+They are comprised of funcitons and variables, seperated into public and private sectors.
+A class cannot have a middleman, which is defined as anything not sitting within a private or public sector.
+
+
+ ▄▖    ▌  ▜  ▘
+ ▙▌ ▌▌ ▛▌ ▐  ▌ ▛▘
+ ▌  ▙▌ ▙▌ ▐▖ ▌ ▙▖
+
+In minis, a public sector is required.
+It typically holds most of the functions, and the initalizer.
+Here is a bare minimum apple class with public, and nothing inside:
+```
+class apple {
+  public {}
+}
+```
+
+
+ ▄▖    ▘       ▗
+ ▙▌ ▛▘ ▌ ▌▌ ▀▌ ▜▘ █▌
+ ▌  ▌  ▌ ▚▘ █▌ ▐▖ ▙▖
+
+A private sector in a Minis class usually holds most variables.
+It is optional. Though, very recomended to use.
+The private sector is typically for storing data about the class, or what it is.
+An apple may have to know it's atoms, if it has been discovered, etc.
+Here's an example of a private sector of an apple:
+```
+private {
+  str color;
+  float weight;
+  tribool poisonus;
+  array str atoms;
+  bool discovered;
+}
+```
+
+
+ ▄▖    ▜  ▐▘
+ ▚  █▌ ▐  ▜▘
+ ▄▌ ▙▖ ▐▖ ▐
+
+In a class, self refers to the current instance of itself.
+It is only used within a class, and is especially useful for initialization.
+It is also the only way to access the private sector.
+Here is an example of using self, to print the color of the apple:
+```
+class apple {
+  public {
+    void display() {
+      print("The apple is {}\n", self.color);
+    }
+  }
+}
+```
+
+
+ ▘    ▘ ▗  ▘    ▜  ▘       ▗  ▘
+ ▌ ▛▌ ▌ ▜▘ ▌ ▀▌ ▐  ▌ ▀▌ ▀▌ ▜▘ ▌ ▛▌ ▛▌
+ ▌ ▌▌ ▌ ▐▖ ▌ █▌ ▐▖ ▌ ▙▖ █▌ ▐▖ ▌ ▙▌ ▌▌
+
+When making a class, you'll usually want to make an initiation function, which sets up variables.
+The initiation lives in the public field.
+The variables you set typically live in the private field.
+Here is a simple initialization for something like an apple class:
+```
+apple(str color, float weight, tribool poisonus, array str atoms, bool discovered) {
+  self.color = color;
+  self.weight = weight;
+  self.poisonus = poisonus;
+  self.atoms = atoms;
+  self.discovered = discovered;
+}
+```
+
+
+ ▄▖              ▜
+ ▙▖ ▚▘ ▀▌ ▛▛▌ ▛▌ ▐  █▌
+ ▙▖ ▞▖ █▌ ▌▌▌ ▙▌ ▐▖ ▙▖
+              ▌
+
+Combining all of the apple examples form before, here is what we are left with:
+```
+class Apple {
+  public {
+    apple(str color, float weight, tribool poisonus, array str atoms, bool discovered) {
+      self.color = color;
+      self.weight = weight;
+      self.poisonus = poisonus;
+      self.atoms = atoms;
+      self.discovered = discovered;
+    }
+
+    void display() {
+      print("The apple is {}\n", self.color);
+    }
+  }
+
+  private {
+    str color;
+    float weight;
+    tribool poisonus;
+    array str atoms;
+    bool discovered;
+  }
+}
+```
