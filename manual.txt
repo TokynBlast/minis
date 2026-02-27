@@ -245,3 +245,22 @@ for (u8 x = 0; x < 50; ++x) {
   print(x);
 }
 ```
+
+ __          ___     _ _        _
+ \ \        / / |   (_) |      | |
+  \ \  /\  / /| |__  _| | ___  | |     ___   ___  _ __
+   \ \/  \/ / | '_ \| | |/ _ \ | |    / _ \ / _ \| '_ \
+    \  /\  /  | | | | | |  __/ | |___| (_) | (_) | |_) |
+     \/  \/   |_| |_|_|_|\___| |______\___/ \___/| .__/
+                                                 | |
+                                                 |_|
+
+A while loop is used to do something until a value false.
+These can also be used to make an infinite loop.
+Here is one way to make an infinite loop, and exit upon "q" being pressed:
+```
+import keyboard as kb;
+while (true) {
+  if (kb::getKey() == "q") { break; }
+}
+```
