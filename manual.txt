@@ -163,3 +163,81 @@ str - string of characters
 char - single character
 ```
 Note: The largest int size is 4096.
+
+
+         ▌ ▘ ▐▘ ▘
+ ▛▛▌ ▛▌ ▛▌ ▌ ▜▘ ▌ █▌ ▛▘ ▛▘
+ ▌▌▌ ▙▌ ▙▌ ▌ ▐  ▌ ▙▖ ▌  ▄▌
+
+There are a few modifiers, which aim to help with stability.
+These modifiers are used in variables and functions.
+Here is the complete list, and what they do:
+
+```
+constset - cannot change after being set; allowed to not be known at compile-time
+const - cannot be changed, must be known at compile time (will force alwaysinline if paired with function)
+static - makes a variable global once made
+```
+
+  ______           _
+ |  ____|         | |
+ | |__ ___  _ __  | |     ___   ___  _ __  ___
+ |  __/ _ \| '__| | |    / _ \ / _ \| '_ \/ __|
+ | | | (_) | |    | |___| (_) | (_) | |_) \__ \
+ |_|  \___/|_|    |______\___/ \___/| .__/|___/
+                                    | |
+                                    |_|
+
+Minis has two ways of doing for loops. This is so to allow for complex or simple loops.
+There is C++ style loops (complex looping), and Rust style loops (simple looping).
+
+
+    ▘        ▜
+ ▛▘ ▌ ▛▛▌ ▛▌ ▐  █▌
+ ▄▌ ▌ ▌▌▌ ▙▌ ▐▖ ▙▖
+          ▌
+
+For simple looping, the bare minimum is start and end.
+You can optionally add a variable to use within the loop, and a stepper, to determine how much to increase by.
+If you don't define a variable, then you shouldn't include the "as"
+The reason for an optional variable, is to minimize code bloat, and fulfill the idea of "Only use what you need."
+```
+for (<var> as <start>..<end>..<stepper>) {}
+```
+NOTE: Even if you don't define a variable for the loop, internally, there is still a variable. It just isn't accesable to you.
+      The variable is used simply to keep track of the internal size.
+
+Here are two simple loops. One prints "x" five times, the other prints the value of x:
+```
+// print "x"
+for (1..5) {
+  print("x");
+}
+
+// print value of x
+for (x as 1..5) {
+  print(x);
+}
+```
+
+
+              ▜
+ ▛▘ ▛▌ ▛▛▌ ▛▌ ▐  █▌ ▚▘
+ ▙▖ ▙▌ ▌▌▌ ▙▌ ▐▖ ▙▖ ▞▖
+           ▌
+
+For complex looping, you define start, check, and stepper.
+You must define all three. The compiler will not "guess" you want to increase by one.
+You must also define the size of the number you will be using.
+
+Here is a guide to complex looping:
+```
+for (<num type> <var> = <int>; <thing to check>; <stepper>) {}
+```
+
+Here is a complex loop to print the value of x:
+```
+for (u8 x = 0; x < 50; ++x) {
+  print(x);
+}
+```
