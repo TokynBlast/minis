@@ -90,13 +90,11 @@ This can be a file within a string, an image in an array, and so on.
 
 It is used like so:
 ```
-str names = "
-#embed "names.txt"
-"
+str names = #embed <names.txt>;
 
 char array image = [
-  #embed "img.png"
-]
+  #embed <img.png>
+];
 ```
 
  __      __        _       _     _
@@ -159,6 +157,7 @@ tribool - true, false, or nil
 
 list - list of values
 dict - map of key and value pairs
+array - like a list, but can only store a single type
 
 str - string of characters
 char - single character
