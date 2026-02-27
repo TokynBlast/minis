@@ -140,10 +140,19 @@ bool isLangChar(str* char) {
     0x904..0x393, // devanagari
   }
   // check every char to see if it's a letter or number
+  // We check characters last, since they take longest :)
   for char in 0..len(c) {
-    if (c[char] in 48..57 || c[char] in 65..90 || c[char] in 97..122) {
+    if (c[char] in 48..57 || c[char] in 65..90 || c[char] in 97..122 || c[char] in characters) {
       continue;
     } else { return false; }
   }
   return true;
+}
+
+auto clamp(auto num, auto min, auto max) {
+  return {
+    min > num -> min,
+    max < num -> max,
+    _ -> num
+  };
 }
