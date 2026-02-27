@@ -40,7 +40,6 @@ The order the macros are searched for is defined as so...
 1. #def
 2. #ifdef
 3. #if
-4. #roll
 The order was chosen specifically so as to minimize workload, and also via logic.
 
 
