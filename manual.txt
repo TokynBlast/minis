@@ -162,5 +162,4 @@ array - like a list, but can only store a single type
 str - string of characters
 char - single character
 ```
-> [!NOTE]
-> If you do a custom size integer, the larger you go, the longer it may take to compile...
+Note: The largest int size is 4096.
