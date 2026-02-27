@@ -103,7 +103,7 @@ bool isAlphanumeric(variant<char*, str*> c) {
 // This is large incomplete, and is expensive to check every single character.
 // Community contributions are greatly appreciated!
 
-bool isLangChar(str* char) {
+bool isLetter(str* char) {
   [[compile::warn]] "The funciton isLangChar is experimental and incomplete.";
   // FIXME: These need to be verified for correctness :)
   list characters = {
