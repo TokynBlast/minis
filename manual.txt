@@ -1,0 +1,146 @@
+Minis Man Pages v0.0.1
+Copyright (C) 2026 Ruri / Mei
+
+  ______                _   _
+ |  ____|              | | (_)
+ | |__ _   _ _ __   ___| |_ _  ___  _ __  ___
+ |  __| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ | |  | |_| | | | | (__| |_| | (_) | | | \__ \
+ |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+
+
+Minis functions are quite simple.
+They allow repetetive things to happen.
+There are some modifiers that can also be used.
+
+Here is the general function style:
+```
+<type> <name>() {}
+```
+This is the bare minimum. There are other things, like return modifiers.
+It allows for even more static typing.
+You can set things such as the constset, which is like const, but it cannot be changed after being set, and can be determined at runtime.
+Here is how an add function with a constset type would look:
+```
+i128 add(i128 a i128 b) -> constset {
+  return a + b;
+}
+```
+
+  __  __
+ |  \/  |
+ | \  / | __ _  ___ _ __ ___  ___
+ | |\/| |/ _` |/ __| '__/ _ \/ __|
+ | |  | | (_| | (__| | | (_) \__ \
+ |_|  |_|\__,_|\___|_|  \___/|___/
+
+A macro is something that is guaranteed to be determined at compile time.
+This is especially useful for targeting different systems.
+The order the macros are searched for is defined as so...
+1. #def
+2. #ifdef
+3. #if
+4. #roll
+The order was chosen specifically so as to minimize workload, and also via logic.
+
+
+  ▌    ▐▘
+ ▛▌ █▌ ▜▘
+ ▙▌ ▙▖ ▐
+
+The def macro defines things. Either for use in ifdef, if, or other various places.
+Minis has it's own set of definitions, depending on the version.
+
+
+ ▘ ▐▘
+ ▌ ▜▘
+ ▌ ▐
+
+
+
+ ▘ ▐▘  ▌    ▐▘
+ ▌ ▜▘ ▛▌ █▌ ▜▘
+ ▌ ▐  ▙▌ ▙▖ ▐
+
+This one works with other macros, and is generally used more often for targeting things based on CPU, OS, etc.<br>
+It doesn't care about a value, only that it exist.<br>
+You can use it in pair with things like #def
+
+# Special Scopes
+
+Minis has the ability, to make scopes like actual inline functions, that you can operate on like a variable or something.<br>
+They can also be used like a regular scope.
+```
+(str){return 3;}
+```
+This will become ```"3"```.<br>
+There are other purposes, such as using it for testing.<br>
+They act as functions, but you can access outside variables from inside there.
+
+
+ __      __        _       _     _
+ \ \    / /       (_)     | |   | |
+  \ \  / /_ _ _ __ _  __ _| |__ | | ___  ___
+   \ \/ / _` | '__| |/ _` | '_ \| |/ _ \/ __|
+    \  / (_| | |  | | (_| | |_) | |  __/\__ \
+     \/ \__,_|_|  |_|\__,_|_.__/|_|\___||___/
+
+Variables work just like most other languages.
+Minis is a statically types language. This means that variable types are known at
+
+
+ ▄▖ ▘         ▘▗
+ ▌  ▌ ▛▘ ▛▘ ▌▌▌▜▘▛▘
+ ▙▖ ▌ ▌  ▙▖ ▙▌▌▐▖▄▌
+
+In Minis, a circuit variable is logic, that becomes a variable.<br>
+Take the following if else:
+```minis
+import fs;
+FILE* file = {
+  fs::exist("text.txt") -> fs::open("text.txt"),
+  fs::exist("config.toml") -> fs::open("config.toml")
+};
+print(file.fs::read(0));
+```
+You can even embed logic within the circuit! Just make another scope :)
+
+
+ ▄▖
+ ▐  ▌▌ ▛▌ █▌ ▛▘
+ ▐  ▙▌ ▙▌ ▙▖ ▄▌
+    ▄▌ ▌
+
+Minis introduces a few more variables types.<br>
+Here is their guide:
+```minis
+u8 - unsigned 8-bit integer
+u16 - unsigned 16-bit integer
+u32 - unsigned 32-bit integer
+u64 - unsigned 64-bit int
+u128 - unsigned 128-bit integer
+u256 - uinsigned 256-bit integer
+
+i8 - signed 8-bit integer
+i6 - signed 16-bit integer
+i32 - signed 32-bit integer
+i64 - signed 64-bit int
+i128 - signed 128-bit integer
+i256 - signed 256-bit integer
+
+int - signed 32-bit int, or 64-bit int; determined by CPU
+<size> float - a float, where <size> is size of bit to store it in
+
+__<u|i><size>__ - a custom size integer of either signdness (WARNING: working with extern is not garunteed)
+
+bool - true or false
+tribool - true, false, or nil
+
+list - list of values
+dict - map of key and value pairs
+
+str - string of characters
+char - single character
+```
+> [!NOTE]
+> If you do a custom size integer, the larger you go, the longer it may take to compile...
