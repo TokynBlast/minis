@@ -57,19 +57,19 @@ Minis has it's own set of definitions, depending on the version.
  ▌ ▜▘ ▛▌ █▌ ▜▘
  ▌ ▐  ▙▌ ▙▖ ▐
 
-This one works with other macros, and is generally used more often for targeting things based on CPU, OS, etc.<br>
-It doesn't care about a value, only that it exist.<br>
+This one works with other macros, and is generally used more often for targeting things based on CPU, OS, etc.
+It doesn't care about a value, only that it exist.
 You can use it in pair with things like #def
 
 # Special Scopes
 
-Minis has the ability, to make scopes like actual inline functions, that you can operate on like a variable or something.<br>
+Minis has the ability, to make scopes like actual inline functions, that you can operate on like a variable or something.
 They can also be used like a regular scope.
 ```
 (str){return 3;}
 ```
-This will become ```"3"```.<br>
-eThere are other purposes, such as using it for testing.<br>
+This will become ```"3"```.
+eThere are other purposes, such as using it for testing.
 They act as functions, but you can access outside variables from inside there.
 
 
@@ -112,7 +112,7 @@ Minis is a statically types language. This means that variable types are known a
  ▌  ▌ ▛▘ ▛▘ ▌▌▌▜▘▛▘
  ▙▖ ▌ ▌  ▙▖ ▙▌▌▐▖▄▌
 
-In Minis, a circuit variable is logic, that becomes a variable.<br>
+In Minis, a circuit variable is logic, that becomes a variable.
 Take the following if else:
 ```minis
 import fs;
@@ -130,7 +130,7 @@ You can even embed logic within the circuit! Just make another scope :)
  ▐  ▙▌ ▙▌ ▙▖ ▄▌
     ▄▌ ▌
 
-Minis introduces a few more variables types.<br>
+Minis introduces a few more variables types.
 Here is their guide:
 ```minis
 u8 - unsigned 8-bit integer
