@@ -1,0 +1,7 @@
+// default _t sizes :)
+
+// most be u64, even on 32-bit systems,
+// prevents 2038 problem for minis compiled code
+typedef typeof(u64) time_t;
+
+typedef typeof(sizeof(0)) size_t;
