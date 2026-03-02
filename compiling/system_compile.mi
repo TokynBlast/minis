@@ -34,7 +34,7 @@ u8 main(u16 argc, list argv) {
     };
     error ? continue : code.append(file_cont);
   }
-  del error;
+  error ? exit(1) : del error;
 
   for (i in 0..len(code)) {
     for (j in 0..len(code[i])) {
