@@ -1,0 +1,141 @@
+// u16 might work, but u32 allows us to expand :)
+// we avoid u64 for two reasons...
+// 1. 32-bit systems
+// 2. RAM overflow issues // comes from an LLVM revert from u32 -> u64 causing RAM overflow problems
+// for acessing afterwards
+
+enum u32 ast = {
+  for,
+  fordd, // ..
+  // we store it as operation =,
+  // rather than creating new symbols
+  // for every combo :)
+  not,       // !
+  eq,        // =
+  gt,        // >
+  lt,        // <
+  bShifLeft, // <<
+  bShifRight,// >>
+  xor,       // ^
+  not,       // ~
+  or,        // |
+  and,       // &
+  min,       // -
+  plus,      // +
+  fslash,    // /
+  bslash,    // \
+  star,      // *
+  mod,       // %
+  colon,     // :
+  dquote,    // "
+  squote,    // '
+  uscore,    // _
+  at,        // @
+  pound,     // #
+  star,      // *
+  dot,       // .
+  comma,     // ,
+  semicolon, // ;
+
+  while,
+  true,
+  false,
+  nil,
+  bool,
+  triBool,
+  str,
+  arr, // array
+  int,
+  float,
+  char,
+
+  size, // size of int, 8 to 1024
+  sign,
+  unsign,
+
+  // with {} and {}
+  with,
+  wand,
+  sync,
+
+  try,
+  catch,
+  // function...
+  fncall, // ...call
+  fndef,  // ...define
+
+  lBrace,   // {
+  rBrace,   // }
+  lBracket, // [
+  rBracket, // ]
+  lParen,   // (
+  rParen,   // )
+
+  min,  // -
+  plus, // +
+  div,  // /
+  tim,  // *
+  sqr,  // ^^
+  mod,  // %
+
+  alwaysinline,
+  inline,
+  onceset,
+  const,
+  del,
+  ternary_cond, // <this> ? :
+  ternary_true, // ? <this> :
+  ternary_false,// ? : <this>
+
+  circuit,
+
+  var_name,
+
+  class,
+  public,
+  private,
+
+  classigrab, // class.thing() // class instance grab
+  classgrab,  // class::thing // class grab
+
+  return,
+  throw,
+
+  in,
+
+  escape, // \...
+  escape_seq // ...sequence
+
+  // declared by someone on discord. if shall stay as
+  // 17, no matter what changed occur.
+  // New word for if? It becomes 17.
+  if: 17,
+  elif,
+  else,
+
+  hex, // 0x483A
+  bin, // 0b01011010
+  num, // other numbers
+
+  enum,
+  struct,
+
+  END // end of file :3
+};
+
+// This function is meant to parse the whole thing in a simple
+// format. it understands the individual characters.
+// after that, it will go back over, and change things,
+// like > and > become >>, aka, a bit shift :)
+
+/*
+General formations:
+
+  for (i in 0..4) {}
+  for varName i in u8 0 fordd u8 4 fordd u8 1 lBrace rBrace END
+  - u8 was determined, because both are constant, and can easily fit into u8 :)
+  - the "fordd u8 1" is because it is the default, and is less work later :)
+
+  int x = 32; if (x == 32) { print("hoi"); }
+  if lParen int var_name x eq eq u8 32  lBrace fnCall print lParen str DQuote hoi DQuote rParen semicolon rBrace
+*/
