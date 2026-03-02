@@ -5,7 +5,7 @@ import comp_info;
 using comp_info;
 
 bool import_impl(str import_path, str place_to_go*) {
-  // get import path,  and append to top, using pointer instead of copying
+  // get import path, and append to top, using pointer instead of copying
 }
 
 u8 main(u16 argc, list argv) {
