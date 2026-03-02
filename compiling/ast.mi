@@ -48,6 +48,7 @@ enum u32 ast = {
   int,
   float,
   char,
+  typedef,
 
   size, // size of int, 8 to 1024
   sign,
