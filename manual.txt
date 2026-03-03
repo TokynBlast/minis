@@ -165,8 +165,34 @@ char - single character
 void - only for functions without a return value; not recommended to use
 
 auto - Automatically determines the return type
+
+enum -
+struct -
 ```
-Note: The largest int size is 4096.
+
+
+ ▀▌ ▛▘ ▛▘ ▀▌ ▌▌
+ █▌ ▌  ▌  █▌ ▙▌
+             ▄▌
+
+An array is formatted like so...
+```
+array[<structure>]
+```
+structure is how it will look.
+It is used to ensure data will look a certain way.
+This is a purely compile time thing, since checking is a O(n) task.
+
+
+█▌▛▌▌▌▛▛▌
+▙▖▌▌▙▌▌▌▌
+
+
+
+  ▗       ▗
+▛▘▜▘▛▘▌▌▛▘▜▘
+▄▌▐▖▌ ▙▌▙▖▐▖
+
 
 
          ▌ ▘ ▐▘ ▘
@@ -405,6 +431,13 @@ print("x is {}", x);
 This will output 3.
 
 
+    ▘  ▗ ▜
+▛▌▛▘▌▛▌▜▘▐ ▛▌
+▙▌▌ ▌▌▌▐▖▐▖▌▌
+▌
+
+Exact same as print, but appends \n before end at compile time
+
   ▜
 ▛▘▐ ▀▌▛▛▌▛▌
 ▙▖▐▖█▌▌▌▌▙▌
@@ -414,19 +447,11 @@ Clamp takes a number, min, and max.
 
 
 
-    ▘  ▗ ▜
-▛▌▛▘▌▛▌▜▘▐ ▛▌
-▙▌▌ ▌▌▌▐▖▐▖▌▌
-▌
-
-
-
-
 ▜
 ▐ █▌▛▌
 ▐▖▙▖▌▌
 
-
+Gets the length of a variable
 
 
 
