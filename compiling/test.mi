@@ -4,7 +4,7 @@
     exit(1);
 
 // Generic clamp with any_num
-ui64 clamp(ui64 num, ui64 min, ui64 max) {
+u64 clamp(u64 num, u64 min, u64 max) {
   if (min > max) {
     error("Min cannot be greater than max!");
   }
