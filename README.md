@@ -13,7 +13,12 @@ Things like a tribool, variable circuits, personal, variableless for loops, and 
 Like a toolbox, you don't pull out everything in there. You only pull out what you need.<br>
 
 ## Contributions
-To contribute, make a branch, make the changes, and make a pull request explainging what you changed.
+To contribute, make a branch, make the changes, and make a pull request explainging what you changed.<br>
+The Minis community is meant to be a fun place :)<br>
+Especially considering how toxic the programming community is 🥲<br>
+The comments throughout are fun and expressive!<br>
+We encourage you to have fun when you help, this isn't a tech company where you aren't allowed to be you<br>
+Seriously, we really reccomend having fun with this, this language is lowlevel and highlevel for a reason!<br>
 
 # Macros
 
