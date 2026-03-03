@@ -244,7 +244,18 @@ fn list astasize(str code, str file_name) {
       str val;
       while (code[pos] !in stoppers) { val += code[pos]; }
       table val {
-        "for" { ast[for_kw] }
+        "for": {
+          code.append(ast[for_kw]);
+          skipWS();
+          if (code[++pos] != '(') {
+            print("{}:{}:{}: Error: a for loop must have (. Make sure you didn't forget it!");
+          }
+          // complex branch
+          // for (define; check; increment) {}
+
+          // simple branch
+          // for (i in 0..1) {} or for (0..1) {}
+        },
       }
     }
   }
