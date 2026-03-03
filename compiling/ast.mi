@@ -234,7 +234,18 @@ fn list astasize(str code, str file_name) {
     } else if (code[pos] == '\n') { ln++; return; }
 
     else {
-      // after handling other cases, we look to see if it may be keywords! :D
+      // after handling other cases, we look to see
+      // if it may be keywords! :D
+      // we use a table cause it is the easiest for now :3
+
+      // we harvest up to known stoppers :)
+      array[list[char]] stoppers = ['[', '"', '\'', '{', ' ', '\n', 0..9];
+      skipWS(); // even though this is a stopper, we do it for safety
+      str val;
+      while (code[pos] !in stoppers) { val += code[pos]; }
+      table val {
+        "for" { ast[for_kw] }
+      }
     }
   }
 }
