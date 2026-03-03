@@ -31,3 +31,5 @@ enum
 async
 
 let file = open("test.txt") ? throw NameError("File missing!") : print(file);
+
+add a str_start to strings, and str_start
