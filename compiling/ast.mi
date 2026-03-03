@@ -120,8 +120,6 @@ enum u32 ast = {
 
   enum,
   struct,
-
-  END // end of file :3
 };
 
 // This function is meant to parse the whole thing in a simple
