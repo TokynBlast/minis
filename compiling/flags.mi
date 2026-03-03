@@ -1,9 +1,8 @@
 dict get_flags(u16 argc*, list argv*) {
   dict flags = {
-    #roll (name) for
-    ["debug", "wall", "wextra", "werror"] in
-      bool {name}:false,
-    #endroll
+    #unroll (name) for \
+    ["debug", "wall", "wextra", "werror"] \
+    in "bool {name}:false,"
     list files:[],
     str output:""
   };
@@ -12,15 +11,14 @@ dict get_flags(u16 argc*, list argv*) {
   for arg in 1..argc {
     // If debug is true, skip :)
     args[arg][0] == "-" ? continue : {
-      #roll (flag, arg) for
+      #unroll (flag, arg) for
       [("wall", "Wall"),
        ("debug", "g"),
        // warn on anything
        ("wall", "Wall"),
-       ("werror", "Werr")] in
-
-      flags[{flag}] ? continue : args[arg] == "-{arg}" ? flags[{flag}] = true : continue;
-      #endroll
+       ("werror", "Werr")]
+       // we add the check, so expanding to track and not allow -o -o, or others to be done twice
+       in "flags[{flag}] ? continue : args[arg] == \"-{arg}\" ? flags[{flag}] = true : continue;"
     }
 
     u64 pos = arg;
