@@ -127,6 +127,9 @@ enum u32 ast = {
 // after that, it will go back over, and change things,
 // like > and > become >>, aka, a bit shift :)
 
+// ast-asize, as in to convert
+u16 array astasize() {}
+
 /*
 General formations:
 
