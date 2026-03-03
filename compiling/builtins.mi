@@ -13,7 +13,7 @@ struct chainLink {
 }
 
 // FIXME: Make it get the chainHeader length value instead
-variant<ui8, ui16, ui32, ui64> len(variant<list, str> to_count) {
+auto variant<u8, u16, u32, u64> len(auto variant<list, str> to_count) {
   u64 length = 0,
       i = 0;
 
@@ -31,8 +31,8 @@ void println(**kwargs vals) {
   print(vals, "\n");
 }
 
-variant<ui8, i8, ui16, i16, ui32, i32, ui64, i64> max(list max_find) {
-  ui64 ls_len = len(max_find);
+auto max(list max_find) {
+  u64 ls_len = len(max_find);
   prev_big = max_find[0];
   for i as 0..ls_len {
     if (max_find[i] < prev_big) {
@@ -150,6 +150,8 @@ bool isLetter(str* char) {
 }
 
 auto clamp(auto num, auto min, auto max) {
+  #assert min < max
+  #assert min != max
   return {
     min > num -> min,
     max < num -> max,
