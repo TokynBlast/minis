@@ -903,6 +903,7 @@ struct FunctionContext {
   class_name: Option<String>,
   self_name: Option<String>,
   is_main: bool,
+  loop_labels: Option<(String, String)>,  // (continue_label, break_label)
 }
 
 impl FunctionContext {
@@ -916,6 +917,7 @@ impl FunctionContext {
       class_name,
       self_name,
       is_main,
+      loop_labels: None,
     }
   }
 
@@ -1028,6 +1030,13 @@ fn llvm_type(type_name: &str) -> String {
 fn collect_functions(pair: pest::iterators::Pair<Rule>, out: &mut Vec<FuncTemplate>) {
   if pair.as_rule() == Rule::func_decl {
     if let Some(func) = parse_func_decl(pair) {
+      out.push(func);
+    }
+    return;
+  }
+
+  if pair.as_rule() == Rule::fn_decl {
+    if let Some(func) = parse_fn_decl(pair) {
       out.push(func);
     }
     return;
@@ -1447,6 +1456,40 @@ fn parse_func_decl(pair: pest::iterators::Pair<Rule>) -> Option<FuncTemplate> {
   })
 }
 
+fn parse_fn_decl(pair: pest::iterators::Pair<Rule>) -> Option<FuncTemplate> {
+  // fn identifier ( param_list? ) block
+  // Returns inferred int by default (like many scripting languages)
+  let mut inner = pair.into_inner();
+  let name = inner.next()?.as_str().to_string();
+
+  let mut params: Vec<(TypeChoice, String)> = Vec::new();
+  let mut block_text: Option<String> = None;
+
+  for next in inner {
+    match next.as_rule() {
+      Rule::param_list => {
+        params = parse_param_list(next);
+      }
+      Rule::block => {
+        block_text = Some(next.as_span().as_str().to_string());
+        break;
+      }
+      _ => {}
+    }
+  }
+
+  let ret = TypeChoice::Single("int".to_string()); // Default return type
+  let has_variant = params.iter().any(|(t, _)| has_variant_type(t));
+
+  Some(FuncTemplate {
+    name,
+    ret,
+    params,
+    has_variant,
+    block_text: block_text.unwrap_or_else(|| "{}".to_string()),
+  })
+}
+
 fn parse_param_list(pair: pest::iterators::Pair<Rule>) -> Vec<(TypeChoice, String)> {
   let mut params = Vec::new();
   for param in pair.into_inner() {
@@ -1762,8 +1805,56 @@ fn emit_statement_ir_with_return(
     Rule::if_stmt => {
       emit_if(inner_pair, ret_ty, func, module)
     }
+    Rule::while_stmt => {
+      emit_while(inner_pair, ret_ty, func, module)
+    }
+    Rule::for_loop => {
+      emit_for_loop(inner_pair, ret_ty, func, module)
+    }
     Rule::try_stmt => {
       emit_try_catch(inner_pair, ret_ty, func, module)
+    }
+    Rule::inc_dec_stmt => {
+      emit_inc_dec(inner_pair, func, module);
+      false
+    }
+    Rule::property_assignment => {
+      emit_property_assignment(inner_pair, func, module);
+      false
+    }
+    Rule::constexpr_decl => {
+      emit_constexpr_decl(inner_pair, func, module);
+      false
+    }
+    Rule::let_decl => {
+      emit_let_decl(inner_pair, func, module);
+      false
+    }
+    Rule::continue_stmt => {
+      if let Some((continue_label, _)) = &func.loop_labels {
+        func.emit(format!("br label %{}", continue_label));
+        return true;
+      }
+      false
+    }
+    Rule::break_stmt => {
+      if let Some((_, break_label)) = &func.loop_labels {
+        func.emit(format!("br label %{}", break_label));
+        return true;
+      }
+      false
+    }
+    Rule::del_stmt => {
+      // del is a no-op for now (memory management placeholder)
+      false
+    }
+    Rule::enum_decl | Rule::struct_decl | Rule::import_stmt => {
+      // These are type declarations, handled at module level
+      false
+    }
+    Rule::fn_decl => {
+      // fn is handled by collect_functions
+      false
     }
     Rule::block => {
       emit_block_ir_with_return(inner_pair, ret_ty, func, module, allow_return)
@@ -1811,6 +1902,402 @@ fn emit_if(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionC
 
   func.emit(format!("{}:", end_label));
   then_term && else_term
+}
+
+fn emit_while(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
+  let mut inner = pair.into_inner();
+  let cond_pair = inner.next();
+  let body_block = inner.next();
+
+  if cond_pair.is_none() || body_block.is_none() {
+    return false;
+  }
+
+  let cond_label = func.new_label("while.cond");
+  let body_label = func.new_label("while.body");
+  let end_label = func.new_label("while.end");
+
+  // Save loop labels for break/continue
+  let prev_loop = func.loop_labels.clone();
+  func.loop_labels = Some((cond_label.clone(), end_label.clone()));
+
+  func.emit(format!("br label %{}", cond_label));
+  func.emit(format!("{}:", cond_label));
+
+  let cond_val = emit_expr_value(cond_pair.unwrap(), func, module);
+  let cond_val = match cond_val {
+    Some(v) => v,
+    None => return false,
+  };
+
+  func.emit(format!("br i1 {}, label %{}, label %{}", cond_val.val, body_label, end_label));
+  func.emit(format!("{}:", body_label));
+
+  let body_term = emit_block_ir(body_block.unwrap(), ret_ty, func, module);
+  if !body_term {
+    func.emit(format!("br label %{}", cond_label));
+  }
+
+  func.emit(format!("{}:", end_label));
+  func.loop_labels = prev_loop;
+  false
+}
+
+fn emit_for_loop(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
+  let mut inner = pair.into_inner();
+  let loop_spec = inner.next();
+  let body_block = inner.next();
+
+  if loop_spec.is_none() || body_block.is_none() {
+    return false;
+  }
+
+  let loop_spec = loop_spec.unwrap();
+
+  match loop_spec.as_rule() {
+    Rule::for_dot_dot => {
+      emit_for_dot_dot(loop_spec, body_block.unwrap(), ret_ty, func, module)
+    }
+    Rule::for_c => {
+      emit_for_c(loop_spec, body_block.unwrap(), ret_ty, func, module)
+    }
+    _ => false,
+  }
+}
+
+fn emit_for_dot_dot(spec: pest::iterators::Pair<Rule>, body: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
+  // for identifier as start..end (..step)?
+  let mut inner = spec.into_inner();
+  let var_name = inner.next().map(|p| p.as_str().to_string()).unwrap_or("_".to_string());
+
+  // The range expression
+  let range_pair = inner.next();
+  if range_pair.is_none() {
+    return false;
+  }
+
+  let range = range_pair.unwrap();
+  let mut range_inner = range.into_inner();
+
+  let start_expr = range_inner.next();
+  let end_expr = range_inner.next();
+  let step_expr = range_inner.next();
+
+  if start_expr.is_none() || end_expr.is_none() {
+    return false;
+  }
+
+  let start_val = emit_expr_value(start_expr.unwrap(), func, module).unwrap_or(ValueIR { ty: "i64".to_string(), val: "0".to_string() });
+  let end_val = emit_expr_value(end_expr.unwrap(), func, module).unwrap_or(ValueIR { ty: "i64".to_string(), val: "0".to_string() });
+  let step_val = step_expr.and_then(|e| emit_expr_value(e, func, module)).unwrap_or(ValueIR { ty: "i64".to_string(), val: "1".to_string() });
+
+  // Allocate loop variable
+  let slot = func.new_temp();
+  func.emit(format!("{} = alloca i64", slot));
+  func.emit(format!("store i64 {}, i64* {}", start_val.val, slot));
+  func.locals.insert(var_name.clone(), ("i64".to_string(), slot.clone()));
+
+  let cond_label = func.new_label("for.cond");
+  let body_label = func.new_label("for.body");
+  let inc_label = func.new_label("for.inc");
+  let end_label = func.new_label("for.end");
+
+  let prev_loop = func.loop_labels.clone();
+  func.loop_labels = Some((inc_label.clone(), end_label.clone()));
+
+  func.emit(format!("br label %{}", cond_label));
+  func.emit(format!("{}:", cond_label));
+
+  // Load and compare
+  let curr = func.new_temp();
+  func.emit(format!("{} = load i64, i64* {}", curr, slot));
+  let cmp = func.new_temp();
+  func.emit(format!("{} = icmp slt i64 {}, {}", cmp, curr, end_val.val));
+  func.emit(format!("br i1 {}, label %{}, label %{}", cmp, body_label, end_label));
+
+  func.emit(format!("{}:", body_label));
+  let body_term = emit_block_ir(body, ret_ty, func, module);
+  if !body_term {
+    func.emit(format!("br label %{}", inc_label));
+  }
+
+  func.emit(format!("{}:", inc_label));
+  let next_val = func.new_temp();
+  func.emit(format!("{} = load i64, i64* {}", next_val, slot));
+  let incremented = func.new_temp();
+  func.emit(format!("{} = add i64 {}, {}", incremented, next_val, step_val.val));
+  func.emit(format!("store i64 {}, i64* {}", incremented, slot));
+  func.emit(format!("br label %{}", cond_label));
+
+  func.emit(format!("{}:", end_label));
+  func.loop_labels = prev_loop;
+  false
+}
+
+fn emit_for_c(spec: pest::iterators::Pair<Rule>, body: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
+  // for (int i = 0; i < 32; ++i) {}
+  let mut inner = spec.into_inner();
+
+  // Parse C-style for: type_spec identifier = value ; identifier comparator value ; val_manipulate
+  let mut type_name: Option<String> = None;
+  let mut var_name: Option<String> = None;
+  let mut init_val: Option<pest::iterators::Pair<Rule>> = None;
+  let mut cmp_var: Option<String> = None;
+  let mut comparator: Option<String> = None;
+  let mut limit_val: Option<pest::iterators::Pair<Rule>> = None;
+  let mut manipulate: Option<pest::iterators::Pair<Rule>> = None;
+
+  for item in inner {
+    match item.as_rule() {
+      Rule::type_spec => type_name = parse_type_name(item),
+      Rule::identifier => {
+        if var_name.is_none() {
+          var_name = Some(item.as_str().to_string());
+        } else if cmp_var.is_none() {
+          cmp_var = Some(item.as_str().to_string());
+        }
+      }
+      Rule::any_num | Rule::number | Rule::hex_number | Rule::binary_number => {
+        if init_val.is_none() {
+          init_val = Some(item);
+        } else if limit_val.is_none() {
+          limit_val = Some(item);
+        }
+      }
+      Rule::comparator => comparator = Some(item.as_str().to_string()),
+      Rule::val_manipulate => manipulate = Some(item),
+      _ => {}
+    }
+  }
+
+  let var_name = var_name.unwrap_or("i".to_string());
+  let llvm_ty = llvm_type(type_name.as_deref().unwrap_or("int"));
+
+  // Allocate loop variable
+  let slot = func.new_temp();
+  func.emit(format!("{} = alloca {}", slot, llvm_ty));
+
+  // Initialize
+  if let Some(init) = init_val {
+    if let Some(val) = emit_expr_value(init, func, module) {
+      let coerced = coerce_value_to_type(val, &llvm_ty, func).unwrap_or(ValueIR { ty: llvm_ty.clone(), val: "0".to_string() });
+      func.emit(format!("store {} {}, {}* {}", llvm_ty, coerced.val, llvm_ty, slot));
+    }
+  } else {
+    func.emit(format!("store {} 0, {}* {}", llvm_ty, llvm_ty, slot));
+  }
+  func.locals.insert(var_name.clone(), (llvm_ty.clone(), slot.clone()));
+
+  let cond_label = func.new_label("for.cond");
+  let body_label = func.new_label("for.body");
+  let inc_label = func.new_label("for.inc");
+  let end_label = func.new_label("for.end");
+
+  let prev_loop = func.loop_labels.clone();
+  func.loop_labels = Some((inc_label.clone(), end_label.clone()));
+
+  func.emit(format!("br label %{}", cond_label));
+  func.emit(format!("{}:", cond_label));
+
+  // Condition check
+  if let (Some(_cmp_var), Some(cmp_op), Some(limit)) = (cmp_var, comparator, limit_val) {
+    let curr = func.new_temp();
+    func.emit(format!("{} = load {}, {}* {}", curr, llvm_ty, llvm_ty, slot));
+    let limit_ir = emit_expr_value(limit, func, module).unwrap_or(ValueIR { ty: llvm_ty.clone(), val: "0".to_string() });
+    let pred = match cmp_op.as_str() {
+      "<" => "slt",
+      "<=" => "sle",
+      ">" => "sgt",
+      ">=" => "sge",
+      "==" => "eq",
+      "!=" => "ne",
+      _ => "slt",
+    };
+    let cmp = func.new_temp();
+    func.emit(format!("{} = icmp {} {} {}, {}", cmp, pred, llvm_ty, curr, limit_ir.val));
+    func.emit(format!("br i1 {}, label %{}, label %{}", cmp, body_label, end_label));
+  } else {
+    // Infinite loop condition (for (;;))
+    func.emit(format!("br label %{}", body_label));
+  }
+
+  func.emit(format!("{}:", body_label));
+  let body_term = emit_block_ir(body, ret_ty, func, module);
+  if !body_term {
+    func.emit(format!("br label %{}", inc_label));
+  }
+
+  func.emit(format!("{}:", inc_label));
+  // Increment/decrement
+  if let Some(manip) = manipulate {
+    emit_val_manipulate(manip, func, module);
+  }
+  func.emit(format!("br label %{}", cond_label));
+
+  func.emit(format!("{}:", end_label));
+  func.loop_labels = prev_loop;
+  false
+}
+
+fn emit_val_manipulate(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  let text = pair.as_str();
+  let mut inner = pair.into_inner();
+
+  // Parse increment, decrement, or compound assignment
+  let first = inner.next();
+  let second = inner.next();
+
+  if let Some(first) = first {
+    match first.as_rule() {
+      Rule::identifier => {
+        let name = first.as_str().to_string();
+        if let Some((ty, slot)) = func.locals.get(&name).cloned() {
+          let curr = func.new_temp();
+          func.emit(format!("{} = load {}, {}* {}", curr, ty, ty, slot));
+
+          if text.contains("++") {
+            let result = func.new_temp();
+            func.emit(format!("{} = add {} {}, 1", result, ty, curr));
+            func.emit(format!("store {} {}, {}* {}", ty, result, ty, slot));
+          } else if text.contains("--") {
+            let result = func.new_temp();
+            func.emit(format!("{} = sub {} {}, 1", result, ty, curr));
+            func.emit(format!("store {} {}, {}* {}", ty, result, ty, slot));
+          } else if let Some(second) = second {
+            // Compound assignment: +=, -=, *=, /=
+            if let Some(val) = emit_expr_value(second, func, module) {
+              let op = if text.contains("+=") { "add" }
+                else if text.contains("-=") { "sub" }
+                else if text.contains("*=") { "mul" }
+                else if text.contains("/=") { "sdiv" }
+                else { "add" };
+              let result = func.new_temp();
+              func.emit(format!("{} = {} {} {}, {}", result, op, ty, curr, val.val));
+              func.emit(format!("store {} {}, {}* {}", ty, result, ty, slot));
+            }
+          }
+        }
+      }
+      Rule::increment | Rule::decrement => {
+        // ++i or --i
+        if let Some(name_pair) = second {
+          let name = name_pair.as_str().to_string();
+          if let Some((ty, slot)) = func.locals.get(&name).cloned() {
+            let curr = func.new_temp();
+            func.emit(format!("{} = load {}, {}* {}", curr, ty, ty, slot));
+            let result = func.new_temp();
+            let op = if first.as_rule() == Rule::increment { "add" } else { "sub" };
+            func.emit(format!("{} = {} {} {}, 1", result, op, ty, curr));
+            func.emit(format!("store {} {}, {}* {}", ty, result, ty, slot));
+          }
+        }
+      }
+      _ => {}
+    }
+  }
+}
+
+fn emit_inc_dec(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  // inc_dec_stmt = { val_manipulate ~ ";" }
+  let mut inner = pair.into_inner();
+  if let Some(manip) = inner.next() {
+    emit_val_manipulate(manip, func, module);
+  }
+}
+
+fn emit_property_assignment(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  let mut inner = pair.into_inner();
+  let obj_name = inner.next().map(|p| p.as_str().to_string());
+  let prop_name = inner.next().map(|p| p.as_str().to_string());
+  let expr = inner.next();
+
+  if let (Some(obj_name), Some(prop_name), Some(expr)) = (obj_name, prop_name, expr) {
+    if let Some(value) = emit_expr_value(expr, func, module) {
+      // Check if it's a local variable that's a class instance
+      if let Some((obj_ty, obj_slot)) = func.locals.get(&obj_name).cloned() {
+        if obj_ty.starts_with('%') && obj_ty.ends_with('*') {
+          let class_name = obj_ty[1..obj_ty.len()-1].to_string();
+          let obj_val = func.new_temp();
+          func.emit(format!("{} = load {}, {}* {}", obj_val, obj_ty, obj_ty, obj_slot));
+          let obj = ValueIR { ty: obj_ty, val: obj_val };
+
+          if let Some((field_type, ptr)) = emit_field_ptr(&class_name, &prop_name, &obj, func, module) {
+            let stored = coerce_value_to_type(value, &field_type, func).unwrap_or(ValueIR { ty: field_type.clone(), val: "0".to_string() });
+            func.emit(format!("store {} {}, {}* {}", field_type, stored.val, field_type, ptr));
+          }
+        }
+      }
+    }
+  }
+}
+
+fn emit_constexpr_decl(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  let mut inner = pair.into_inner();
+  let mut type_name: Option<String> = None;
+  let mut var_name: Option<String> = None;
+  let mut expr: Option<pest::iterators::Pair<Rule>> = None;
+
+  for item in inner {
+    match item.as_rule() {
+      Rule::base_type => type_name = Some(item.as_str().to_string()),
+      Rule::identifier => var_name = Some(item.as_str().to_string()),
+      Rule::expr => expr = Some(item),
+      _ => {}
+    }
+  }
+
+  if let (Some(name), Some(expr)) = (var_name, expr) {
+    let llvm_ty = llvm_type(type_name.as_deref().unwrap_or("int"));
+    let slot = func.new_temp();
+    func.emit(format!("{} = alloca {}", slot, llvm_ty));
+
+    if let Some(value) = emit_expr_value(expr, func, module) {
+      let coerced = coerce_value_to_type(value, &llvm_ty, func).unwrap_or(ValueIR { ty: llvm_ty.clone(), val: "0".to_string() });
+      func.emit(format!("store {} {}, {}* {}", llvm_ty, coerced.val, llvm_ty, slot));
+    }
+    func.locals.insert(name, (llvm_ty, slot));
+  }
+}
+
+fn emit_let_decl(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
+  // let identifier (: type_ref)? (= expr)?
+  let mut inner = pair.into_inner();
+  let mut var_name: Option<String> = None;
+  let mut type_name: Option<String> = None;
+  let mut expr: Option<pest::iterators::Pair<Rule>> = None;
+
+  for item in inner {
+    match item.as_rule() {
+      Rule::identifier => var_name = Some(item.as_str().to_string()),
+      Rule::type_ref | Rule::type_spec | Rule::base_type => type_name = parse_type_name(item),
+      Rule::expr => expr = Some(item),
+      _ => {}
+    }
+  }
+
+  if let Some(name) = var_name {
+    // Infer type from expression if not specified
+    let llvm_ty = if let Some(ref e) = expr {
+      if let Some(val) = emit_expr_value(e.clone(), func, module) {
+        val.ty.clone()
+      } else {
+        llvm_type(type_name.as_deref().unwrap_or("int"))
+      }
+    } else {
+      llvm_type(type_name.as_deref().unwrap_or("int"))
+    };
+
+    let slot = func.new_temp();
+    func.emit(format!("{} = alloca {}", slot, llvm_ty));
+
+    if let Some(e) = expr {
+      if let Some(value) = emit_expr_value(e, func, module) {
+        let coerced = coerce_value_to_type(value, &llvm_ty, func).unwrap_or(ValueIR { ty: llvm_ty.clone(), val: "0".to_string() });
+        func.emit(format!("store {} {}, {}* {}", llvm_ty, coerced.val, llvm_ty, slot));
+      }
+    }
+    func.locals.insert(name, (llvm_ty, slot));
+  }
 }
 
 fn emit_try_catch(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
@@ -2227,12 +2714,49 @@ fn emit_member_access(pair: pest::iterators::Pair<Rule>, obj: ValueIR, func: &mu
   Some(ValueIR { ty: field_type, val })
 }
 
+fn emit_index_access(pair: pest::iterators::Pair<Rule>, base: ValueIR, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  // index_tail = { "[" ~ expr ~ "]" }
+  let mut inner = pair.into_inner();
+  let idx_expr = inner.next()?;
+  let idx = emit_expr_value(idx_expr, func, module)?;
+  let idx_coerced = coerce_value_to_type(idx, "i64", func)?;
+
+  // For strings (i8*), return a character (i8)
+  if base.ty == "i8*" {
+    let ptr = func.new_temp();
+    func.emit(format!("{} = getelementptr i8, i8* {}, i64 {}", ptr, base.val, idx_coerced.val));
+    let val = func.new_temp();
+    func.emit(format!("{} = load i8, i8* {}", val, ptr));
+    return Some(ValueIR { ty: "i8".to_string(), val });
+  }
+
+  // For other pointer types, do pointer arithmetic and load
+  if base.ty.ends_with('*') {
+    let elem_ty = base.ty[..base.ty.len()-1].to_string();
+    let ptr = func.new_temp();
+    func.emit(format!("{} = getelementptr {}, {} {}, i64 {}", ptr, elem_ty, base.ty, base.val, idx_coerced.val));
+    let val = func.new_temp();
+    func.emit(format!("{} = load {}, {}* {}", val, elem_ty, elem_ty, ptr));
+    return Some(ValueIR { ty: elem_ty, val });
+  }
+
+  // For arrays/lists implemented as runtime values, call runtime function
+  module.externs.insert("declare i64 @minis_list_get(i8*, i64)".to_string());
+  let tmp = func.new_temp();
+  func.emit(format!("{} = call i64 @minis_list_get(i8* {}, i64 {})", tmp, base.val, idx_coerced.val));
+  Some(ValueIR { ty: "i64".to_string(), val: tmp })
+}
+
 fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
   match pair.as_rule() {
     Rule::expr |
     Rule::logical_expr |
     Rule::logical_and_expr |
     Rule::comparison => emit_comparison(pair, func, module),
+    Rule::bit_or_expr => emit_bit_or_expr(pair, func, module),
+    Rule::bit_xor_expr => emit_bit_xor_expr(pair, func, module),
+    Rule::bit_and_expr => emit_bit_and_expr(pair, func, module),
+    Rule::shift_expr => emit_shift_expr(pair, func, module),
     Rule::arith_expr => emit_arith_expr(pair, func, module),
     Rule::term => emit_term_expr(pair, func, module),
     Rule::primary => {
@@ -2248,6 +2772,9 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
           }
           Rule::member_tail => {
             result = emit_member_access(postfix, result, func, module)?;
+          }
+          Rule::index_tail => {
+            result = emit_index_access(postfix, result, func, module)?;
           }
           _ => {}
         }
@@ -2278,6 +2805,24 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
       let text = stripped.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r");
       let ptr = module.string_ptr(&text);
       Some(ValueIR { ty: "i8*".to_string(), val: ptr })
+    }
+    Rule::char_literal => {
+      let stripped = pair.as_str().trim_matches('\'');
+      let char_val: i8 = if stripped.starts_with('\\') {
+        match stripped.chars().nth(1) {
+          Some('n') => '\n' as i8,
+          Some('t') => '\t' as i8,
+          Some('r') => '\r' as i8,
+          Some('0') => 0,
+          Some('\\') => '\\' as i8,
+          Some('\'') => '\'' as i8,
+          Some(c) => c as i8,
+          None => 0,
+        }
+      } else {
+        stripped.chars().next().map(|c| c as i8).unwrap_or(0)
+      };
+      Some(ValueIR { ty: "i8".to_string(), val: char_val.to_string() })
     }
     Rule::bool => {
       let val = if pair.as_str() == "true" { "1" } else { "0" };
@@ -2351,8 +2896,200 @@ fn emit_term_expr(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext,
   Some(left)
 }
 
-fn emit_comparison(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+fn emit_shift_expr(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
   let mut inner = pair.into_inner();
+  let mut left = emit_expr_value(inner.next()?, func, module)?;
+  while let Some(op) = inner.next() {
+    let right = emit_expr_value(inner.next()?, func, module)?;
+    let op_name = match op.as_rule() {
+      Rule::bit_shl => "shl",
+      Rule::bit_shr => "ashr",
+      _ => return None,
+    };
+    let tmp = func.new_temp();
+    func.emit(format!("{} = {} {} {}, {}", tmp, op_name, left.ty, left.val, right.val));
+    left = ValueIR { ty: left.ty, val: tmp };
+  }
+  Some(left)
+}
+
+fn emit_bit_and_expr(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  let mut inner = pair.into_inner();
+  let mut left = emit_expr_value(inner.next()?, func, module)?;
+  while let Some(op) = inner.next() {
+    if op.as_rule() == Rule::bit_and {
+      let right = emit_expr_value(inner.next()?, func, module)?;
+      let tmp = func.new_temp();
+      func.emit(format!("{} = and {} {}, {}", tmp, left.ty, left.val, right.val));
+      left = ValueIR { ty: left.ty, val: tmp };
+    }
+  }
+  Some(left)
+}
+
+fn emit_bit_xor_expr(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  let mut inner = pair.into_inner();
+  let mut left = emit_expr_value(inner.next()?, func, module)?;
+  while let Some(op) = inner.next() {
+    if op.as_rule() == Rule::bit_xor {
+      let right = emit_expr_value(inner.next()?, func, module)?;
+      let tmp = func.new_temp();
+      func.emit(format!("{} = xor {} {}, {}", tmp, left.ty, left.val, right.val));
+      left = ValueIR { ty: left.ty, val: tmp };
+    }
+  }
+  Some(left)
+}
+
+fn emit_bit_or_expr(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  let mut inner = pair.into_inner();
+  let mut left = emit_expr_value(inner.next()?, func, module)?;
+  while let Some(op) = inner.next() {
+    if op.as_rule() == Rule::bit_or {
+      let right = emit_expr_value(inner.next()?, func, module)?;
+      let tmp = func.new_temp();
+      func.emit(format!("{} = or {} {}, {}", tmp, left.ty, left.val, right.val));
+      left = ValueIR { ty: left.ty, val: tmp };
+    }
+  }
+  Some(left)
+}
+
+fn emit_comparison(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
+  let rule = pair.as_rule();
+  let mut inner = pair.into_inner();
+
+  // Handle logical_expr: logical_and_expr (|| logical_and_expr)*
+  if rule == Rule::logical_expr {
+    let first = inner.next()?;
+    let mut left = emit_comparison(first, func, module)?;
+
+    while let Some(op_pair) = inner.next() {
+      if op_pair.as_rule() == Rule::logical_or {
+        let right_pair = inner.next()?;
+        // Short-circuit OR: if left is true, don't evaluate right
+        let short_label = func.new_label("or.short");
+        let eval_label = func.new_label("or.eval");
+        let end_label = func.new_label("or.end");
+
+        let left_i1 = if left.ty != "i1" {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = icmp ne {} {}, 0", tmp, left.ty, left.val));
+          ValueIR { ty: "i1".to_string(), val: tmp }
+        } else { left.clone() };
+
+        func.emit(format!("br i1 {}, label %{}, label %{}", left_i1.val, short_label, eval_label));
+
+        func.emit(format!("{}:", eval_label));
+        let right = emit_comparison(right_pair, func, module)?;
+        let right_i1 = if right.ty != "i1" {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
+          ValueIR { ty: "i1".to_string(), val: tmp }
+        } else { right.clone() };
+        let from_eval = func.new_label("from_eval");
+        func.emit(format!("br label %{}", end_label));
+
+        func.emit(format!("{}:", short_label));
+        func.emit(format!("br label %{}", end_label));
+
+        func.emit(format!("{}:", end_label));
+        let result = func.new_temp();
+        func.emit(format!("{} = phi i1 [ 1, %{} ], [ {}, %{} ]", result, short_label, right_i1.val, eval_label));
+        left = ValueIR { ty: "i1".to_string(), val: result };
+      } else {
+        left = emit_comparison(op_pair, func, module)?;
+      }
+    }
+    return Some(left);
+  }
+
+  // Handle logical_and_expr: (logical_not? ~ comparison) (&& (logical_not? ~ comparison))*
+  if rule == Rule::logical_and_expr {
+    let first = inner.next()?;
+    // Check if first element is logical_not
+    let mut left = if first.as_rule() == Rule::logical_not {
+      let comp = inner.next()?;
+      let val = emit_comparison(comp, func, module)?;
+      let val_i1 = if val.ty != "i1" {
+        let tmp = func.new_temp();
+        func.emit(format!("{} = icmp ne {} {}, 0", tmp, val.ty, val.val));
+        ValueIR { ty: "i1".to_string(), val: tmp }
+      } else { val };
+      let tmp = func.new_temp();
+      func.emit(format!("{} = xor i1 {}, 1", tmp, val_i1.val));
+      ValueIR { ty: "i1".to_string(), val: tmp }
+    } else {
+      emit_comparison(first, func, module)?
+    };
+
+    while let Some(op_pair) = inner.next() {
+      if op_pair.as_rule() == Rule::logical_and {
+        let right_pair = inner.next()?;
+        // Check if right side starts with logical_not
+        let (negated, actual_right) = if right_pair.as_rule() == Rule::logical_not {
+          (true, inner.next()?)
+        } else {
+          (false, right_pair)
+        };
+
+        // Short-circuit AND: if left is false, don't evaluate right
+        let short_label = func.new_label("and.short");
+        let eval_label = func.new_label("and.eval");
+        let end_label = func.new_label("and.end");
+
+        let left_i1 = if left.ty != "i1" {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = icmp ne {} {}, 0", tmp, left.ty, left.val));
+          ValueIR { ty: "i1".to_string(), val: tmp }
+        } else { left.clone() };
+
+        func.emit(format!("br i1 {}, label %{}, label %{}", left_i1.val, eval_label, short_label));
+
+        func.emit(format!("{}:", eval_label));
+        let mut right = emit_comparison(actual_right, func, module)?;
+        if negated {
+          let val_i1 = if right.ty != "i1" {
+            let tmp = func.new_temp();
+            func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
+            ValueIR { ty: "i1".to_string(), val: tmp }
+          } else { right };
+          let tmp = func.new_temp();
+          func.emit(format!("{} = xor i1 {}, 1", tmp, val_i1.val));
+          right = ValueIR { ty: "i1".to_string(), val: tmp };
+        }
+        let right_i1 = if right.ty != "i1" {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
+          ValueIR { ty: "i1".to_string(), val: tmp }
+        } else { right.clone() };
+        func.emit(format!("br label %{}", end_label));
+
+        func.emit(format!("{}:", short_label));
+        func.emit(format!("br label %{}", end_label));
+
+        func.emit(format!("{}:", end_label));
+        let result = func.new_temp();
+        func.emit(format!("{} = phi i1 [ 0, %{} ], [ {}, %{} ]", result, short_label, right_i1.val, eval_label));
+        left = ValueIR { ty: "i1".to_string(), val: result };
+      } else if op_pair.as_rule() == Rule::logical_not {
+        // Handle !expr that appears without &&
+        let expr_pair = inner.next()?;
+        let val = emit_comparison(expr_pair, func, module)?;
+        let val_i1 = if val.ty != "i1" {
+          let tmp = func.new_temp();
+          func.emit(format!("{} = icmp ne {} {}, 0", tmp, val.ty, val.val));
+          ValueIR { ty: "i1".to_string(), val: tmp }
+        } else { val };
+        let tmp = func.new_temp();
+        func.emit(format!("{} = xor i1 {}, 1", tmp, val_i1.val));
+        left = ValueIR { ty: "i1".to_string(), val: tmp };
+      } else {
+        left = emit_comparison(op_pair, func, module)?;
+      }
+    }
+    return Some(left);
+  }
 
   // Get the first child
   let first = inner.next()?;
@@ -2392,12 +3129,36 @@ fn emit_comparison(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
       Some(ValueIR { ty: "i1".to_string(), val: tmp })
     },
     Rule::logical_and => {
-      // TODO: Implement && properly with short-circuit evaluation
-      Some(left)  // Placeholder
+      // Simple AND without short-circuit (fallback)
+      let left_i1 = if left.ty != "i1" {
+        let tmp = func.new_temp();
+        func.emit(format!("{} = icmp ne {} {}, 0", tmp, left.ty, left.val));
+        ValueIR { ty: "i1".to_string(), val: tmp }
+      } else { left.clone() };
+      let right_i1 = if right.ty != "i1" {
+        let tmp = func.new_temp();
+        func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
+        ValueIR { ty: "i1".to_string(), val: tmp }
+      } else { right.clone() };
+      let tmp = func.new_temp();
+      func.emit(format!("{} = and i1 {}, {}", tmp, left_i1.val, right_i1.val));
+      Some(ValueIR { ty: "i1".to_string(), val: tmp })
     },
     Rule::logical_or => {
-      // TODO: Implement || properly with short-circuit evaluation
-      Some(left)  // Placeholder
+      // Simple OR without short-circuit (fallback)
+      let left_i1 = if left.ty != "i1" {
+        let tmp = func.new_temp();
+        func.emit(format!("{} = icmp ne {} {}, 0", tmp, left.ty, left.val));
+        ValueIR { ty: "i1".to_string(), val: tmp }
+      } else { left.clone() };
+      let right_i1 = if right.ty != "i1" {
+        let tmp = func.new_temp();
+        func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
+        ValueIR { ty: "i1".to_string(), val: tmp }
+      } else { right.clone() };
+      let tmp = func.new_temp();
+      func.emit(format!("{} = or i1 {}, {}", tmp, left_i1.val, right_i1.val));
+      Some(ValueIR { ty: "i1".to_string(), val: tmp })
     },
     _ => None
   }
@@ -2929,11 +3690,37 @@ fn extract_macros(input: &str) -> (String, HashMap<String, MacroDef>) {
     let line = lines[i];
     let trimmed = line.trim_start();
 
-    if trimmed.starts_with("#if") {
+    if trimmed.starts_with("#if ") || trimmed.starts_with("#if\t") {
       let include_parent = *include_stack.last().unwrap_or(&true);
-      let ident = trimmed[3..].trim();
-      let is_defined = macros.contains_key(ident);
-      include_stack.push(include_parent && is_defined);
+      let rest = trimmed[3..].trim();
+      // Check if it's a type check like "c type is str" - always include
+      let is_type_check = rest.contains(" type is ");
+      if is_type_check {
+        // Include type check blocks - emit the directive for grammar parsing
+        output.push_str(line);
+        output.push('\n');
+        include_stack.push(true);
+      } else {
+        let is_defined = macros.contains_key(rest);
+        include_stack.push(include_parent && is_defined);
+      }
+      i += 1;
+      continue;
+    }
+
+    if trimmed.starts_with("#elif ") || trimmed.starts_with("#elif\t") {
+      // For #elif, just emit the line and keep including
+      // (proper type checking is deferred to later stages)
+      output.push_str(line);
+      output.push('\n');
+      i += 1;
+      continue;
+    }
+
+    if trimmed.starts_with("#else") {
+      // Emit #else for grammar
+      output.push_str(line);
+      output.push('\n');
       i += 1;
       continue;
     }
@@ -2942,6 +3729,9 @@ fn extract_macros(input: &str) -> (String, HashMap<String, MacroDef>) {
       if include_stack.len() > 1 {
         include_stack.pop();
       }
+      // Emit #endif for grammar
+      output.push_str(line);
+      output.push('\n');
       i += 1;
       continue;
     }
@@ -3308,3 +4098,4 @@ fn is_ident_start(ch: char) -> bool {
 fn is_ident_continue(ch: char) -> bool {
   ch == '_' || ch.is_ascii_alphanumeric()
 }
+// force rebuild

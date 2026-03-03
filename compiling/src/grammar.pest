@@ -3,13 +3,17 @@ COMMENT = _{
     "//" ~ (!"\n" ~ ANY)* ~ "\n"?
   | "/*" ~ (!"*/" ~ ANY)* ~ "*/"
 }
-WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+line_continuation = _{ "\\" ~ NEWLINE }
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" | line_continuation }
 NEWLINE = _{ "\r\n" | "\n" }
 
 // Preprocessor directives
 // #def for simple defines (no value)
 // No body; continuation should be handled by macro_def
 macro_simple_def = { "#def" ~ identifier ~ macro_params ~ NEWLINE }
+
+// #check for compile-time assertions
+check_directive = { "#check" ~ expr }
 
 // #def with parameters and body (can use backslash for continuation)
 macro_def = { "#def" ~ identifier ~ macro_params? ~ macro_body }
@@ -25,19 +29,25 @@ macro_line_terminal = @{ (!NEWLINE ~ !"\\" ~ ANY)* ~ NEWLINE }
 
 // Conditional compilation (#if with defined macros only!)
 // Ends with #endif (no braces needed!)
-macro_if = { "#if" ~ identifier ~ NEWLINE }
-macro_endif = { "#endif" ~ NEWLINE? }
-macro_block = { macro_if ~ statement* ~ macro_endif }
+macro_if = { "#if" ~ macro_condition }
+macro_elif = { "#elif" ~ macro_condition }
+macro_else = { "#else" }
+macro_endif = { "#endif" }
+// Macro condition can be identifier, or "expr type is type"
+macro_condition = { identifier ~ "type" ~ "is" ~ type_spec | identifier }
+macro_block = { macro_if ~ statement* ~ (macro_elif ~ statement*)* ~ (macro_else ~ statement*)? ~ macro_endif }
 
 // Type system (defined early so keyword can reference it)
 base_type = {
     "i8" | "i16" | "i32" | "i64"
   | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
-  | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
+  | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict"
   | "void" | "auto"
 }
-variant_type = { "variant" ~ "<" ~ base_type ~ ("," ~ base_type)* ~ ">" }
+variant_element = { (base_type | class_name) ~ "*"? }
+// Allow variant to close with > or not (for struct fields that end with ;)
+variant_type = { "variant" ~ "<" ~ variant_element ~ ("," ~ variant_element)* ~ ">"? }
 experimental_variant_type = { "!" ~ variant_type }
 modifier = { "const" | "static" }
 type_spec = { modifier? ~ (base_type | variant_type | experimental_variant_type) }
@@ -57,6 +67,9 @@ return_modifier = {
 access_modifier = { "public" | "private" }
 
 // All keywords in one place
+// Word boundary - keyword must not be followed by alphanumeric or underscore
+word_boundary = _{ !(ASCII_ALPHANUMERIC | "_") }
+
 keyword = @{
   ( "if" | "else" | "elif"
   | "while" | "for" | "with" | "and"
@@ -66,25 +79,32 @@ keyword = @{
   | "i8" | "i16" | "i32" | "i64"
   | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
-  | "int" | "float" | "str" | "bool" | "tribool" | "list" | "dict"
+  | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict"
   | "void" | "auto"
   | "const" | "static" | "variant"
   | "true" | "false" | "global" | "unknown"
   | "constexpr"
   | "return" | "in" | "as"
   | "try" | "catch"
-  | "not")
-  ~ !ASCII_ALPHANUMERIC
+  | "not"
+  | "fn" | "let" | "continue" | "break" | "del"
+  | "enum" | "struct" | "import")
+  ~ word_boundary
 }
 
 // Identifier - just don't match keywords (but can be class names)
 identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
-class_name = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+class_name = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+template_var = { "{" ~ identifier ~ "}" }
+ident_or_template = { template_var | identifier }
 
 // String with format support
-string = { "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+string = { "\"" ~ (("\\" ~ ANY) | (!"\"" ~ ANY))* ~ "\"" }
 
-hex_number = @{ "0x" ~ ASCII_HEX_DIGIT+ }
+// Character literal
+char_literal = { "'" ~ (("\\" ~ ANY) | (!"'" ~ ANY)) ~ "'" }
+
+hex_number = @{ ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
 binary_number = @{ "0b" ~ ("0" | "1")+ }
 any_num = { hex_number | binary_number | float | number }
 number = @{ "-"? ~ ASCII_DIGIT+ }
@@ -98,9 +118,9 @@ subtract = { "-" }
 multiply = { "*" }
 divide = { "/" }
 modulo = { "%" }
-comparator = { "<=" | ">=" | "!=" | "==" | "<" | ">" }
+comparator = { "<=" | ">=" | "!=" | "==" | "<" | ">" | "in" }
 logical_and = { "&&" }
-logical_or = { "||" }
+logical_or = { "||" | "|=" }
 logical_not = { "!" }
 increment = { "++" }
 decrement = { "--" }
@@ -121,54 +141,107 @@ index_tail = { "[" ~ expr ~ "]" }
 method_tail = { "." ~ identifier ~ "(" ~ expr_list? ~ ")" }
 member_tail = { "." ~ identifier }
 
+// Keywords that can be used as identifiers in certain contexts
+keyword_as_ident = @{
+  ( "char" | "int" | "float" | "str" | "bool" | "list" | "dict" | "void" | "auto"
+  | "i8" | "i16" | "i32" | "i64"
+  | "ui8" | "ui16" | "ui32" | "ui64"
+  | "u8" | "u16" | "u32" | "u64"
+  ) ~ word_boundary
+}
+
 primary_base = {
   "(" ~ expr ~ ")"
   | type_cast
   | class_instantiation
+  | namespace_call
   | function_call
+  | exit_expr
   | hex_number
   | binary_number
-  | float
   | number
+  | float
   | string
+  | char_literal
   | bool
   | tribool_val
+  | keyword_as_ident
   | identifier
   | list_literal
   | dict_literal
   | circuit_var
+  | curly_list_literal
 }
 
-// Ternary operator
-ternary = { logical_expr ~ "?" ~ expr ~ ":" ~ expr }
+// Exit expression (exit is a keyword)
+exit_expr = { "exit" ~ "(" ~ expr? ~ ")" }
+
+// Del expression (del without semicolon, for use in ternary branches)
+del_expr = { "del" ~ identifier }
+
+// Ternary operator - can have expressions, blocks, or control flow
+control_flow_kw = { "continue" | "break" | "return" ~ expr? }
+assign_expr = { identifier ~ assign_op ~ expr }
+ternary_value = { block | control_flow_kw | del_expr | assign_expr | expr | ternary }
+ternary = { logical_expr ~ "?" ~ ternary_value ~ ":" ~ ternary_value }
+// Ternary as statement (no semicolon needed if ends with block, semicolon needed if ends with control_flow_kw)
+// Ternary_stmt branches can be: block, control_flow with ;, or assignment with ;
+ternary_stmt = { logical_expr ~ "?" ~ ternary_value ~ ":" ~ ternary_value ~ ";"? }
 
 // Logical expressions (streamlined - removed pass-through wrappers)
-comparison = { arith_expr ~ (comparator ~ arith_expr)* }
+comparison = { bit_or_expr ~ (comparator ~ bit_or_expr)* }
 logical_and_expr = { (logical_not? ~ comparison) ~ (logical_and ~ (logical_not? ~ comparison))* }
 logical_expr = { logical_and_expr ~ (logical_or ~ logical_and_expr)* }
+// Bitwise operators
+bit_or = { "|" }
+bit_xor = { "^" }
+bit_and = { "&" }
+bit_shl = { "<<" }
+bit_shr = { ">>" }
+
+bit_or_expr = { bit_xor_expr ~ (bit_or ~ bit_xor_expr)* }
+bit_xor_expr = { bit_and_expr ~ (bit_xor ~ bit_and_expr)* }
+bit_and_expr = { shift_expr ~ (bit_and ~ shift_expr)* }
+shift_expr = { range_expr ~ ((bit_shl | bit_shr) ~ range_expr)* }
 
 term = { primary ~ ((multiply | divide | modulo) ~ primary)* }
 arith_expr = { term ~ ((add | subtract) ~ term)* }
-expr = { logical_expr }
+// Range expressions like 1..10 or 1..10..2 (with step)
+range_op = { ".." }
+range_expr = { arith_expr ~ (range_op ~ arith_expr ~ (range_op ~ arith_expr)?)? }
+expr = { ternary | logical_expr }
 
 function_call = { identifier ~ "(" ~ expr_list? ~ ")" }
 expr_list = { expr ~ ("," ~ expr)* }
 list_literal = { "[" ~ expr_list? ~ "]" }
+// Curly brace list initialization (C-style)
+curly_list_literal = { "{" ~ expr_list? ~ ","? ~ "}" }
 
 // Dictionary literal
-dict_pair = { expr ~ ":" ~ expr }
-dict_literal = { "{" ~ (dict_pair ~ ("," ~ dict_pair)*)? ~ "}" }
+typed_dict_key = { type_ref ~ ident_or_template }
+dict_pair = { (typed_dict_key | expr) ~ ":" ~ expr }
+roll_vars = { "(" ~ identifier ~ ("," ~ identifier)* ~ ")" }
+roll_items = { "[" ~ (string | tuple_literal) ~ ("," ~ (string | tuple_literal))* ~ "]" }
+unroll_kw = { "#unroll" } // only #unroll
+unroll_directive = { unroll_kw ~ roll_vars ~ "for" ~ roll_items ~ "in" ~ string }
+dict_element = { unroll_directive | dict_pair }
+dict_literal = { "{" ~ (dict_element ~ ((","? ~ dict_element))* ~ ","?)? ~ "}" }
+tuple_literal = { "(" ~ expr ~ ("," ~ expr)* ~ ")" }
 
 // Circuit variable (inline conditional assignment)
 // Can be simple expression OR block with return
+// Condition can be: _, (expr), or bare comparison
+circuit_condition = { "_" | ("(" ~ expr ~ ")") | comparison }
 circuit_value = { block | expr }
-circuit_arm = { ("_" | ("(" ~ expr ~ ")")) ~ "->" ~ circuit_value ~ ";" }
+circuit_arm = { circuit_condition ~ "->" ~ circuit_value ~ (";" | ",")? }
 circuit_var = { "{" ~ circuit_arm+ ~ "}" }
 
-range = { expr ~ ".." ~ expr ~ (".." ~ expr)? }
+// Range for for loops: 1..10, 1..10..2 (with step), OR just an iterable expression
+range = { expr }
 
-// for x as 1..4 {}
-for_dot_dot = { identifier ~ "as" ~ range }
+// for x as 1..4 {} or for x in 1..4 {}
+for_in_kw = { "as" | "in" }
+for_dot_dot = { (keyword | identifier) ~ for_in_kw ~ expr }
 val_manipulate = {
     identifier ~ increment
   | identifier ~ decrement
@@ -177,23 +250,27 @@ val_manipulate = {
   | identifier ~ (( "+" | "*" | "^" | "/" | "-" ) ~ "=") ~ any_num
 }
 
-// for (int i = 0; i < 32; ++i) {}
-for_c = { "(" ~ (( type_spec ~ identifier ~ "=" ~ any_num ~ ";" ~ identifier ~ comparator ~ any_num ~ ";" ~ val_manipulate ) | ";;") ~ ")" }
+// for (int i = 0; i < 32; ++i) {} or for (i in expr) {}
+for_c = { "(" ~ (( type_spec ~ identifier ~ "=" ~ any_num ~ ";" ~ identifier ~ comparator ~ any_num ~ ";" ~ val_manipulate ) | ";;" | for_dot_dot) ~ ")" }
 for_loop = { "for" ~ ( for_dot_dot | for_c ) ~ block }
 
 // Function parameters
 kwargs_prefix = { "**" }
-param = { kwargs_prefix? ~ type_ref ~ identifier }
+pointer_suffix = { "*" }
+param_name = { keyword | identifier }
+param = { kwargs_prefix? ~ type_ref ~ pointer_suffix? ~ param_name ~ pointer_suffix? }
 param_list = { param ~ ("," ~ param)* }
+fn_param = { param | param_name }
+fn_param_list = { fn_param ~ ("," ~ fn_param)* }
 
 // Auto type inference: Replace 'auto' with inferred type based on the expression
 inferred_type = @{
     "auto"
 }
 
-var_decl_single = { (inferred_type | type_spec | class_name) ~ identifier ~ ("=" ~ expr)? }
-var_decl_multi = { (inferred_type | type_spec | class_name) ~ identifier ~ ("=" ~ expr)? ~ ("," ~ identifier ~ ("=" ~ expr)?)* }
-var_decl = { var_decl_multi ~ ";" }
+var_decl_single = { (inferred_type | type_spec | class_name) ~ "*"? ~ identifier ~ ("=" ~ expr)? }
+var_decl_multi = { (inferred_type | type_spec | class_name) ~ "*"? ~ identifier ~ ("=" ~ expr)? ~ ("," ~ identifier ~ ("=" ~ expr)?)* }
+var_decl = { var_decl_multi ~ ";"? }
 
 // Constexpr declaration - MUST have an expression that can be evaluated at compile time
 constexpr_decl = { "constexpr" ~ base_type? ~ identifier ~ "=" ~ expr ~ ";" }
@@ -201,10 +278,10 @@ constexpr_decl = { "constexpr" ~ base_type? ~ identifier ~ "=" ~ expr ~ ";" }
 // Function with optional return modifier
 func_decl = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
 
-// Class member (field or method)
+// Class member (field, method, or nested access section)
 class_field = { type_ref ~ identifier ~ ("=" ~ expr)? ~ ";" }
 class_method = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
-class_member = { class_field | class_method }
+class_member = { access_section | class_field | class_method }
 
 // Class access section
 access_section = { access_modifier ~ "{" ~ class_member* ~ "}" }
@@ -218,9 +295,13 @@ use_item = { use_feature | identifier }
 use_stmt = { "use" ~ use_item ~ ("," ~ use_item)* ~ ";" }
 include_stmt = { "include" ~ string ~ ("as" ~ identifier)? ~ ";" }
 
+// Assignment operators
+assign_op = { "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "=" }
 // Assignment (can assign circuit variable too!)
-assignment = { identifier ~ "=" ~ expr ~ ";" }
-property_assignment = { identifier ~ "." ~ identifier ~ "=" ~ expr ~ ";" }
+assignment = { identifier ~ assign_op ~ expr ~ ";"? }
+// Index assignment - primary[index] = expr
+index_assignment = { identifier ~ ("[" ~ expr ~ "]")+ ~ assign_op ~ expr ~ ";"? }
+property_assignment = { identifier ~ "." ~ identifier ~ assign_op ~ expr ~ ";"? }
 
 // Increment/Decrement statements
 inc_dec_stmt = { val_manipulate ~ ";" }
@@ -238,28 +319,79 @@ table_stmt = { "table" ~ table_name? ~ table_type? ~ identifier ~ "{" ~ table_ar
 with_block = { "{" ~ statement* ~ "}" }
 with_stmt = { "with" ~ with_block ~ ("and" ~ with_block)+ }
 
+// Enum declaration
+enum_value_name = { keyword | identifier }
+enum_value = { enum_value_name ~ (":" ~ number)? }
+enum_decl = { "enum" ~ base_type? ~ identifier ~ "=" ~ "{" ~ (enum_value ~ ","?)* ~ "}" ~ ";"? }
+
+// Struct declaration
+struct_field = { type_ref ~ identifier? ~ ("*")? ~ ";" }
+struct_decl = { "struct" ~ identifier ~ "{" ~ struct_field* ~ "}" }
+
+// Import statement (from vm_compile.mi)
+import_kw = @{ "import" ~ word_boundary }
+import_stmt = { import_kw ~ identifier ~ ";"? }
+
+// fn function declaration (alternate syntax)
+fn_decl = { "fn" ~ identifier ~ "(" ~ fn_param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
+
+// typedef: typedef typeof(expr) name; or typedef type name;
+typeof_expr = { "typeof" ~ "(" ~ expr ~ ")" }
+typedef_decl = { "typedef" ~ (typeof_expr | type_ref) ~ identifier ~ ";" }
+
+// let variable declaration (alternate syntax)
+let_decl = { "let" ~ identifier ~ (":" ~ type_ref)? ~ ("=" ~ expr)? ~ ";"? }
+
+// continue and break statements
+continue_stmt = { "continue" ~ ";"? }
+break_stmt = { "break" ~ ";"? }
+
+// del statement (delete/free)
+del_stmt = { "del" ~ identifier ~ ";" }
+
+// Attributes/annotations [[attr::name]]
+attribute_name = { identifier ~ ("::" ~ identifier)* }
+attribute = { "[[" ~ attribute_name ~ "]]" }
+attribute_stmt = { attribute ~ string ~ ";" }
+
 // Statements
 statement = {
-  macro_simple_def
+  macro_block
+  | macro_simple_def
   | macro_def
+  | check_directive
   | include_stmt
+  | import_stmt
   | use_stmt
+  | attribute_stmt
   | class_decl
+  | enum_decl
+  | struct_decl
   | constexpr_decl
+  | typedef_decl
   | if_stmt
   | try_stmt
   | func_decl
+  | fn_decl
   | return_stmt
+  | continue_stmt
+  | break_stmt
   | var_decl
+  | let_decl
+  | del_stmt
   | table_stmt
   | with_stmt
   | assignment
+  | index_assignment
   | property_assignment
   | inc_dec_stmt
   | exit_stmt
- | namespace_call ~ ";"
-  | function_call ~ ";"
-  | expr ~ ";"
+  | unroll_directive
+  | ternary_stmt
+  | block
+ | namespace_call ~ ";"?
+  | function_call ~ ";"?
+    | expr ~ ";"?
   | while_stmt
   | for_loop
 }
@@ -272,7 +404,7 @@ namespace_call = { identifier ~ "::" ~ identifier ~ "(" ~ expr_list? ~ ")" }
 top_statement = { statement }
 
 block = { "{" ~ statement* ~ "}" }
-if_stmt = { "if" ~ "(" ~ expr ~ ")" ~ block ~ (("elif" ~ "(" ~ expr ~ ")" ~ block)* ~ ("else" ~ block)?)? }
+if_stmt = { "if" ~ "(" ~ expr ~ ")" ~ block ~ ((("elif" | "else" ~ "if") ~ "(" ~ expr ~ ")" ~ block)* ~ ("else" ~ block)?)? }
 while_stmt = { "while" ~ "(" ~ expr ~ ")" ~ block }
-return_stmt = { "return" ~ expr? ~ ";" }
+return_stmt = { "return" ~ expr? ~ ";"? }
 program = { SOI ~ top_statement* ~ EOI }
