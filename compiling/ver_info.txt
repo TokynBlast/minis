@@ -1,0 +1,4 @@
+         Minis 0.1.0
+Copyright GNU Free Public License
+Minis is an open source programming language,
+which you are free to distribute at your own will.
