@@ -25,25 +25,39 @@ u8 main(u16 argc, list argv) {
     str file_cont = {
       fs::exist(file[i]) -> fs::open(files[i]).read(),
       _ -> {
-        print("File {} does not exist", file[i]);
+        print("File {} does not exist\n", file[i]);
         // by setting to true no matter what, we avoid
         // checking, then maybe we set. we just set.
         error = true;
         return '\0';
       }
     };
+    // we don't go through the memory possibly I/O
+    // heavy task of reading the file into memory
+    // if there was an error
     error ? continue : code.append(file_cont);
   }
+  // delete error if there wasn't one,
+  // otherwise exit on 1
   error ? exit(1) : del error;
 
+  // FIXME: Make it parse len(code), and each content, once
+  // len() is currently a heavy task
+
+  // i = all the files
+  // j = content of files
   for (i in 0..len(code)) {
     for (j in 0..len(code[i])) {
+      // we don't parse strings
+      // FIXME: add ability to do \"
       if (code[i][j] == '"') {
         while (code[i][j] != '"') {
           ++j;
         }
+      // check if character is an 'i', and that rest of code is within lenght of kw import
       } else if (code[i][j] == 'i' && j + 5 < len(code[i])) {
         bool imp = true;
+        // we check for 'i' to avoid checking entirety of import
         str kw = "mport";
         for (k in 0..5) {
           (code[i][j + k + 1] == kw[k]) ? continue : { imp = false; break; };
@@ -69,11 +83,17 @@ u8 main(u16 argc, list argv) {
           if (found) {
             code[i] = code[i][0..j] + import_file + code[i][start + 1..len(code[i])];
           } else {
-            print("Import file {} not found\n", file);
+            print("{}:{}:{}: file {} not found\n{}",
+                  files[i], // file name
+                  line,
+                  files[i][j], // char/column
+                  file, // name of file to be imported
+                  code[i].substr(line, line));
             error = true;
           }
         }
       }
+
     }
   }
 
