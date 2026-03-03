@@ -15,14 +15,14 @@ There are some modifiers that can also be used.
 
 Here is the general function style:
 ```
-<type> <name>() {}
+fn <type> <name>() {}
 ```
 This is the bare minimum. There are other things, like return modifiers.
 It allows for even more static typing.
-You can set things such as the constset, which is like const, but it cannot be changed after being set, and can be determined at runtime.
-Here is how an add function with a constset type would look:
+You can set things such as the onceset, which is like const, but it cannot be changed after being set, and can be determined at runtime.
+Here is how an add function with a onceset type would look:
 ```
-i128 add(i128 a i128 b) -> constset {
+fn i128 add(i128 a i128 b) -> onceset {
   return a + b;
 }
 ```
@@ -204,7 +204,7 @@ These modifiers are used in variables and functions.
 Here is the complete list, and what they do:
 
 ```
-constset - cannot change after being set; allowed to not be known at compile-time
+onceset - cannot change after being set; allowed to not be known at compile-time
 const - cannot be changed, must be known at compile time (will force alwaysinline if paired with function)
 static - makes a variable global once made
 ```
@@ -522,6 +522,7 @@ These are anything to do with conditional branches, that isn't already covered.
 ▐ █▌▛▘▛▌▀▌▛▘▌▌
 ▐ ▙▖▌ ▌▌█▌▌ ▙▌
             ▄▌
+
 ▄▖▐▘
 ▐ ▜▘
 ▟▖▐
