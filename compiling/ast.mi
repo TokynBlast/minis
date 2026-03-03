@@ -232,6 +232,10 @@ fn list astasize(str code, str file_name) {
       skipWS();
       return;
     } else if (code[pos] == '\n') { ln++; return; }
+
+    else {
+      // after handling other cases, we look to see if it may be keywords! :D
+    }
   }
 }
 
