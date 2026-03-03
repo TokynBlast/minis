@@ -12,7 +12,7 @@
 // for acessing afterwards
 
 enum u32 ast = {
-  for,
+  for_kw,
   fordd, // ..
   // we store it as operation =,
   // rather than creating new symbols
