@@ -286,7 +286,16 @@ list astasize(str code, str file_name) {
     }
   }
 }
-
+dict txt_to_type = {
+  #unroll (size) in [8, 16, 32, 64, 128, 256, 512] "\"u{size}\":u{size},"
+  #unroll (size) in [8, 16, 32, 64, 128, 256, 512] "\"i{size}\":i{size},"
+  "float":float,
+  "int":int,
+  "str":str,
+  "dict":dict
+  #unroll (type) in [str, float, dict, int] "\"{type}\":i{type},"
+  // we don't do array, since it has an infinite number of possibilities :(
+};
 /*
 General formations:
 
