@@ -249,7 +249,7 @@ list astasize(str code, str file_name) {
       while (code[pos] !in stoppers) { val += code[pos]; }
       table val {
         "for": {
-          code.append(ast[for_kw]);
+          fin_ast.append(ast[for_kw]);
           skipWS();
           if (code[++pos] != '(') {
             print("{}:{}:{}: Error: a for loop must have (. Make sure you didn't forget it!",
