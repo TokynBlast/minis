@@ -108,6 +108,7 @@ enum u16 ast = {
 
   in_kw,
 
+  nin, // !in
 
   escape, // \...
   escape_seq // ...sequence
