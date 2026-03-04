@@ -215,7 +215,7 @@ list astasize(str code, str file_name) {
           if (code[pos] == '[') {
             fin_ast.append(ast[lBracket]);
           #unroll [sym, name] for [('!', "not"), ('=', "eq"), ('>', "gt"),
-                               ('<', "lt"), ('+', "plus"), ('*', "tim"),
+                               ('<', "lt"), ('+', "plus"), ('*', "star"),
                                ('-', "min"), ('/', "div"), ('^', "carat"),
                                ('~', "tild"), ('{', "lBrace"), ('}', "rBrace"),
                                ('[', "lBracket"), (']', "rBracket"), ('(', "lParen"),
