@@ -14,9 +14,6 @@
 enum u16 ast = {
   for_kw,
   fordd, // ..
-  // we store it as operation =,
-  // rather than creating new symbols
-  // for every combo :)
   not,       // !
   eq,        // =
   neq,       // !=
