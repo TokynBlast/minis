@@ -49,18 +49,27 @@ enum u16 ast = {
   true_val,
   false_val,
   nil_val,
-  bool,
+  bool_type,
   triBool,
   string,
   arr, // array
-  int,
-  float,
+  int_type,
+  float_type,
   char_type,
   typedef,
 
-  size, // size of int, 8 to 1024
-  sign,
-  unsign,
+  u8_type,
+  u16_type,
+  u32_type,
+  u64_type,
+  u128_type,
+  u512_type,
+  i8_type,
+  i16_type,
+  i32_type,
+  i64_type,
+  i128_type,
+  i512_type.
 
   // with {} and {}
   with,
