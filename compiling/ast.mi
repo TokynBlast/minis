@@ -137,7 +137,8 @@ enum u16 ast = {
   struct_kw,
 
   complex_for,
-  simple_for
+  simple_for,
+  new_var
 };
 
 void skipWS() {
