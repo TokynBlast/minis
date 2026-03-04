@@ -11,7 +11,7 @@
 // 2. RAM overflow issues // comes from an LLVM revert from u32 -> u64 causing RAM overflow problems
 // for acessing afterwards
 
-enum u32 ast = {
+enum u16 ast = {
   for_kw,
   fordd, // ..
   // we store it as operation =,
