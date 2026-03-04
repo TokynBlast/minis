@@ -126,7 +126,10 @@ enum u16 ast = {
   place_hold_end,
 
   enum,
-  struct
+  struct,
+
+  complex_for,
+  simple_for
 };
 
 void skipWS() {
