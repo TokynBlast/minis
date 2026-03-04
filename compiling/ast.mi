@@ -242,16 +242,30 @@ fn list astasize(str code, str file_name) {
       array[list[char]] stoppers = ['[', '"', '\'', '{', ' ', '\n', 0..9];
       skipWS(); // even though this is a stopper, we do it for safety
       str val;
+      array[list[u32]] start_info = [ln, ln_pos];
       while (code[pos] !in stoppers) { val += code[pos]; }
       table val {
         "for": {
           code.append(ast[for_kw]);
           skipWS();
           if (code[++pos] != '(') {
-            print("{}:{}:{}: Error: a for loop must have (. Make sure you didn't forget it!");
+            print("{}:{}:{}: Error: a for loop must have (. Make sure you didn't forget it!",
+                  file_name, start_info[0], start_info[1]);
+            // TODO: ... next line ...
+            // We try to look for a ), or .. to let us know we can continue :)
           }
+
           // complex branch
           // for (define; check; increment) {}
+          for (i in ['u', 'i']) {
+            for (j in ['8', "16", "32", "64", "128", "512"]) {
+              for (k in 0..j.len()) {
+                if ((code[++pos] == i) && (code[pos+k] == j[k])) {
+                  u8 type = 0;
+                }
+              }
+            }
+          }
 
           // simple branch
           // for (i in 0..1) {} or for (0..1) {}
