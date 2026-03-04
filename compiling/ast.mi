@@ -19,6 +19,8 @@ enum u16 ast = {
   // for every combo :)
   not,       // !
   eq,        // =
+  neq,       // !=
+  diveq,     // /=
   isEQ,      // ==
   gt,        // >
   lt,        // <
