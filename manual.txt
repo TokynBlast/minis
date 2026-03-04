@@ -15,14 +15,14 @@ There are some modifiers that can also be used.
 
 Here is the general function style:
 ```
-fn <type> <name>() {}
+<type> <name>() {}
 ```
 This is the bare minimum. There are other things, like return modifiers.
 It allows for even more static typing.
 You can set things such as the onceset, which is like const, but it cannot be changed after being set, and can be determined at runtime.
 Here is how an add function with a onceset type would look:
 ```
-fn i128 add(i128 a i128 b) -> onceset {
+i128 add(i128 a i128 b) -> onceset {
   return a + b;
 }
 ```
