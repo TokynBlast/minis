@@ -144,7 +144,7 @@ void skipWS() {
 
 // TODO: implement use of sync with, to let other take over any
 // time there is space and it's not in quotes :3
-fn list astasize(str code, str file_name) {
+list astasize(str code, str file_name) {
   list fin_ast;
 
   static u32 ln = 1, ln_pos = 1;
