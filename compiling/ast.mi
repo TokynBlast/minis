@@ -69,7 +69,7 @@ enum u16 ast = {
   i32_type,
   i64_type,
   i128_type,
-  i512_type.
+  i512_type,
 
   // with {} and {}
   with,
