@@ -33,14 +33,12 @@ enum u16 ast = {
   fslash,    // /
   bslash,    // \
   star,      // *
-  mod,       // %
   colon,     // :
   dquote,    // "
   squote,    // '
   uscore,    // _
   at,        // @
   pound,     // #
-  star,      // *
   dot,       // .
   comma,     // ,
   semicolon, // ;
