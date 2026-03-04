@@ -220,7 +220,7 @@ list astasize(str code, str file_name) {
                                ('~', "tild"), ('{', "lBrace"), ('}', "rBrace"),
                                ('[', "lBracket"), (']', "rBracket"), ('(', "lParen"),
                                (')', "rParen"), (',', "comma"), ('.', "dot"),
-                               ('%', "mod"), (';', "semicolon"), ('*', "star")]
+                               ('%', "mod"), (';', "semicolon")]
           in "else if (code[pos] == '{sym}') { fin_ast.append(ast[{name}]) }"
             var += code[++pos];
           }
