@@ -45,7 +45,7 @@ enum u16 ast = {
   comma,     // ,
   semicolon, // ;
 
-  while,
+  while_kw,
   true_val,
   false_val,
   nil_val,
