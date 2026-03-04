@@ -46,9 +46,9 @@ enum u16 ast = {
   semicolon, // ;
 
   while,
-  true,
-  false,
-  nil,
+  true_val,
+  false_val,
+  nil_val,
   bool,
   triBool,
   string,
