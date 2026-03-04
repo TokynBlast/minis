@@ -83,11 +83,11 @@ enum u16 ast = {
   sqr,  // ^^
   mod,  // %
 
-  alwaysinline,
-  inline,
-  onceset,
-  const,
-  del,
+  alwaysinline_kw,
+  inline_kw,
+  onceset_kw,
+  const_kw,
+  del_kw,
   ternary_cond, // <this> ? :
   ternary_true, // ? <this> :
   ternary_false,// ? : <this>
@@ -96,17 +96,18 @@ enum u16 ast = {
 
   var,
 
-  class,
-  public,
-  private,
+  class_kw,
+  public_kw,
+  private_kw,
 
   classigrab, // class.thing() // class instance grab
   classgrab,  // class::thing // class grab
 
-  return,
-  throw,
+  return_kw,
+  throw_kw,
 
-  in,
+  in_kw,
+
 
   escape, // \...
   escape_seq // ...sequence
@@ -114,9 +115,9 @@ enum u16 ast = {
   // declared by someone on discord. if shall stay as
   // 17, no matter what changed occur.
   // New word for if? It becomes 17.
-  if: 17,
+  if_kw: 17,
   elif,
-  else,
+  else_kw,
 
   hex, // 0x483A
   bin, // 0b01011010
@@ -125,8 +126,8 @@ enum u16 ast = {
   place_hold_start, // {} in a char or string :)
   place_hold_end,
 
-  enum,
-  struct,
+  enum_kw,
+  struct_kw,
 
   complex_for,
   simple_for
