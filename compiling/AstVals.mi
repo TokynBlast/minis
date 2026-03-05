@@ -25,7 +25,7 @@ enum u16 ast = {
   xor,       // ^
   sqr,       // ^
   tild,      // ~
-  or,        // |
+  pipe,      // |
   amp,       // &
   ref,       // &var
   point,     // *var
