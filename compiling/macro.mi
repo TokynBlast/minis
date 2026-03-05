@@ -47,7 +47,9 @@ str* macro_expand(str* code, list macros) {
           } else {
             // look for a ), and set the global error val if it's not
             // then we continue till ), where if no ) is found, we error
-            // and look for a for
+            // and look for a for, error if none, then we go to [, to ],
+            // to in, (, ), and then finally ", where a missing double
+            // quote will end it :3
           }
         }
       };
