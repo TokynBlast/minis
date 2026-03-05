@@ -209,6 +209,24 @@ enum u16 ast = {
                       "dict", "char", "bool", "tribool"]
                       in "{size}VarRefReturn,"
 
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarPointConv,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarConv,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarRefConv,"
+
   table,
 
   scopeStart,
