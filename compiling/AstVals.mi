@@ -6,18 +6,30 @@
 // for acessing afterwards
 
 enum u16 ast = {
-  for_kw,
-  not,       // !
-  eq,        // =
-  neq,       // !=
-  diveq,     // /=
-  peq,       // +=
-  meq,       // -=
-  isEQ,      // ==
-  gt,        // >
-  lt,        // <
-  bShifLeft, // <<
-  bShifRight,// >>
+  not,         // !
+  eq,          // =
+  neq,         // !=
+  diveq,       // /=
+  peq,         // +=
+  meq,         // -=
+  isEQ,        // ==
+  gt,          // >
+  lt,          // <
+  bitShifLeft, // <<
+  bitShifRight,// >>
+  modEQ,       // %=
+  sqrEQ,       // ^=
+
+  kwarg,       // **kwargs
+
+  bitShiftLeftEQ, // <<=
+  bitShiftRightEQ,// >>=
+
+  macroBegin,
+  macroEnd,
+
+  escapeSeqStart, // \...
+  escapeSeqEnd, // determined usually by space, first char, etc. :)
 
   // we have the three possibilities as ^, because while they are the same in
   // source, they are different in output, which is what matters
@@ -51,26 +63,9 @@ enum u16 ast = {
   true_val,
   false_val,
   nil_val,
-  bool_type,
   triBool,
   string,
-  int_type,
-  float_type,
-  char_type,
   typedef,
-
-  u8_type,
-  u16_type,
-  u32_type,
-  u64_type,
-  u128_type,
-  u512_type,
-  i8_type,
-  i16_type,
-  i32_type,
-  i64_type,
-  i128_type,
-  i512_type,
 
   // with {} and {}
   with_kw,
@@ -80,8 +75,8 @@ enum u16 ast = {
   try_kw,
   catch_kw,
   // function...
-  fncall, // ...call
-  fndef,  // ...define
+  fnCall, // ...call
+  fnDef,  // ...define
 
   lBrace,   // {
   rBrace,   // }
@@ -97,14 +92,16 @@ enum u16 ast = {
   inline_kw,
   onceset_kw,
   const_kw,
+  constexpr_kw,
   del_kw,
-  ternary_cond, // <this> ? :
-  ternary_true, // ? <this> :
-  ternary_false,// ? : <this>
+  ternaryCond, // <this> ? :
+  ternaryTrue, // ? <this> :
+  ternaryFalse,// ? : <this>
+  ternaryStart,
+  ternaryEnd,
 
-  circuit,
-
-  var,
+  circuitStart,
+  circuitEnd,
 
   class_kw,
   public_kw,
@@ -121,7 +118,7 @@ enum u16 ast = {
   nin, // !in
 
   escape, // \...
-  escape_seq // ...sequence
+  escapeSeq // ...sequence
 
   // declared by someone on discord. if shall stay as
   // 17, no matter what changed occur.
@@ -140,11 +137,54 @@ enum u16 ast = {
   enum_kw,
   struct_kw,
 
-  for_loop,
-  new_var,
+  forLoopStart,
+  forLoopEnd,
+  forCheck,
+  forIncrement,
 
-  for_check,
-  for_increment,
+  // used in other places
+  for_kw,
 
-  table
+  import,
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarPointMake,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarMake,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarRefMake,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarRefGet,"
+
+    #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarPointGet,"
+
+  #unroll (size) for ["str", "int", "float", "u8", "u16", "u32",
+                      "u64", "u128", "u256", "u512", "i8", "i16",
+                      "i32", "i64", "i128", "i256", "i512", "list",
+                      "dict", "char", "bool", "tribool"]
+                      in "{size}VarGet,"
+
+  table,
+
+  scopeStart,
+  scopeEnd
 };
