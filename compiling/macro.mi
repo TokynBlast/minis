@@ -43,7 +43,7 @@ str* macro_expand(str* code, list macros) {
             ++i;
           }
           if (code[i] == '(') {
-
+            code += '(';
           } else {
             // look for a ), and set the global error val if it's not
             // then we continue till ), where if no ) is found, we error
