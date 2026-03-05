@@ -78,6 +78,10 @@ enum u16 ast = {
   fnCall, // ...call
   fnDef,  // ...define
 
+  // For passing things
+  fnPassStart,
+  fnPassEnd,
+
   lBrace,   // {
   rBrace,   // }
   lBracket, // [
