@@ -7,13 +7,6 @@
 
 import AstVals;
 
-dict num_to_type = {
-  #unroll (size) in [8, 16, 32, 64, 128, 256, 512] "\"u{size}\":ast[u{size}_type],"
-  #unroll (size) in [8, 16, 32, 64, 128, 256, 512] "\"i{size}\":ast[i{size}_type],"
-  "float":float,
-  "int":int,
-};
-
 void skipWS() {
   while (pos < sz && code[pos] == ' ') {
     ++pos;
