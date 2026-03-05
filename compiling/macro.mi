@@ -1,0 +1,68 @@
+// This file parses macros :3
+
+// stored as lists over dicts, since a list is an offset,
+// a dict has to search for a key
+list macros = [
+  ["__VERSION__", "0.1.0"],
+];
+
+str* macro_expand(str* code, list macros) {
+  str output = "";
+  u64 len = code.len();
+  u64 i = 0;
+
+  while (i < len) {
+    if (code[i] == '"') {
+      while (true) {
+        if (i > len) {
+          print("{}:{}:{}: UnclosedStrError: String was never close.\n", "file name", 0, 0);
+          exit(1);
+        } else if (code[i] == '"') {
+          output += '"';
+          break;
+        } else {
+          if (code[i] == '\\') {
+            output += '\{code[++i]}';
+          }
+          // continue if not :3
+        }
+      }
+    } else if (code[i] == '#') {
+      ++i;
+      str mac = "";
+      while (code[i] != ' ') {
+        // Macro we found :3
+        mac += code[i];
+        ++i;
+      }
+      table mac {
+        "unroll" -> {
+          list vars = [];
+          // check for (
+          while (code[i] == ' ') {
+            ++i;
+          }
+          if (code[i] == '(') {
+
+          } else {
+            // look for a ), and set the global error val if it's not
+            // then we continue till ), where if no ) is found, we error
+            // and look for a for
+          }
+        }
+      };
+    } else {
+      // TODO: Make it so it does replacements too :)
+      output += code;
+    }
+    ++i;
+  }
+}
+
+bool is_identifier_start(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+bool is_identifier_char(char c) {
+  return is_identifier_start(c) || (c >= '0' && c <= '9');
+}
