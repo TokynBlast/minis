@@ -139,11 +139,70 @@ list astasize(str code, str file_name) {
             for (j in ['8', "16", "32", "64", "128", "512"]) {
               for (k in 0..j.len()) {
                 if ((code[++pos] == i) && (code[pos+k] == j[k])) {
-                  u8 type = 0;
+                  fin_ast.append(ast[complex_for]);
+                  fin_ast.append(ast[new_var]);
+                  fin_ast.append(ast[txt_to_type[i+j]]);
+                  str varname;
+                  array[list[u32]] start_info = [ln, ln_pos];
+                  --pos;
+                  while (true) {
+                    ++pos;
+                    varname += {
+                      (code[pos] == ' ') -> {
+                        // we first check for an = before we assume there's a space in the variable name :D
+                        while(code[pos] == ' ' && pos < sz) { pos++; }
+                        if (pos >= sz) { print("Error: Complex for loop incomplete"); exit(1); }
+                        if (code[pos] != '=') {
+                          print("{}:{}:{}: Error: There needs to be an '=' following a decleation. Make sure you didn't forget!\n",
+                                 file_name, start_info[0], start_info[1]);
+                        }
+
+                        ++pos;
+
+                        str num;
+
+                        while (code[pos] != ';') {
+                          num += code[pos];
+                          // when more is added, expand to a full branch tree :)
+                          // i got really confused... soooo... this is gonna be saved for later,
+                          // so it doesn't cause problems with compiling down the road :3
+                          /*
+                          code[pos] == ' ' ? {
+                            print("{}:{}:{}: Error: variable has a space\n",
+                                 file_name, start_info[0], start_info[1]);
+                            exit(1);
+                          } : continue;
+                          */
+                        }
+
+                        fin_ast.append(ast[for_check]);
+
+                        while (code[pos] != ';') {
+                          // being a bit lazy :3
+                          #unroll [sym, name] for [('!', "not"), ('=', "eq"), ('>', "gt"),
+                                ('<', "lt"), ('+', "plus"), ('*', "star"),
+                                ('-', "min"), ('/', "div"), ('^', "carat"),
+                                ('~', "tild"), ('{', "lBrace"), ('}', "rBrace"),
+                                ('[', "lBracket"), (']', "rBracket"), ('(', "lParen"),
+                                (')', "rParen"), (',', "comma"), ('.', "dot"),
+                                ('%', "mod"), ('=', "eq")]
+                          in "fin_ast.append(ast[{name}]);"
+                        }
+
+                      } break;
+
+                      // TODO?: should be expaneded
+                    }
+                  }
+
                 }
               }
             }
           }
+
+          // fall through :3
+          // simple is more common to use, and should go first
+          // but, it's a bit harder to manage-
 
           // simple branch
           // for (i in 0..1) {} or for (0..1) {}
