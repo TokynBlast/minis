@@ -121,6 +121,7 @@ enum u16 ast = {
   throw_kw,
 
   in_kw,
+  break_kw,
 
   nin, // !in
 
