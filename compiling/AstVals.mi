@@ -107,6 +107,9 @@ enum u16 ast = {
   public_kw,
   private_kw,
 
+  classInitStart,
+  classInitEnd,
+
   classigrab, // class.thing() // class instance grab
   classgrab,  // class::thing // class grab
 
