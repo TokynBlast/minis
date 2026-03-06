@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Plan to slowly upgrade when needed
 // ! WARNING !
 // SKIP C11 FOR C17/C18!
@@ -274,3 +278,7 @@ void print(const char* text) {
   if (!text) return;
   fputs(text, stdout);
 }
+
+#ifdef __cplusplus
+}
+#endif
