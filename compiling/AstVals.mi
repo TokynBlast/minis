@@ -161,23 +161,23 @@ enum u16 ast = {
   // this is hell-
   #unroll (kind) for ["Make", "Get", "Return", "Conv"]
   in "
-  #unroll (size) for [\"str\", \"int\", \"float\", \"u8", \"u16", \"u32\",
+  #unroll (size) for [\"str\", \"int\", \"float\", \"u8\", \"u16\", \"u32\",
                       \"u64\", \"u128\", \"u256\", \"u512\", \"i8\", \"i16\",
                       \"i32\", \"i64\", \"i128\", \"i256\", \"i512\", \"list\",
-                      \"dict\", \"char\", \"bool\", \"tribool\"]
+                      \"dict\", \"char\", \"bool\", \"tribool\", \"void\"]
                       in \"\{size\}VarPoint{kind},\"
 
   #unroll (size) for [\"str\", \"int\", \"float\", \"u8\", \"u16\", \"u32\",
-                      \"u64\", \"u128", \"u256\", \"u512\", \"i8\", \"i16\",
+                      \"u64\", \"u128\", \"u256\", \"u512\", \"i8\", \"i16\",
                       \"i32\", \"i64\", \"i128\", \"i256\", \"i512\", \"list\",
-                      \"dict\", \"char\", \"bool\", \"tribool\"]
-                      in "\{size\}Var{kind}},\"
+                      \"dict\", \"char\", \"bool\", \"tribool\", \"void\"]
+                      in \"\{size\}Var{kind},\"
 
   #unroll (size) for [\"str\", \"int\", \"float\", \"u8\", \"u16\", \"u32\",
-                      \"u64\", \"u128\", \"u256", \"u512\", \"i8\", \"i16\",
+                      \"u64\", \"u128\", \"u256\", \"u512\", \"i8\", \"i16\",
                       \"i32\", \"i64\", \"i128\", \"i256\", \"i512\", \"list\",
-                      \"dict\", \"char\", \"bool\", \"tribool\"]
-                      in "\{size\}VarRef{kind},\"
+                      \"dict\", \"char\", \"bool\", \"tribool\", \"void\"]
+                      in \"\{size\}VarRef{kind},\"
 "
 
   table,
