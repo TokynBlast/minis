@@ -1,2 +1,4 @@
          Minis 0.1.0 Prerelease
-This version is unstable and incomplete
+This version is unstable, and may have major undiscovered bugs.
+Do NOT use in production for now.
+Copyright (C) Ruri/Mei, and other contributors 2026
