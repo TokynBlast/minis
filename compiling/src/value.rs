@@ -1,4 +1,6 @@
 // value.rs - Runtime values
+#![allow(dead_code)]
+
 use crate::ast::Type;
 
 #[derive(Debug, Clone)]

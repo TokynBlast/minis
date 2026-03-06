@@ -1,4 +1,5 @@
 // AST (Abstract Syntax Tree) definitions for Vedit
+#![allow(dead_code)]
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {

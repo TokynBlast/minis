@@ -453,6 +453,7 @@ fn run_opt(ir: &str, level: &str) -> Result<String, String> {
   Ok(stdout)
 }
 
+#[allow(dead_code)]
 fn run_llvm_as(ir: &str, output_path: &str) -> Result<(), String> {
   let mut child = Command::new("llvm-as")
     .arg("-o")
@@ -540,7 +541,13 @@ fn compile_to_binary(ir: &str, output_path: &str, _target_triple: &str, extra_ob
 
 fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
   let cwd = env::current_dir().map_err(|err| format!("failed to get cwd: {err}"))?;
-  let runtime_src = cwd.join("src").join("runtime").join("builtins.cpp");
+  // Try both current directory and parent directory for runtime
+  let mut runtime_src = cwd.join("src").join("runtime").join("builtins.cpp");
+  if !runtime_src.exists() {
+    if let Some(parent) = cwd.parent() {
+      runtime_src = parent.join("src").join("runtime").join("builtins.cpp");
+    }
+  }
   if !runtime_src.exists() {
     return Ok(None);
   }
@@ -550,19 +557,20 @@ fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
     .to_string_lossy()
     .to_string();
 
-  let mut candidates: Vec<&str> = vec!["cc", "clang", "gcc"];
+  // Use C++ compilers since builtins.cpp is C++ code
+  let mut candidates: Vec<&str> = vec!["g++", "c++", "clang++"];
   if cfg!(target_os = "windows") {
-    candidates = vec!["clang", "gcc", "cc"];
+    candidates = vec!["clang++", "g++", "c++"];
   }
 
-  let mut last_err: Option<String> = None;
+  let mut _last_err: Option<String> = None;
   for tool in candidates {
     let output = Command::new(tool)
       .arg("-c")
       .arg(runtime_src.as_os_str())
       .arg("-o")
       .arg(&runtime_obj)
-      .arg("-std=c99")
+      .arg("-fpermissive")  // Allow implicit void* conversions in C++
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
       .output();
@@ -571,10 +579,10 @@ fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
       Ok(out) if out.status.success() => return Ok(Some(runtime_obj)),
       Ok(out) => {
         let stderr = String::from_utf8_lossy(&out.stderr);
-        last_err = Some(format!("{tool}: {stderr}"));
+        _last_err = Some(format!("{tool}: {stderr}"));
       }
       Err(err) => {
-        last_err = Some(format!("{tool}: failed to start compiler: {err}"));
+        _last_err = Some(format!("{tool}: failed to start compiler: {err}"));
       }
     }
   }
@@ -624,6 +632,7 @@ fn link_object(obj_path: &str, output_path: &str, extra_objects: &[String]) -> R
 #[derive(Debug, Clone)]
 enum TypeChoice {
   Single(String),
+  #[allow(dead_code)]
   Variant(Vec<String>, bool),
 }
 
@@ -807,6 +816,7 @@ struct ModuleContext {
   global_vars: Vec<GlobalVar>,
   global_map: HashMap<String, String>,
   /// Maps module alias to set of function names
+  #[allow(dead_code)]
   modules: HashMap<String, HashSet<String>>,
 }
 
@@ -1015,9 +1025,9 @@ fn llvm_type(type_name: &str) -> String {
   }
   match type_name {
     "i8" | "u8" => "i8".to_string(),
-    "i16" | "ui16" => "i16".to_string(),
-    "i32" | "ui32" => "i32".to_string(),
-    "i64" | "ui64" | "int" => "i64".to_string(),
+    "i16" | "u16" | "ui16" => "i16".to_string(),
+    "i32" | "u32" | "ui32" => "i32".to_string(),
+    "i64" | "u64" | "ui64" | "int" => "i64".to_string(),
     "float" => "double".to_string(),
     "bool" => "i1".to_string(),
     "tribool" => "i8".to_string(),
@@ -1497,13 +1507,13 @@ fn parse_param_list(pair: pest::iterators::Pair<Rule>) -> Vec<(TypeChoice, Strin
       continue;
     }
     let mut inner = param.into_inner();
-    let mut is_variadic = false;
+    let mut _is_variadic = false;
     let mut first_pair = inner.next();
 
     // Check if first pair is kwargs_prefix
     if let Some(ref p) = first_pair {
       if p.as_rule() == Rule::kwargs_prefix {
-        is_variadic = true;
+        _is_variadic = true;
         first_pair = inner.next();
       }
     }
@@ -1686,6 +1696,7 @@ fn emit_block_ir_with_return(
   false
 }
 
+#[allow(dead_code)]
 fn emit_statement_ir(pair: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
   emit_statement_ir_with_return(pair, ret_ty, func, module, true)
 }
@@ -1762,6 +1773,18 @@ fn emit_statement_ir_with_return(
     }
     Rule::var_decl => {
       let mut inner = inner_pair.into_inner();
+      // var_decl contains var_decl_multi, unwrap it
+      let var_decl_multi = if let Some(multi) = inner.next() {
+        if multi.as_rule() == Rule::var_decl_multi {
+          multi
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      };
+
+      let mut inner = var_decl_multi.into_inner();
       let mut type_name: Option<String> = None;
       let mut last_slot: Option<(String, String)> = None;
       while let Some(next) = inner.next() {
@@ -1771,11 +1794,17 @@ fn emit_statement_ir_with_return(
           }
           Rule::identifier => {
             let name = next.as_str().to_string();
-            let llvm_ty = llvm_type(type_name.as_deref().unwrap_or("int"));
+            let type_str = type_name.as_deref().unwrap_or("int");
+            // Check if it's a class type - use %ClassName* format
+            let llvm_ty = if module.classes.contains_key(type_str) {
+              format!("%{}*", type_str)
+            } else {
+              llvm_type(type_str)
+            };
             let slot = func.new_temp();
             func.emit(format!("{} = alloca {}", slot, llvm_ty));
-            func.locals.insert(name.clone(), (llvm_ty, slot));
-            last_slot = func.locals.get(&name).cloned();
+            func.locals.insert(name.clone(), (llvm_ty.clone(), slot.clone()));
+            last_slot = Some((llvm_ty, slot));
           }
           Rule::expr => {
             if let Some(value) = emit_expr_value(next, func, module) {
@@ -2036,7 +2065,7 @@ fn emit_for_dot_dot(spec: pest::iterators::Pair<Rule>, body: pest::iterators::Pa
 
 fn emit_for_c(spec: pest::iterators::Pair<Rule>, body: pest::iterators::Pair<Rule>, ret_ty: &str, func: &mut FunctionContext, module: &mut ModuleContext) -> bool {
   // for (int i = 0; i < 32; ++i) {}
-  let mut inner = spec.into_inner();
+  let inner = spec.into_inner();
 
   // Parse C-style for: type_spec identifier = value ; identifier comparator value ; val_manipulate
   let mut type_name: Option<String> = None;
@@ -2232,7 +2261,7 @@ fn emit_property_assignment(pair: pest::iterators::Pair<Rule>, func: &mut Functi
 }
 
 fn emit_constexpr_decl(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
-  let mut inner = pair.into_inner();
+  let inner = pair.into_inner();
   let mut type_name: Option<String> = None;
   let mut var_name: Option<String> = None;
   let mut expr: Option<pest::iterators::Pair<Rule>> = None;
@@ -2261,7 +2290,7 @@ fn emit_constexpr_decl(pair: pest::iterators::Pair<Rule>, func: &mut FunctionCon
 
 fn emit_let_decl(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) {
   // let identifier (: type_ref)? (= expr)?
-  let mut inner = pair.into_inner();
+  let inner = pair.into_inner();
   let mut var_name: Option<String> = None;
   let mut type_name: Option<String> = None;
   let mut expr: Option<pest::iterators::Pair<Rule>> = None;
@@ -2548,6 +2577,7 @@ fn emit_namespace_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionCon
   func.emit(format!("call i64 @{}({})", func_name, args_str));
 }
 
+#[allow(dead_code)]
 fn emit_module_tail_call(pair: pest::iterators::Pair<Rule>, _obj: ValueIR, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
   // This handles: identifier :: functionName ( args ) as an expression (though we'll likely not use this)
   // The obj is ignored since this is a function call, not a method call
@@ -2757,6 +2787,18 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
     Rule::bit_xor_expr => emit_bit_xor_expr(pair, func, module),
     Rule::bit_and_expr => emit_bit_and_expr(pair, func, module),
     Rule::shift_expr => emit_shift_expr(pair, func, module),
+    Rule::range_expr => {
+      // For now, just unwrap and recursively process (ranges not fully implemented)
+      let mut inner = pair.clone().into_inner();
+      let first = inner.next()?;
+      if inner.next().is_none() {
+        // No range operator, just a single arith_expr
+        emit_expr_value(first, func, module)
+      } else {
+        // Has range operator - not implemented yet, return None
+        None
+      }
+    }
     Rule::arith_expr => emit_arith_expr(pair, func, module),
     Rule::term => emit_term_expr(pair, func, module),
     Rule::primary => {
@@ -2765,18 +2807,23 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
       let mut result = emit_expr_value(base, func, module)?;
 
       // Process postfix operations (method calls, member access, indexing)
-      for postfix in inner {
-        match postfix.as_rule() {
-          Rule::method_tail => {
-            result = emit_method_call(postfix, result, func, module)?;
+      for postfix_wrapper in inner {
+        // postfix = { index_tail | method_tail | member_tail }
+        // Need to unwrap the postfix to get the actual tail
+        let mut postfix_inner = postfix_wrapper.into_inner();
+        if let Some(postfix) = postfix_inner.next() {
+          match postfix.as_rule() {
+            Rule::member_tail => {
+              result = emit_member_access(postfix, result, func, module)?;
+            }
+            Rule::method_tail => {
+              result = emit_method_call(postfix, result, func, module)?;
+            }
+            Rule::index_tail => {
+              result = emit_index_access(postfix, result, func, module)?;
+            }
+            _ => {}
           }
-          Rule::member_tail => {
-            result = emit_member_access(postfix, result, func, module)?;
-          }
-          Rule::index_tail => {
-            result = emit_index_access(postfix, result, func, module)?;
-          }
-          _ => {}
         }
       }
       Some(result)
@@ -2987,7 +3034,7 @@ fn emit_comparison(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
           func.emit(format!("{} = icmp ne {} {}, 0", tmp, right.ty, right.val));
           ValueIR { ty: "i1".to_string(), val: tmp }
         } else { right.clone() };
-        let from_eval = func.new_label("from_eval");
+        let _from_eval = func.new_label("from_eval");
         func.emit(format!("br label %{}", end_label));
 
         func.emit(format!("{}:", short_label));
@@ -3262,6 +3309,7 @@ fn emit_circuit_var(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContex
   }
 }
 
+#[allow(dead_code)]
 fn emit_circuit_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
   match pair.as_rule() {
     Rule::block => {
@@ -3409,6 +3457,7 @@ fn parse_type_name(pair: pest::iterators::Pair<Rule>) -> Option<String> {
   }
 }
 
+#[allow(dead_code)]
 fn print_pairs(pairs: Pairs<Rule>, indent: usize, input: &str) {
   for pair in pairs {
     let rule = pair.as_rule();
@@ -3455,6 +3504,7 @@ fn print_pairs(pairs: Pairs<Rule>, indent: usize, input: &str) {
   }
 }
 
+#[allow(dead_code)]
 fn literal_text(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   match pair.as_rule() {
     Rule::string => {
@@ -3486,6 +3536,7 @@ fn literal_text(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   }
 }
 
+#[allow(dead_code)]
 fn concat_expr_list(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   if pair.as_rule() != Rule::expr_list {
     return None;
@@ -3508,6 +3559,7 @@ fn concat_expr_list(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   Some(parts.join(""))
 }
 
+#[allow(dead_code)]
 fn concat_list_literal(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   if pair.as_rule() != Rule::list_literal {
     return None;
@@ -3522,6 +3574,7 @@ fn concat_list_literal(pair: &pest::iterators::Pair<Rule>) -> Option<String> {
   concat_expr_list(&expr_list)
 }
 
+#[allow(dead_code)]
 fn get_line_col(input: &str, pos: usize) -> (usize, usize) {
   let mut line = 1;
   let mut col = 1;
@@ -3541,6 +3594,7 @@ fn get_line_col(input: &str, pos: usize) -> (usize, usize) {
   (line, col)
 }
 
+#[allow(dead_code)]
 fn should_skip_rule(rule: &Rule, child_count: usize, pair: &pest::iterators::Pair<Rule>) -> bool {
   // Always skip statement wrappers (they're purely organizational)
   match rule {
@@ -3581,6 +3635,7 @@ fn should_skip_rule(rule: &Rule, child_count: usize, pair: &pest::iterators::Pai
   }
 }
 
+#[allow(dead_code)]
 fn summarize_text(text: &str) -> String {
   // Replace escape sequences with actual characters
   let mut cleaned = text.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r");
@@ -3599,6 +3654,7 @@ fn summarize_text(text: &str) -> String {
   }
 }
 
+#[allow(dead_code)]
 fn show_multiline(text: &str) -> String {
   let lines: Vec<&str> = text.lines().collect();
   if lines.len() <= 3 {
@@ -3609,6 +3665,7 @@ fn show_multiline(text: &str) -> String {
   }
 }
 
+#[allow(dead_code)]
 fn diagnose_error(text: &str) -> String {
   let trimmed = text.trim();
 
@@ -3632,6 +3689,7 @@ fn diagnose_error(text: &str) -> String {
   }.to_string()
 }
 
+#[allow(dead_code)]
 fn diagnose_block_error(text: &str) -> String {
   let trimmed = text.trim();
 

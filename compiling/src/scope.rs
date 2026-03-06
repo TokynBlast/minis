@@ -1,4 +1,6 @@
 // scope.rs - Manages variable scopes
+#![allow(dead_code)]
+
 use hashbrown::HashMap;
 use crate::ast::TypeSpec;
 use crate::value::Value;
