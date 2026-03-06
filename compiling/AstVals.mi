@@ -20,16 +20,24 @@ enum u16 ast = {
   modEQ,       // %=
   sqrEQ,       // ^=
 
-  kwarg,       // **kwargs
+  NotValBegin, // !(...
+  NotValEnd,   //   ...)
+
+  Kwarg,       // **kwargs
 
   bitShiftLeftEQ, // <<=
   bitShiftRightEQ,// >>=
 
-  macroBegin,
-  macroEnd,
+  MacroBegin,
+  MacroPragma,
+  MacroIf,
+  MacroIfDef,
+  MacroIfNDef,
+  MacroPragmaOnce,
+  MacroEnd,
 
-  escapeSeqStart, // \...
-  escapeSeqEnd, // determined usually by space, first char, etc. :)
+  EscapeSeqStart, // \...
+  EscapeSeqEnd, // determined usually by space, first char, etc. :)
 
   // we have the three possibilities as ^, because while they are the same in
   // source, they are different in output, which is what matters
@@ -56,8 +64,8 @@ enum u16 ast = {
   comma,     // ,
   semicolon, // ;
 
-  if_and, // &&
-  if_or,  // ||
+  IfAnd, // &&
+  IfOr,  // ||
 
   while_kw,
   true_val,
@@ -94,66 +102,87 @@ enum u16 ast = {
 
   alwaysinline_kw,
   inline_kw,
-  onceset_kw,
-  const_kw,
-  constexpr_kw,
-  del_kw,
-  ternaryCond, // <this> ? :
-  ternaryTrue, // ? <this> :
-  ternaryFalse,// ? : <this>
-  ternaryStart,
-  ternaryEnd,
+  OnceSetKW,
+  ConstSetKW,
+  ConstExprKW,
+  DelKW,
+  TernaryCond, // <this> ? :
+  TernaryTrue, // ? <this> :
+  TernaryFalse,// ? : <this>
+  TernaryStart,
+  TernaryEnd,
 
-  circuitStart,
-  circuitEnd,
+  CircuitStart,
+  CircuitEnd,
 
-  class_kw,
-  public_kw,
-  private_kw,
+  // classes :3
+  ClassKW,
+  PublicKW,
+  PrivateKW,
 
+  ClassMakeStart
+  ClassMakeEnd
   classInitStart,
   classInitEnd,
 
-  classigrab, // class.thing() // class instance grab
-  classgrab,  // class::thing // class grab
+  StaticKW,
 
-  return_kw,
-  throw_kw,
 
-  in_kw,
-  break_kw,
+  NonStaticClassFunction, // x = class; x.thing()
+  StaticClassFunction,         // class::thing
+
+  SelfKWPoint,
+  SelfKWRef,
+  SelfKW,
+
+  OtherKWPoint,
+  OtherKWRef,
+  OtherKW,
+
+  ClassPublicStart,
+  ClassPublicEnd,
+  ClassPrivateStart,
+  ClassPrivateEnd,
+
+  ReturnKW,
+  ThrowKW,
+
+  InKW,
+  BreakKW,
 
   nin, // !in
 
-  escape, // \...
-  escapeSeq // ...sequence
+  Escape, // \...
+  EscapeSeq // ...sequence
+  EscapeSeqEnd
 
   // declared by someone on discord. if shall stay as
   // 17, no matter what changed occur.
   // New word for if? It becomes 17.
-  if_kw: 17,
-  elif,
-  else_kw,
+  IfKW: 17,
+  ElseIf,
+  ElseKW,
 
   hex, // 0x483A
   bin, // 0b01011010
   num, // other numbers
 
-  place_hold_start, // {} in a char or string :)
-  place_hold_end,
+  // TODO: we may not need these
+  StrPlaceHolderStart, // {} in a char or string :)
+  StrPlaceHolderEnd,
 
-  enum_kw,
-  struct_kw,
+  EnumKW,
+  StructKW,
 
-  forLoopStart,
-  forLoopEnd,
-  forCheck,
-  forIncrement,
+  ForLoopStart,
+  ForLoopEnd,
+  ForCheck,
+  ForIncrement,
 
   // used in other places
-  for_kw,
+  ForKW,
 
-  import,
+  ImportKW,
 
   // make a way to simplify this further-
 
@@ -180,8 +209,8 @@ enum u16 ast = {
                       in \"\{size\}VarRef{kind},\"
 "
 
-  table,
+  Table,
 
-  scopeStart,
-  scopeEnd
+  ScopeStart,
+  ScopeEnd
 };
