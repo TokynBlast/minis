@@ -52,6 +52,10 @@ class player {
     void invPrint() {
       print(inventory);
     }
+
+    void addItem(str item) {
+      inventory += item;
+    }
   }
   private {
     list inventory;
@@ -72,12 +76,13 @@ u8 main() {
   p.move(10, 20);
   p.setHealth(10);  // Clamps to 100
 
+  print(p.health, "\n");
+  print("hoi :3\n");
   if (p.health == 32) {
-    error("Error...", "\n", "i don know D:");
+    print("Error...", "\n", "i don know D:\n");
   } else {
-    if (p.health == 10) {
-      error("arf");
-    }
+    print("woof\n");
   }
+  print("RETURNINGGGGGGGGG");
   return 0;
 }
