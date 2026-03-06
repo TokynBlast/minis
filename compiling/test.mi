@@ -58,12 +58,12 @@ class player {
   }
 }
 
-i8 main() {
+u8 main() {
   print("hoi :3\n");
 
   print("big number\n");
 
-  i64 bigCounter = 99999999999999999999999999999999;
+  u64 bigCounter = 99999999999999999999999999999999;
   print(bigCounter);
 
   print("\nboig noomber\n");
