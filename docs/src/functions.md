@@ -27,7 +27,7 @@ static
 constexpr
 ```
 
-Here is a 
+Here is an add example, where it is determined at compile time, and the value is stuck in place of where it was called.
 ```minis
 int add(int a, int b) -> constexpr {
     return a + b;
@@ -35,3 +35,5 @@ int add(int a, int b) -> constexpr {
 ```
 
 ## Return Types
+Functions have all of the regular types from u8-i512.
+Plus some extras, like void.
