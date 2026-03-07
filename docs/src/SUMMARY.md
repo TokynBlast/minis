@@ -8,3 +8,5 @@
 - [Classes](./classes.md)
 - [Tables](./tables.md)
 - [Scopes](./scopes.md)
+- [Optomizing](./optomize.md)
+- [Definitions](./defines.md)
