@@ -57,8 +57,8 @@ hljs.registerLanguage('minis', function (hljs) {
   return {
     name: 'Minis',
     keywords: {
-      keyword: 'return import as for while if else break class public private self void auto enum struct other',
-      type: 'u8 u16 u32 u64 u128 u256 i8 i16 i32 i64 i128 i256 int float bool tribool list dict str char auto void',
+      keyword: 'union usafe return import as for while if else break class public private self void auto enum struct other this',
+      type: 'u8 u16 u32 u64 u128 u256 u512 i8 i16 i32 i64 i128 i256 i512 int float bool tribool list dict str char auto void',
       literal: 'true false nil',
       built_in: 'print println clamp len',
     },
