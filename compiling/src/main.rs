@@ -789,6 +789,7 @@ struct GlobalVar {
 struct ClassField {
   ty: String,
   name: String,
+  default_val: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -959,6 +960,11 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
 
   let self_name = inst.class_name.as_ref().map(|_| "__self".to_string());
   let is_main = inst.name == "main";
+
+  if inst.name.contains("setHealth") {
+    eprintln!("DEBUG setHealth block_text: {:?}", inst.block_text);
+  }
+
   let mut func = FunctionContext::new(ret_ty.clone(), inst.class_name.clone(), self_name, is_main);
   for (ty, name) in &inst.params {
     let llvm_ty = llvm_type(ty);
@@ -1395,7 +1401,11 @@ fn parse_class_field(pair: pest::iterators::Pair<Rule>) -> Option<ClassField> {
   })?;
 
   let name = inner.next()?.as_str().to_string();
-  Some(ClassField { ty, name })
+
+  // Check for default value
+  let default_val = inner.next().map(|expr| expr.as_str().to_string());
+
+  Some(ClassField { ty, name, default_val })
 }
 
 fn parse_class_method(pair: pest::iterators::Pair<Rule>) -> Option<ClassMethod> {
@@ -2609,13 +2619,31 @@ fn emit_class_new(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext,
   let mut inner = pair.into_inner();
   let class_name = inner.next()?.as_str().to_string();
 
-  if !module.classes.contains_key(&class_name) {
-    return None;
-  }
+  let class_def = module.classes.get(&class_name)?.clone();
 
   // Allocate space for the struct: %obj = alloca %ClassName
   let tmp = func.new_temp();
   func.emit(format!("{} = alloca %{}", tmp, class_name));
+
+  // Initialize default field values
+  for (field_idx, field) in class_def.fields.iter().enumerate() {
+    if let Some(default_expr_str) = &field.default_val {
+      // Parse and evaluate the default expression
+      if let Ok(mut pairs) = MiniParser::parse(Rule::expr, default_expr_str) {
+        if let Some(expr_pair) = pairs.next() {
+          if let Some(val) = emit_expr_value(expr_pair, func, module) {
+            let field_type = llvm_type(&field.ty);
+            let ptr = func.new_temp();
+            func.emit(format!("{} = getelementptr %{}, %{}* {}, i32 0, i32 {}",
+              ptr, class_name, class_name, tmp, field_idx));
+            let coerced = coerce_value_to_type(val, &field_type, func)
+              .unwrap_or_else(|| ValueIR { ty: field_type.clone(), val: "0".to_string() });
+            func.emit(format!("store {} {}, {}* {}", coerced.ty, coerced.val, field_type, ptr));
+          }
+        }
+      }
+    }
+  }
 
   // For now, just return the allocated pointer
   // TODO: Initialize default field values
