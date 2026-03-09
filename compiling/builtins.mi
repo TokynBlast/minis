@@ -145,7 +145,7 @@ bool isLetter(str* char) {
     0x840..0x858, // mandic
     0x870..0x882, // arabic part 5
     0x8A0..0x8C7, // arabic part 6
-    0x904..0x393, // devanagari
+    0x904..0x393  // devanagari
   }
   // check every char to see if it's a letter or number
   // We check characters last, since they take longest :)
