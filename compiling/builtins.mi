@@ -35,13 +35,18 @@ void println(**kwargs vals) {
   print(vals, "\n");
 }
 
-auto max(list max_find) {
-  u64 ls_len = len(max_find);
-  prev_big = max_find[0];
-  for i as 0..ls_len {
-    if (max_find[i] < prev_big) {
-      prev_big = max_find;
-    }
+
+// return any value, which we can garuntee will be a number of some type.
+void* max(variant<str, list>& ToFindMax) {
+  // FIXME: We need to make sure we're comparing same types :)
+  try {
+    Biggest = ToFindMax[0];
+  catch {
+    print("List must be ");
+    exit(1);
+  }
+  for i as 0..len(ToFindMax) {
+    ToFindMax[i] < &Biggest ? Biggest = ToFindMax[i] : continue;
   }
 }
 
