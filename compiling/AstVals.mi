@@ -170,6 +170,8 @@ enum u16 ast = {
   EnumKW,
   StructKW,
 
+  ForLoopParamStart
+  ForLoopParamEnd
   ForLoopStart,
   ForLoopEnd,
   ForCheck,
