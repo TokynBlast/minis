@@ -1,4 +1,4 @@
 .vscode/
 compiling/target
 *.o
-./docs/book
+docs/book
