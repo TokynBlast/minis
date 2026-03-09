@@ -174,8 +174,8 @@ enum u16 ast = {
   ForLoopParamEnd
   ForLoopStart,
   ForLoopEnd,
-  ForCheck,
-  ForIncrement,
+  ForLoopCheck,
+  ForLoopIncrement,
 
   // used in other places
   ForKW,
