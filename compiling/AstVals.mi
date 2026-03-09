@@ -67,21 +67,21 @@ enum u16 ast = {
   IfAnd, // &&
   IfOr,  // ||
 
-  while_kw,
-  true_val,
-  false_val,
-  nil_val,
-  triBool,
-  string,
-  typedef,
+  WhileKW,
+  TrueVal,
+  FalseVal,
+  NilVal,
+  TriBool,
+  String,
+  TypedefKW,
 
   // with {} and {}
-  with_kw,
-  wand,
-  sync_kw,
+  WithKW,
+  WAnd,
+  SyncKW,
 
-  try_kw,
-  catch_kw,
+  TryKW,
+  CatchKW,
   // function...
   fnCall, // ...call
   fnDef,  // ...define
@@ -100,8 +100,8 @@ enum u16 ast = {
   sqr,  // ^^
   mod,  // %
 
-  alwaysinline_kw,
-  inline_kw,
+  AlwaysInlineKW,
+  InlineKW,
   OnceSetKW,
   ConstSetKW,
   ConstExprKW,
