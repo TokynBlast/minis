@@ -10,7 +10,7 @@ struct chainLink {
 // First item in list or string
 struct chainHeader {
   chainLink &start;
-  u64 *length;
+  u256 *length;
 }
 
 // whole number :)
