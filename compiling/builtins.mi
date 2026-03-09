@@ -1,16 +1,22 @@
-// First item in list or string
-struct chainHeader {
-  u64 start*;
-  u64 length*;
-}
+import templ.mi;
 
 // Every other item :)
 struct chainLink {
-  u64 next*;
-  // Since the value could be any type, we use auto to let the compiler
-  // generate the use case :3
-  variant<list, value*;
+  u64 &next;
+  // Since the value could be any type, we use a pointer to a void, so we accept any type! :D
+  void *value;
 }
+
+// First item in list or string
+struct chainHeader {
+  chainLink &start;
+  u64 *length;
+}
+
+// whole number :)
+typedef wnum variant<u8, u16, u32, u64, u256, u512, i8, i16, i32, i64, i256, i512, int, time_t, size_t>;
+// any num
+typedef anum variant<u8, u16, u32, u64, u256, u512, i8, i16, i32, i64, i256, i512, int, time_t, size_t, float>;
 
 // FIXME: Make it get the chainHeader length value instead
 auto variant<u8, u16, u32, u64> len(auto variant<list, str> to_count) {
