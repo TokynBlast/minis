@@ -92,7 +92,7 @@ enum u16 ast = {
   rParen,   // )
 
   Sqr,  // ^^
-  mod,  // %
+  Mod,  // %
 
   AlwaysInlineKW,
   InlineKW,
