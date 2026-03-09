@@ -46,6 +46,8 @@ Minis has many, many types. This will walk you through them all, with examples o
 
 ### void
 The `void` type can change meaning depending on whether it is a function, or a value.
+In a value, it can be any type. In a function, it means there will be no returned value.
+Further, a `void*` (void pointer), means any return type.
 
 ### _t type
 The `_t` type is probably one of the most important types.
