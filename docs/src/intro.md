@@ -21,10 +21,9 @@ bool main() {
   return true;
 }
 ```
+> [!NOTE]
+> It is usually recommended to return an `int` type over a set size so you can utilize the full range of return error numbers.
 
-```admonish note
-It is usually recommended to return an `int` type over a set size so you can utilize the full range of return error numbers.
-```
 
 ## Safety
 
