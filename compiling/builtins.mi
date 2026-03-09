@@ -21,7 +21,7 @@ typedef anum variant<u8, u16, u32, u64, u256, u512, i8, i16, i32, i64, i256, i51
 // FIXME: Make it get the chainHeader length value instead
 wnum len(variant<list, str> to_count) {
   u64 length = 0,
-      i = 0;
+  i = 0;
 
   // Go till null terminator
   while (to_count[i] != '\0') {
