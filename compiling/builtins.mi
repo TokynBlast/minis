@@ -4,7 +4,7 @@ import templ.mi;
 struct chainLink {
   u64 &next;
   // Since the value could be any type, we use a pointer to a void, so we accept any type! :D
-  void *value;
+  void* value;
 }
 
 // First item in list or string
