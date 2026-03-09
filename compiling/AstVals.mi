@@ -40,7 +40,6 @@ enum u16 ast = {
   // source, they are different in output, which is what matters
   Carrat,    // ^
   Xor,       // ^
-  Sqr,       // ^
   Tild,      // ~
   Pipe,      // |
   Amp,       // &
@@ -92,7 +91,7 @@ enum u16 ast = {
   lParen,   // (
   rParen,   // )
 
-  sqr,  // ^^
+  Sqr,  // ^^
   mod,  // %
 
   AlwaysInlineKW,
