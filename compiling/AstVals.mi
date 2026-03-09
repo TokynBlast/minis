@@ -20,9 +20,6 @@ enum u16 ast = {
   modEQ,       // %=
   sqrEQ,       // ^=
 
-  NotValBegin, // !(...
-  NotValEnd,   //   ...)
-
   Kwarg,       // **kwargs
 
   bitShiftLeftEQ, // <<=
