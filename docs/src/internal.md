@@ -13,7 +13,7 @@ x == 10 ? continue : print("not 10 :(\n");
 ```
 After the first parse, it will become...
 ```minis-ast
-IntKW x eq 10 Semicolon x eq eq 10 QuestionMark ContinueKW Colon fnCall print LParen str "not 10 :(\n" RParen Semicolon
+int x eq 10 Semicolon x eq eq 10 QuestionMark ContinueKW Colon fnCall print lParen str "not 10 :(\n" rParen Semicolon
 ```
 This is super basic and literal. It is unoptomized. The next check is an optomization pass, where the AST drops so much literalness, and pattern matches things.
 Once this happens, over multiple passes, it becomes...
