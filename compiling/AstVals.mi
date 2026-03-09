@@ -19,6 +19,7 @@ enum u16 ast = {
   bitShifRight,// >>
   modEQ,       // %=
   sqrEQ,       // ^=
+  QuestionMark,// ?
 
   Kwarg,       // **kwargs
 
