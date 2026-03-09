@@ -35,5 +35,6 @@ int add(int a, int b) -> constexpr {
 ```
 
 ## Return Types
-Functions have all of the regular types from u8-i512.
-Plus some extras, like void.
+Function return types are required. They tell the program what to expect.
+The only way to tell the program to expect anything at all. Whether it be a string, an int, etc., is with `void*`.
+Though, `void*` is really dangerous, as accepting *ANY* type can lead to corruption or misuse of data.
