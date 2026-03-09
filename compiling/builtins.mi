@@ -31,8 +31,6 @@ wnum len(variant<list, str> to_count) {
   return length;
 }
 
-// FIXME: This should print more efficiently?
-//        Or atleast better formatting
 void println(**kwargs vals) {
   print(vals, "\n");
 }
