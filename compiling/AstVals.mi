@@ -101,6 +101,7 @@ enum u16 ast = {
   ConstSetKW,
   ConstExprKW,
   DelKW,
+  ContinueKW,
   TernaryCond, // <this> ? :
   TernaryTrue, // ? <this> :
   TernaryFalse,// ? : <this>
