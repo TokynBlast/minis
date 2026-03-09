@@ -161,8 +161,8 @@ auto clamp(auto num, auto min, auto max) {
   #assert min < max
   #assert min != max
   return {
-    min > num -> min,
-    max < num -> max,
+    min >= num -> min,
+    max <= num -> max,
     _ -> num
   };
 }
