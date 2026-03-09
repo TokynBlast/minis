@@ -113,7 +113,6 @@ bool isAlphanumeric(variant<char*, str*> c) {
 // Community contributions are greatly appreciated!
 
 bool isLetter(str* char) {
-  [[compile::warn]] "The funciton isLangChar is experimental and incomplete.";
   // FIXME: These need to be verified for correctness :)
   list characters = {
     0x41..0x5A,   // upper alpha
