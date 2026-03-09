@@ -39,7 +39,7 @@ enum u16 ast = {
   // we have the three possibilities as ^, because while they are the same in
   // source, they are different in output, which is what matters
   Carrat,    // ^
-  Xor,       // ^
+  XOR,       // ^
   Tild,      // ~
   Pipe,      // |
   Amp,       // &
