@@ -206,8 +206,7 @@ enum u16 ast = {
                       \"u64\", \"u128\", \"u256\", \"u512\", \"i8\", \"i16\",
                       \"i32\", \"i64\", \"i128\", \"i256\", \"i512\", \"list\",
                       \"dict\", \"char\", \"bool\", \"tribool\", \"void\"]
-                      in \"\{size\}VarRef{kind},\"
-"
+                      in \"\{size\}VarRef{kind},\""
 
   Table,
 
