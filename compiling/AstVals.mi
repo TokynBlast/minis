@@ -38,20 +38,18 @@ enum u16 ast = {
 
   // we have the three possibilities as ^, because while they are the same in
   // source, they are different in output, which is what matters
-  carrat,    // ^
-  xor,       // ^
-  sqr,       // ^
-  tild,      // ~
-  pipe,      // |
-  amp,       // &
-  ref,       // &var
-  point,     // *var
-  min,       // -
-  plus,      // +
-  fslash,    // /
-  bslash,    // \
-  star,      // *
-  colon,     // :
+  Carrat,    // ^
+  Xor,       // ^
+  Sqr,       // ^
+  Tild,      // ~
+  Pipe,      // |
+  Amp,       // &
+  Min,       // -
+  Plus,      // +
+  FSlash,    // /
+  BSlash,    // \
+  Star,      // *
+  Colon,     // :
   dquote,    // "
   squote,    // '
   uscore,    // _
