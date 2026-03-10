@@ -76,7 +76,7 @@ You come to a problem. The compiler will yell at you.
 ```minis-error
 Error: main.mi:3:0: Redefining class `¶Apple¶` from apple.mi.
 │
-├→ First definition of Apple: apple.mi
+├→ Initial definition of class Apple: apple.mi
 │  │
 │  ╰─┬───────────────────╮
 │    │ §// apple.mi§       │
@@ -84,7 +84,7 @@ Error: main.mi:3:0: Redefining class `¶Apple¶` from apple.mi.
 │    │   §public {§        │
 │    │     §int mass = 0;§ │
 │    ╰───────────────────╯
-├→ Redefenition of Apple: main.mi
+├→ Redefenition of class Apple: main.mi
 │  │
 │  ╰─┬───────────────────╮
 │    │ §// main.mi§        │
