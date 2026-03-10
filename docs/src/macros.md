@@ -21,8 +21,19 @@ Or, you can just define it.
 The `#if` macro is used to check for something at compile time. This ranges from hardware, to features, to things in the language.
 
 ## ifdef
+The `#ifdef` macro will check simply if a macro is defined. It does not care about whether or not it has a value associated, or what that value is.
 
 ## ifndef
+When `#ifdef` returns true, this will return false.
+It checks if it doesn't exist.
+A really useful case is...
+```minis
+#ifndef var
+  #def var
+#endif
+```
+That way, if `var` already exist, you don't overwrite it. This is especially useful if you just want the var to exist, and you don't care about the value.
+Another piece of code can define the same, where `var` has a value the other person's code needs, but you don't need.
 
 ## unroll
 
