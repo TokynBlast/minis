@@ -2,7 +2,7 @@
 
 - [Introduction](./intro.md)
 - [Functions](./functions.md)
-- [Built Ins](./builtin.md)
+- [Builtins](./builtin.md)
 - [Macros](./macros.md)
 - [Variables](./variables.md)
 - [For Loops](./loops.md)
