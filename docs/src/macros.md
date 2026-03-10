@@ -74,7 +74,7 @@ import apple;
 ```
 You come to a problem. The compiler will yell at you.
 ```minis-error
-Error: main.mi:3:0: Redefining class `¶Apple¶` from apple.mi.
+Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
 │
 ├→ Initial definition of class Apple: apple.mi
 │  │
