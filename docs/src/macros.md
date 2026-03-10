@@ -144,3 +144,5 @@ It is used to warn about something wile compiling.
 ### debug
 This will emit debugging symbols for a specific part of the code, whether debugging is on or off.
 
+### breakpoint
+This will add a yield to the code, so that it pauses at that spot during runtime.
