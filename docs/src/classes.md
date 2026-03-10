@@ -51,3 +51,18 @@ The private class is for safety and seperation.
 ## Initalization
 The initalization is a function that lives within the public section.
 It is called when making a new instance of a class. When running it, you can run functions, set variables, and so on, where the only limit is what you can do with Minis.
+
+
+## Static Functions
+A static function is a function, where you do not need to make or initalize a class. Instead, you can call it like `ClassName::Function`.
+It specifically uses `::`, because `::` refers to the class as a whole when there is no initalization required.
+If you initalize a class, then you use `.` to perform specific operations on the class datsa.
+A prime example is like so:
+```minis
+types::string x = "Hello, World!";
+x.print();
+```
+> [!NOTE]
+> This is not how you make a string, it is a hypotehtical, and an example.
+
+This example also dives into the idea of a static function being the intializer. This is absolutely possible.
