@@ -24,7 +24,6 @@ bool main() {
 > [!NOTE]
 > It is usually recommended to return an `int` type over a set size so you can utilize the full range of return error numbers.
 
-
 ## Safety
 
 Like Rust, Minis is meant to be safe. It does this via explicit declaration, garunteed initalization, and a WYSWYG model. What you see, is what you get.
