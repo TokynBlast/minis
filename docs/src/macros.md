@@ -121,3 +121,7 @@ removed.
 
 ### hot
 `#pragma hot` will tell the compiler that the following function is rarely used, and should be optimized like so, where the funciton should be as fast as possible at the loss of a small size.
+
+### depreceated
+Using this macro will warn at compile time that a function is depreceated, and give the alternative, new function (if any) to use.
+You put it before the function is declared.
