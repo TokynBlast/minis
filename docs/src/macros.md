@@ -92,7 +92,8 @@ Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
 │    │ §import apple;§     │
 │    │ ^~~~~~~~~~~~~     │
 │    ╰───────────────────╯
-╰→ Maybe you forgot to include `¶#pragma once¶`?
+╰→ Based on origins of each class, did you
+   forget to include `¶#pragma once¶`?
 ```
 The errors in Minis are pretty errors. They are meant to be helpful, and easy to look at.
 The `#pragma` macro will fix this, by keeping a list of what has been imported, and making sure to not include twice.
