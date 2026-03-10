@@ -101,3 +101,75 @@ hljs.registerLanguage('minis-ast', function (hljs) {
     ]
   };
 });
+
+hljs.registerLanguage('minis-error', function (hljs) {
+  return {
+    name: 'Minis Error',
+    contains: [
+      {
+        className: 'box',
+        begin: /[╰─┬│├┤┼╭╮╯┌┐└┘┃━┏┓┗┛╔╗╚╝║═→←↑↓⟺~^]+/
+      },
+      {
+        className: 'label',
+        begin: /[├╰]→/
+      },
+      {
+        // §//comment§ — comment starting with // ending at §
+        className: 'comment',
+        begin: /§\/\//,
+        end: /§/,
+        excludeBegin: true,
+        excludeEnd: true,
+      },
+      {
+        className: 'suggest',
+        begin: /¶/,
+        end: /¶/,
+        excludeBegin: true,
+        excludeEnd: true,
+      },
+      {
+        // § ... § region — full syntax highlighting inside, § hidden
+        begin: /§/,
+        end: /§/,
+        excludeBegin: true,
+        excludeEnd: true,
+        contains: [
+          hljs.QUOTE_STRING_MODE,
+          hljs.C_NUMBER_MODE,
+          {
+            className: 'meta',
+            begin: /#(ifdef|def|ifndef|if|embed|pragma|unroll)\b/
+          },
+          {
+            className: 'keyword',
+            begin: /\b(return|import|as|for|while|if|else|break|class|public|private|self|void|auto|enum|struct|other|with|and|sync|continue)\b/
+          },
+          {
+            className: 'type',
+            begin: /\b(u8|u16|u32|u64|u128|u256|i8|i16|i32|i64|i128|i256|int|float|bool|tribool|list|dict|str|char)\b/
+          },
+          {
+            className: 'literal',
+            begin: /\b(true|false|nil)\b/
+          },
+          {
+            className: 'built_in',
+            begin: /\b(print|println|clamp|len)\b/
+          },
+          {
+            className: 'title',
+            begin: /[a-zA-Z_]\w*(?=\s*\()/
+          },
+        ]
+      },
+    ]
+  };
+});
+
+hljs.addPlugin({
+  'after:highlight': (result) => {
+    result.value = result.value.replace(/§/g, '').replace(/¶/g, '');
+  }
+});
