@@ -21,7 +21,6 @@ int* add(int a, int b) {
 In Minis, return modifiers are placed afterwards, and modify how the returned value works.
 You can add the following:
 ```minis
-onceset
 const
 static
 constexpr
