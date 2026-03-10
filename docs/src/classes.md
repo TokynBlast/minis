@@ -30,11 +30,10 @@ class Apple {
 }
 ```
 
-```admonish note
-The eat funciton is purposely left blank, and will not be filled in.
-It is to show there can be empty functions in Minis.
-These will usually be optimized out. There is a page dedicated to explaining optimizations.
-```
+> [!NOTE]
+> The eat funciton is purposely left blank. It is to showcase an empty class function.
+> [!NOTE]
+> Minis will warn if you do `*self` or `self`. It is better to alias.
 
 ## Public
 A class must have a public section. These are things that are accesable from outside of the class.
