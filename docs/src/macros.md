@@ -92,8 +92,7 @@ Error: main.mi:3:0: Redefining class `¶Apple¶` from apple.mi.
 │    │ §import apple;§     │
 │    │ ^~~~~~~~~~~~~     │
 │    ╰───────────────────╯
-╰→ Based on origin of redefention,
-   Did you forget to include `¶#pragma once¶`?
+╰→ Maybe you forgot to include `¶#pragma once¶`?
 ```
 The errors in Minis are pretty errors. They are meant to be helpful, and easy to look at.
 The `#pragma` macro will fix this, by keeping a list of what has been imported, and making sure to not include twice.
