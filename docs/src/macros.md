@@ -137,3 +137,7 @@ int x = 32;
 ```
 The output program will be ~400 bytes, since defining an int of x as 32 takes up virtually no storage.
 
+### warn
+`#pragma warn()` will warn about something at compile time.
+It is used to warn about something wile compiling.
+
