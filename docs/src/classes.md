@@ -33,7 +33,7 @@ class Apple {
 ```admonish note
 The eat funciton is purposely left blank, and will not be filled in.
 It is to show there can be empty functions in Minis.
-These will usually be optomized out. There is a page dedicated to explaining optomizations.
+These will usually be optimized out. There is a page dedicated to explaining optomizations.
 ```
 
 ## Public
