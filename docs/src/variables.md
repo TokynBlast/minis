@@ -68,3 +68,10 @@ It will ignore [SIMD](./defines.md#)
 ## Modifiers
 A modifier changes how the program can interact with a variable.
 It changes things like lifetime, where it is stored, if it can change, and more.
+
+### static
+Making a variable static makes it so that once set, it can no longer be changed. It is permanent.
+
+> [!NOTE]
+> This is program side.
+> If another application modifies the variable in RAM, Minis cannot stop it.
