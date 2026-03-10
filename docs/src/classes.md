@@ -45,8 +45,8 @@ Public also usually hosts *most* static functions. This does not mean the privat
 The private section is only able to be accessed from within the class.
 This is where variables usually live, or other functions that don't need to be used from outside the class.
 Although, you can put everything in a private section, this is not recommended, as that is unsafe and may cause confusion.
-
-The private class is for safety
+You cannot initalize a class, then from there try to access it directly. You must use a class-provided function to do so.
+The private class is for safety and seperation.
 
 ## Initalization
 The initalization is a function that lives within the public section.
