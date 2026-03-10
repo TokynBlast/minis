@@ -125,3 +125,7 @@ removed.
 ### depreceated
 Using this macro will warn at compile time that a function is depreceated, and give the alternative, new function (if any) to use.
 You put it before the function is declared.
+
+### align
+This will allow you to align the data in memory to a specific point. It is useful for constraints, or systems where putting something to a specific point will give better performance.
+
