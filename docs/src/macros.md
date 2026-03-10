@@ -141,3 +141,6 @@ The output program will be ~400 bytes, since defining an int of x as 32 takes up
 `#pragma warn()` will warn about something at compile time.
 It is used to warn about something wile compiling.
 
+### debug
+This will emit debugging symbols for a specific part of the code, whether debugging is on or off.
+
