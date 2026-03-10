@@ -4,6 +4,18 @@ Macros are bits of code processed before anything else is done.
 They are parsed as they it goes along. There is no particular order in which they are parsed.
 
 ## def
+The `#def` macro defines a value that is only alive during compilation.
+It is used for branching, like with [`#if`](./macros.md#if), [`#ifdef`](./macros.md#ifdef), [`#ifndef`](./macros.md#ifndef), and so on.
+The compiler also defines some values too.
+The `#def` macro can be formatted in one of two ways.
+Giving it a value,
+```minis
+#def value 32
+```
+Or, you can just define it.
+```minis
+#def value
+```
 
 ## if
 The `#if` macro is used to check for something at compile time. This ranges from hardware, to features, to things in the language.
