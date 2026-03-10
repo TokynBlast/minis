@@ -64,3 +64,7 @@ It cannot be converted to any other other type, unless it is a copy.
 #### size
 The `size_t` type will set the number to be the largest size of integer the CPU can handle natively and naturally.
 It will ignore [SIMD](./defines.md#)
+
+## Modifiers
+A modifier changes how the program can interact with a variable.
+It changes things like lifetime, where it is stored, if it can change, and more.
