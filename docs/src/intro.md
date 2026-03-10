@@ -36,4 +36,4 @@ A lot of the Minis safety comes from Rust ideas. The syntax is both organic and 
 
 ## Speed
 
-By default, Minis tries to be as safe as possible with the data. It avoids copying unless explicitly told to, uses all features to it's abilities, tries to minimize size of [O](./defines.md#o). How much Minis does, depends what optomization level you have set the program to.
+By default, Minis tries to be as safe as possible with the data. It avoids copying unless explicitly told to, uses all features to it's abilities, tries to minimize size of [O](./defines.md#o). How much Minis does, depends what optimization level you have set the program to.
