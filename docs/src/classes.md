@@ -39,6 +39,7 @@ class Apple {
 A class must have a public section. These are things that are accesable from outside of the class.
 The public sector is usually where thigs like functions live.
 Something that *MUST*  live within the private section, is the initalization function. For more, read [this](./classes.md#initalization).
+Public also usually hosts *most* static functions. This does not mean the private section cannot hold static functions.
 
 ## Private
 The private section is only able to be accessed from within the class.
