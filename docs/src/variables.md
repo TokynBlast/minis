@@ -6,6 +6,10 @@ In Minis, a variable is garunteed to be initalized upon declaration.
 This means that if you make a variable, even if you set no value, it has grabbed the memory to put something there.
 A string will grab
 
+## Global
+A global variable in Minis is accesable from any point in the program. It is defined outside of the `main()` function.
+There area a few equvilant ways to do make a global variable but not in the true global scope. These are [modifers](./variables.md#modifiers).
+
 ## Ownership <!-- TODO: Change this to explain how ownership works, not what it does internally -->
 
 In Minis, if you move a variable, or set another variable to that value, minis by default does name moving.
