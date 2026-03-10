@@ -6,6 +6,7 @@ They are parsed as they it goes along. There is no particular order in which the
 ## def
 
 ## if
+The `#if` macro is used to check for something at compile time. This ranges from hardware, to features, to things in the language.
 
 ## ifdef
 
