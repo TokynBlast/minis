@@ -115,3 +115,8 @@ there's a small chance where file1 has x
 removed.
 -->
 
+### cold
+`#pragma cold` will tell the compiler that the following function is rarely used, and should be optimized like so, where the funciton should be as small as possible at the loss of speed.
+
+### hot
+`#pragma hot` will tell the compiler that the following function is rarely used, and should be optimized like so, where the funciton should be as fast as possible at the loss of a small size.
