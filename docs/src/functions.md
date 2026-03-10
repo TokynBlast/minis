@@ -33,6 +33,8 @@ int add(int a, int b) -> constexpr {
 }
 ```
 
+To read more, check out [here](./variables.md#modifiers).
+
 ## Return Types
 Function return types are required. They tell the program what to expect.
 The only way to tell the program to expect anything at all. Whether it be a string, an int, etc., is with `void*`.
