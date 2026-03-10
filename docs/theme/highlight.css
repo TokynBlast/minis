@@ -81,3 +81,11 @@
   color: #b31d28;
   background-color: #ffeef0;
 }
+
+.hljs-box {
+  color: #FF0000;
+}
+
+.hljs-suggest {
+  color: #1AC74B
+}
