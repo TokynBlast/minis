@@ -97,3 +97,22 @@ Error: main.mi:3:0: Redefining class `¶Apple¶` from apple.mi.
 ```
 The errors in Minis are pretty errors. They are meant to be helpful, and easy to look at.
 The `#pragma` macro will fix this, by keeping a list of what has been imported, and making sure to not include twice.
+
+### optimize
+The `#optimize` macro allows you to turn on, or off optimizations for a specific block.
+If you do `#optimize(off)`, but never do `#optimize(on)` later (within the same file), Minis will warn you.
+There is no way to set different optimization levels between files. The different optimization levels are set via args. You can only tell the compiler to not touch certain parts, but that is as far as it goes.
+
+<!--
+Say you have...
+// file1.mi
+int x() {}
+
+file2.mi
+x();
+
+if you have file1 be O3, but file2 be O0,
+there's a small chance where file1 has x
+removed.
+-->
+
