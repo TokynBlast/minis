@@ -83,3 +83,6 @@ Some things are already constexpr with some [optimizations](./optimize.md), like
 int x = (1 + 99) / 2;
 ```
 `x` will become `100`.
+
+### const
+The `const` modifier will make the variable immutable and global. It *must* be initalized.
