@@ -129,3 +129,11 @@ You put it before the function is declared.
 ### align
 This will allow you to align the data in memory to a specific point. It is useful for constraints, or systems where putting something to a specific point will give better performance.
 
+### pack
+This will pack the output machine code so that the point on disk to there will match the specified number of bytes.
+```minis
+int x = 32;
+#pragma pack(400)
+```
+The output program will be ~400 bytes, since defining an int of x as 32 takes up virtually no storage.
+
