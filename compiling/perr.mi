@@ -95,7 +95,6 @@ class error {
 }
 
 /*
-```minis-error
 Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
 │
 ├→ Initial definition of class Apple: apple.mi
@@ -116,22 +115,4 @@ Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
 │    ╰───────────────────╯
 ╰→ Based on origins of each class, did you
    forget to include `#pragma once`?
-   */
-
-
-/*
-│    │ // apple.mi       │
-│    │ class Apple {     │
-│    │   public {        │
-│    │     int mass = 0; │
-│    ╰───────────────────╯
-├→ Redefenition of class Apple: main.mi
-│
-╰─┬───────────────────╮
-  │ // main.mi        │
-  │ import fruits;    │
-  │ import apple;     │
-  │ ^~~~~~~~~~~~~     │
-  ╰───────────────────╯
-→
 */
