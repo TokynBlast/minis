@@ -19,7 +19,7 @@ A for loop allows for a more complex loops than a while loop. It has a value rel
 The syntax is like so...
 ```minis
 for (<type> <name> = <value>; <thing to check>; <how to increment>) {}
-``
+```
 Alternatively, you can leave them all blank, and do it more like a while loop...
 ```minis
 for (;;) {}
