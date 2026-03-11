@@ -35,3 +35,7 @@ A lot of the Minis safety comes from Rust ideas. The syntax is both organic and 
 ## Speed
 By default, Minis tries to be as safe as possible with the data. It avoids copying unless explicitly told to, uses all features to it's abilities, tries to minimize size of [O](./defines.md#o). How much Minis does, depends what optimization level you have set the program to.
 Minis is designed for competetive programming. There are some things you can do to make it even faster too. But by default, Minis doesn't enable these things, as they can cause issues in stability, portability, ammong other things.
+
+## Compile-time Vs. Run-time
+Compile time has a lot more restricitons and capabilities than runtime does.
+Things like `const`, `static`, and more, are safety features for the compiler. It isn't easy to do the same to the runtime, where the RAM can have an error, and a value gets changed.
