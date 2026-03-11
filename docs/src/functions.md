@@ -34,6 +34,8 @@ int add(int a, int b) -> constexpr {
 ```
 
 To read more, check out [here](./variables.md#modifiers).
+## Function Modifiers
+Unlike *return* modifiers, a funciton modifier will affect how the funciton itself is handled.
 
 ## Return Types
 Function return types are required. They tell the program what to expect.
