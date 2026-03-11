@@ -16,7 +16,8 @@ This will add a string to somewhere, where it will wait to be printed.
 During this time, the string is considered to be borrowed, so you cannot delete the string before flushing.
 
 ### flush
-This will flush out every string and value given via write.
+Once you're done with writing, you call flush.
+The will clear the buffer
 
 ### Write or Print?
 This difference can help, especially with competetive programming.
