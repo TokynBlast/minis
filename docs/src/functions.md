@@ -33,6 +33,7 @@ int add(int a, int b) -> static {
 ```
 
 To read more, check out [here](./variables.md#modifiers).
+
 ## Function Modifiers
 Unlike *return* modifiers, a funciton modifier will affect how the funciton itself is handled.
 This list is quite short...
