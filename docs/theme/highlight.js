@@ -60,7 +60,7 @@ hljs.registerLanguage('minis', function (hljs) {
       keyword: 'return import as for while if else break class public private self void auto enum struct other self other with and sync continue',
       type: 'u8 u16 u32 u64 u128 u256 i8 i16 i32 i64 i128 i256 int float bool tribool list dict str char auto void',
       literal: 'true false nil',
-      built_in: 'print println clamp len',
+      built_in: 'print println clamp len write flush',
     },
     contains: [
       hljs.C_LINE_COMMENT_MODE,        // // comments
