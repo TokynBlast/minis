@@ -42,6 +42,7 @@ inline
 alwaysinline
 constexpr
 ```
+The function modifier name is placed before the type returned by the function.
 
 ## Return Types
 Function return types are required. They tell the program what to expect.
