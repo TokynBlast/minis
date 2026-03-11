@@ -76,13 +76,5 @@ Making a variable static makes it so that once set, it can no longer be changed.
 > This is program side.
 > If another application modifies the variable in RAM, Minis cannot stop it.
 
-### constexpr
-This will make it so the values related, will be determined at compile time, taking off a load on the CPU for the user, and onto the developers CPU momentarily.
-Some things are already constexpr with some [optimizations](./optimize.md), like...
-```minis
-int x = (1 + 99) / 2;
-```
-`x` will become `100`.
-
 ### const
 The `const` modifier will make the variable immutable and global. It *must* be initalized.
