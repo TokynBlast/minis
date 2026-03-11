@@ -5,7 +5,7 @@ A while loop is a simple loop, where it only repeats while a condition is true (
 It can have anything. From malicously deleting files, to asking for the right password until the correct one is given.
 The syntax is...
 ```minis
-while (<to check>) {}
+while (<thing to check>) {}
 ```
 
 ## For Loops
