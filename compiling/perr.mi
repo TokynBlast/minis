@@ -1,16 +1,137 @@
+#pragma once
+
+enum class u8 IsWhat {
+  Box,       // Box of code
+  Pointer,   // "first definition, second definition"
+  Suggestion // "Did you forget ___?"
+}
+
 class error {
   public {
-    // This is not 0, because lines start at 1, not 0 :)
-    u128 num_of_nl = 1;
-    // This is only a helper, the main compiler handles the actual exiting part
-    bool perror(str msg) {
-      error ? continue : error = true;
-      // char_ to avoid kw conflict
-      // FIXME: This should be more advanced?
-      print("Error at {}:{}, {}", num_of_nl, char_, msg)
+    // nothing we need to set! :D
+    error(){}
+
+    void HeaderPrint(str fname, u64 row, u64 col, str err) {
+      /// Prints start of error in format of Error: <file>:<row>:<col>: <error>
+      write("Error: {}:{}:{}: {}\n│\n", fname, row, col, err);
     }
-    private {
-      bool error = false;
+
+    void HelperTextPrint(bool IsEnd, str help) {
+      /// Prints `├→` or `╰→`
+      str err = "";
+      IsEnd ? write("╰→ " + help) : write("├→ " + help);
     }
   }
+
+  void CodeBoxPrint(str code, bool IsEnd, bool HadHelper) {
+    list SplitCode = code.split();
+
+    u8 NumOfCodeLines = SplitCode.len();
+    u8 BoxWidth = 0;
+
+    for (u8 i = 0; i < NumOfCodeLines; ++i) {
+      SplitCode[i].trim() > BoxWidth ? BoxWidth = clamp(SplitCode[i].len(), 0, 17) : continue;
+    }
+
+    u8 BoxWidth += 2;
+
+    str box = "";
+
+    // we assume a three space offset, and no pipes on left wall
+    if (HadHelper && IsEnd) {
+      box += "   ╰─┬" + ("─" * BoxWidth) + "╮\n";
+
+      // we put them all into a string var, then into write, so we can avoid
+      // reaching the 2048 max pointers in the write buffer so quickly
+      for (u8 i = 0; i < NumOfCodeLines; ++i) {
+        box += "     │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
+      }
+
+      // bottom of the box
+      box += "     ╰" + ("─" * BoxWidth) + "╯\n";
+
+    // we assume start on left wall, and no pipies touching walls except our own
+    } else if (!HadHelper && IsEnd) {
+      box += "├" + ("─" * BoxWidth) + "╮\n";
+
+      // we put them all into a string var, then into write, so we can avoid
+      // reaching the 2048 max pointers in the write buffer so quickly
+      for (u8 i = 0; i < NumOfCodeLines; ++i) {
+        box += "│ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
+      }
+
+      // bottom of the box
+      box += "  ╰" + ("─" * BoxWidth) + "╯\n";
+
+    } else if (HadHelper && !IsEnd) {
+      box += "│  │\n│  ╰─┬" + ("─" * BoxWidth) + "╮\n";
+
+      // we put them all into a string var, then into write, so we can avoid
+      // reaching the 2048 max pointers in the write buffer so quickly
+      for (u8 i = 0; i < NumOfCodeLines; ++i) {
+        box += "│    │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
+      }
+
+      // bottom of the box
+      box += "│    ╰" + ("─" * BoxWidth) + "╯\n";
+
+    } else if (!HadHelper && !IsEnd) {
+      box += "│\n├─┬" + ("─" * BoxWidth) + "╮\n";
+
+      // we put them all into a string var, then into write, so we can avoid
+      // reaching the 2048 max pointers in the write buffer so quickly
+      for (u8 i = 0; i < NumOfCodeLines; ++i) {
+        box += "│ │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
+      }
+
+      // bottom of the box
+      box += "│ ╰" + ("─" * BoxWidth) + "╯\n";
+    }
+  }
+
+  private {
+    bool error = false;
+  }
 }
+
+/*
+```minis-error
+Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
+│
+├→ Initial definition of class Apple: apple.mi
+│  │
+│  ╰─┬───────────────────╮
+│    │ // apple.mi       │
+│    │ class Apple {     │
+│    │   public {        │
+│    │     int mass = 0; │
+│    ╰───────────────────╯
+├→ Redefenition of class Apple: main.mi
+│  │
+│  ╰─┬───────────────────╮
+│    │ // main.mi        │
+│    │ import fruits;    │
+│    │ import apple;     │
+│    │ ^~~~~~~~~~~~~     │
+│    ╰───────────────────╯
+╰→ Based on origins of each class, did you
+   forget to include `#pragma once`?
+   */
+
+
+/*
+│    │ // apple.mi       │
+│    │ class Apple {     │
+│    │   public {        │
+│    │     int mass = 0; │
+│    ╰───────────────────╯
+├→ Redefenition of class Apple: main.mi
+│
+╰─┬───────────────────╮
+  │ // main.mi        │
+  │ import fruits;    │
+  │ import apple;     │
+  │ ^~~~~~~~~~~~~     │
+  ╰───────────────────╯
+→
+*/
