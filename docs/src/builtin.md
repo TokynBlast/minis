@@ -30,9 +30,9 @@ Write is better if you have a lot of stuff to print, but don't need it instantly
 It is much lighter, and can *sometimes* be better for formatting.
 
 ```minis
-write(&"Hello,");
-write(&" World");
-write(&"!");
-write(&"\n");
+write("Hello,");
+write(" World");
+write("!");
+write("\n");
 flush();
 ```
