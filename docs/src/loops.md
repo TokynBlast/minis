@@ -7,6 +7,7 @@ The syntax is...
 ```minis
 while (<thing to check>) {}
 ```
+As soon as the value to check is either 0 or false, it will stop.
 
 ## For Loops
 A for loop allows for a more complex loops than a while loop. It has a value related to it, a check, and an increment specified.
