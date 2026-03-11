@@ -18,3 +18,9 @@ This is a [CLI](./defines.md#cli) arg that will completely turn off optimization
 This will optimize the code to be as fast as possible, regardless of size.
 
 ## Osz
+
+## comptive
+This level of optimizations is for competetive programming, where you need the most speed possible.
+It is even more aggresive than Ofst.
+It has everything Ofst has, plus avoiding print for formatting, and instead relying on multiple `write()` functions, followed by a `flush()`.
+It will also constexpr as much as it safely can.
