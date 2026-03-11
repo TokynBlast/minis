@@ -36,3 +36,4 @@ write("!");
 write("\n");
 flush();
 ```
+The reason there is no & (reference) next to the strings, is because the write function's bufer must own it. There is nobody else to own it, so write is forced to.
