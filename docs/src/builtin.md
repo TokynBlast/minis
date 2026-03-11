@@ -19,7 +19,7 @@ During this time, the string is considered to be borrowed, so you cannot delete 
 Once you're done with writing, you call flush.
 The will clear the buffer
 
-### Write or Print?
+<h3>Write or Print?</h3>
 This difference can help, especially with competetive programming.
 Print is instant. For when you have a few things to print, or can't wait.
 ```minis
