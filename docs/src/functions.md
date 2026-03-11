@@ -23,7 +23,6 @@ You can add the following:
 ```minis
 const
 static
-constexpr
 ```
 
 Here is an add example, where it is determined at compile time, and the value is stuck in place of where it was called.
@@ -36,6 +35,12 @@ int add(int a, int b) -> constexpr {
 To read more, check out [here](./variables.md#modifiers).
 ## Function Modifiers
 Unlike *return* modifiers, a funciton modifier will affect how the funciton itself is handled.
+This list is quite short...
+```minis
+inline
+alwaysinline
+constexpr
+```
 
 ## Return Types
 Function return types are required. They tell the program what to expect.
