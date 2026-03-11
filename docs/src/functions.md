@@ -25,7 +25,7 @@ const
 static
 ```
 
-Here is an add example, where it is determined at compile time, and the value is stuck in place of where it was called.
+Here is an add function example, where the value returned cannot be changed after the function returns a value.
 ```minis
 int add(int a, int b) -> constexpr {
     return a + b;
