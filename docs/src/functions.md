@@ -44,6 +44,16 @@ constexpr
 ```
 The function modifier name is placed before the type returned by the function.
 
+### constexpr
+This will make it so the function's output is determined at compile-time. This takes some processing power off of the person who runs the binary later, and *usually* results in smaller binaries by removing a funciton, and it's calls, replacing it with the output.
+```minis
+constexpr int add(int a, int b) {
+  return a + b;
+}
+print(add(1, 3));
+```
+Rather than calling add, it will just print the value `4`.
+
 ## Return Types
 Function return types are required. They tell the program what to expect.
 The only way to tell the program to expect anything at all. Whether it be a string, an int, etc., is with `void*`.
