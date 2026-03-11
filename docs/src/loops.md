@@ -8,6 +8,11 @@ The syntax is...
 while (<thing to check>) {}
 ```
 As soon as the value to check is either 0 or false, it will stop.
+> [!TIP]
+> <h3 style="line-height:0.001px">Why do 1 and 0 affect it?</h3>
+> Internally, true, false, and nil become numbers.
+> In fact, most of what modern programming is, is just an interface.
+> Classes don't exist to your computer.
 
 ## For Loops
 A for loop allows for a more complex loops than a while loop. It has a value related to it, a check, and an increment specified.
