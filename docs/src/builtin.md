@@ -14,6 +14,9 @@ This is the same as print, but it puts `\n` after everything else.
 ### write
 This will add a string to somewhere, where it will wait to be printed.
 During this time, the string is considered to be borrowed, so you cannot delete the string before flushing.
+Knowing that all values passes are references is really important, and often neccesary.
+It will prevent you from trying to delete a variable that is in the write buffer.
+The only way to get past this, is to force write to own it.
 
 ### flush
 Once you're done with writing, you call flush.
