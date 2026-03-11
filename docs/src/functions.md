@@ -27,8 +27,8 @@ static
 
 Here is an add function example, where the value returned cannot be changed after the function returns a value.
 ```minis
-int add(int a, int b) -> constexpr {
-    return a + b;
+int add(int a, int b) -> static {
+  return a + b;
 }
 ```
 
