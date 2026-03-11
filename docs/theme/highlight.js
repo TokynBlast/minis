@@ -68,9 +68,9 @@ hljs.registerLanguage('minis', function (hljs) {
       hljs.QUOTE_STRING_MODE,          // strings
       hljs.C_NUMBER_MODE,              // numbers
       {
-        // modifiers like onceset, const, static
+        // modifiers like const, static
         className: 'meta',
-        begin: /-> ?(constexpr|onceset|const|static)/
+        begin: /-> ?(constexpr|const|static|inline|alwaysinline)/
       },
       {
         // macros: #def, #ifdef, #if, #embed
