@@ -8,9 +8,6 @@ enum class u8 IsWhat {
 
 class error {
   public {
-    // nothing we need to set! :D
-    error(){}
-
     void HeaderPrint(str fname, u64 row, u64 col, str err) {
       /// Prints start of error in format of Error: <file>:<row>:<col>: <error>
       write("Error: {}:{}:{}: {}\n│\n", fname, row, col, err);
