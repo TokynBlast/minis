@@ -46,12 +46,25 @@ They are like a pointer, but use `&` instead. Unlike a pointer, they only give t
 Minis has many, many types. This will walk you through them all, with examples on how to use them, and what they can do or hold.
 
 ### int
-`int` stands for integer. During compiling, it will become either 32-bit, or a 64-bit integer.
+`int` stands for integer. During compiling, it will become either 32-bit, or a 64-bit integer. What it becomes depends on the CPU you're targeting.
 
 ### void
 The `void` type can change meaning depending on whether it is a function, or a value.
 In a value, it can be any type. In a function, it means there will be no returned value.
-Further, a `void*` (void pointer), means any return type.
+Further, a `void*` (void pointer), means any return type. Read more below.
+
+### void*
+The void pointer is a return type that signifies there can be a retuened type of anything. It does not matter what the contents are, or what it is. The void pointer is also dangerous, since it doesn't check to make sure types are correct.
+
+### Bit Sized Integers
+This expands to multiple other types.
+There are 7 sizes: `8, 16, 32, 65, 128, 256, 512`.
+The size refers to the number of bits. A byte is 8 bits.
+
+## Signed
+A signed integer will track whether it is positive or negative.
+
+## Unsigned
 
 ### _t type
 The `_t` type is probably one of the most important types.
