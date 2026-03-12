@@ -16,7 +16,49 @@ class error {
       bool EndIsNear = false;
       str PipeIndent = "";
       for (int i = 0; i < PartsLen; ++i) {
+        // FIXME: maybe we do `++i`?
         i + 1 >= PartsLen ? EndIsNear = true : continue;
+        // TODO: [FIXME]
+        // FIXME: EndIsNear only checks if the next is the last one,
+        //        but we need to check if we ever go back to the same
+        //        indentation level before we going below the current,
+        //        This is more reliable than our current method, e.x.,
+        //
+        // 0, pointer
+        // 1, box
+        // 2, pointer
+        // 3, box
+        // 1, suggestion
+        // 0, suggestion
+        //
+        // currently:
+        //
+        // │
+        // ├→
+        // |  ╰┬──╮
+        // |   │  │
+        // |   ╰──╯
+        // |  |  ├→
+        // |  |  |  ╰┬──╮
+        // |  |  |   │  │
+        // |  |  |   ╰──╯
+        // |  ├→
+        // ╰→
+        //
+        // should be:
+        //
+        // │
+        // ├→
+        // |  ├┬──╮
+        // |  |│  │
+        // |  |╰──╯
+        // |  |  ├→
+        // |  |  |  ╰┬──╮
+        // |  |  |   │  │
+        // |  |  |   ╰──╯
+        // |  ╰→
+        // ╰→
+        //
         EndIsNear ? PipeIndent = "   " * parts[i][0]
                   : PipeIndent = "|  " * parts[i][0];
         if (parts[i][1] == IsWhat.Pointer || parts[i][1] == IsWhat.Suggestion) {
