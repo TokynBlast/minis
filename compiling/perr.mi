@@ -8,81 +8,50 @@ enum class u8 IsWhat {
 
 class error {
   public {
-    void HeaderPrint(str fname, u64 row, u64 col, str err) {
-      /// Prints start of error in format of Error: <file>:<row>:<col>: <error>
-      write("Error: {}:{}:{}: {}\n│\n", fname, row, col, err);
-    }
+    void print(list header,     // basic error info
+               list[list] parts // error insides, must be 3D list
+    ) {
+      write("Error: {}:{}:{}: {}\n│\n", header[0], header[1], header[2], header[3]);
+      int PartsLen = parts.len();
+      bool EndIsNear = false;
+      str PipeIndent = "";
+      for (int i = 0; i < PartsLen; ++i) {
+        i + 1 >= PartsLen ? EndIsNear = true : continue;
+        EndIsNear ? PipeIndent = "   " * parts[i][0]
+                  : PipeIndent = "|  " * parts[i][0];
+        if (parts[i][1] == IsWhat.Pointer || parts[i][1] == IsWhat.Suggestion) {
+          EndIsNear ? write(PipeIndent + "╰→ ")
+                    : write(PipeIndent + "├→ ");
+          write(parts[i][2])
+        } else {
+          SplitCode = parts[i][2].split();
 
-    void HelperTextPrint(bool IsEnd, str help) {
-      /// Prints `├→` or `╰→`
-      str err = "";
-      IsEnd ? write("╰→ " + help) : write("├→ " + help);
-    }
-  }
+          // not inside, so we calculate once :)
+          LinesOfCode = SplitCode.len()
 
-  void CodeBoxPrint(str code, bool IsEnd, bool HadHelper) {
-    list SplitCode = code.split();
+          // the biggest one :)
+          Max = 0;
+          MaxLen = 50;
+          for (u8 j = 0; j < LinesOfCode; ++j) {
+            u8 CurrLen = SplitCode[j].len();
+            CurrLen > Max ? Max = CurrLen : continue;
+            if (CurrLen > MaxLen) {
+              // -3 for the '...'
+              SplitCode[j] = SplitCode[j][0:MaxLen-3] + "...";
+            }
+          }
+          Max = clamp(Max, 0, MaxLen) + 2;
+          // top and bottom of box
+          TopBottomSizing = "─" * Max;
+          write(PipeIndent + "╰┬"
+              + TopBottomSizing + "╮\n");
 
-    u8 NumOfCodeLines = SplitCode.len();
-    u8 BoxWidth = 0;
-
-    for (u8 i = 0; i < NumOfCodeLines; ++i) {
-      SplitCode[i].trim() > BoxWidth ? BoxWidth = clamp(SplitCode[i].len(), 0, 17) : continue;
-    }
-
-    u8 BoxWidth += 2;
-
-    str box = "";
-
-    // we assume a three space offset, and no pipes on left wall
-    if (HadHelper && IsEnd) {
-      box += "   ╰─┬" + ("─" * BoxWidth) + "╮\n";
-
-      // we put them all into a string var, then into write, so we can avoid
-      // reaching the 2048 max pointers in the write buffer so quickly
-      for (u8 i = 0; i < NumOfCodeLines; ++i) {
-        box += "     │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
+          for (u8 k = 0; k < LinesOfCode; ++k) {
+            write(PipeIndent + " │ " + SplitCode[i] + ( " " * SplitCode[i].len() - Max ) + " │\n");
+          }
+          write(PipeIndent + " ╰"  + TopBottomSizing + '╯');
+        }
       }
-
-      // bottom of the box
-      box += "     ╰" + ("─" * BoxWidth) + "╯\n";
-
-    // we assume start on left wall, and no pipies touching walls except our own
-    } else if (!HadHelper && IsEnd) {
-      box += "├" + ("─" * BoxWidth) + "╮\n";
-
-      // we put them all into a string var, then into write, so we can avoid
-      // reaching the 2048 max pointers in the write buffer so quickly
-      for (u8 i = 0; i < NumOfCodeLines; ++i) {
-        box += "│ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
-      }
-
-      // bottom of the box
-      box += "  ╰" + ("─" * BoxWidth) + "╯\n";
-
-    } else if (HadHelper && !IsEnd) {
-      box += "│  │\n│  ╰─┬" + ("─" * BoxWidth) + "╮\n";
-
-      // we put them all into a string var, then into write, so we can avoid
-      // reaching the 2048 max pointers in the write buffer so quickly
-      for (u8 i = 0; i < NumOfCodeLines; ++i) {
-        box += "│    │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
-      }
-
-      // bottom of the box
-      box += "│    ╰" + ("─" * BoxWidth) + "╯\n";
-
-    } else if (!HadHelper && !IsEnd) {
-      box += "│\n├─┬" + ("─" * BoxWidth) + "╮\n";
-
-      // we put them all into a string var, then into write, so we can avoid
-      // reaching the 2048 max pointers in the write buffer so quickly
-      for (u8 i = 0; i < NumOfCodeLines; ++i) {
-        box += "│ │ " + SplitCode[i] + ( " " * SplitCode[i].len() - BoxWidth ) + " │\n";
-      }
-
-      // bottom of the box
-      box += "│ ╰" + ("─" * BoxWidth) + "╯\n";
     }
   }
   private {
