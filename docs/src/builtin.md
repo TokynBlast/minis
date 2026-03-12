@@ -40,3 +40,21 @@ write("\n");
 flush();
 ```
 The reason there is no & (reference) next to the strings, is because the write function's bufer must own it. There is nobody else to own it, so write is forced to.
+
+## len
+This will get you the length of an input string or list. It is currently slow because of how it works. It walks the item provided until the kernel stops it and says that's outside of  it's memory.
+
+## IsAlpha
+Returns a `bool`. It will tell you if the character(s) provided are roman characters. (A-Z, a-z).
+
+## IsNumeric
+Returns a `bool`. Will determine if the provided character(s) are numbers. (0-9).
+
+## IsAlphaNumeric
+Returns a `bool`. It will tell you if the character(s) provided are numbers and/or roman characters. (A-Z, a-z, 0-9).
+
+## IsLetter
+Returns a `bool`. This funciton will tell you if the provided character(s) are a letter of any language's alphabet that is supported in standard UTF-8.
+
+## exit
+No return. Takes a single int. It will unwrap the stack, deallocate everything, then return the given value to the system.
