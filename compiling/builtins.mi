@@ -88,7 +88,7 @@ bool isAlpha(variant<char*, str*> c) {
 // return (isAlpha || isNumeric)
 // something like "hey!" would work, but "hey1", would not.
 // isAlpha would work till the 1, and isNumeric would fail on "h"
-bool isAlphanumeric(variant<char*, str*> c) {
+bool isAlphaNumeric(variant<char*, str*> c) {
   #if c type is char
     // check if c is a letter (upper or lower), or a number
     if (c in 48..57 || c in 65..90 || c in 97..122) {
