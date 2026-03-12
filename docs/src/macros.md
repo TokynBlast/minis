@@ -17,11 +17,16 @@ Or, you can just define it.
 #def value
 ```
 
+The def macro can also be expanded to more complex programs, like implementing whole functions, or ways of interacting and storing things.
+You can make a list wrapper, or even your own way of doing lists.
+
 ## if
 The `#if` macro is used to check for something at compile time. This ranges from hardware, to features, to things in the language.
+There are other functions you can pair with it, like `defined()`. You can also add checks, or use it to replace `#pragma assert assert`, and make it compile-time.
 
 ## ifdef
 The `#ifdef` macro will check simply if a macro is defined. It does not care about whether or not it has a value associated, or what that value is.
+This is the same as doing `#if defined()`. However, `#ifdef` simplifies things a lot. `#if` can get a lot more complicated, and allows for more specific checks. The `#ifdef` macro simplifies it, and
 
 ## ifndef
 When `#ifdef` returns true, this will return false.
@@ -52,7 +57,7 @@ Here is an example to print the pairs "Hello," and "World!":
 ```
 
 ## pragma
-The `#pragma` macro gives information about the file to the compiler.
+The `#pragma` macro gives information about the file to the compiler, or tells the compiler what to do.
 
 ### once
 When you append `#pragma once` to the top of the file, it will let the compiler know, this file should be included once throughout the entire source.
