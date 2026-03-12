@@ -162,3 +162,6 @@ This will emit debugging symbols for a specific part of the code, whether debugg
 
 ### breakpoint
 This will add a yield to the code, so that it pauses at that spot during runtime.
+
+### assert
+Assert will check if a condition is true or not, and error if it's not.
