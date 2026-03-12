@@ -90,26 +90,3 @@ class error {
     bool error = false;
   }
 }
-
-/*
-Error: main.mi:3:0: Redefenition of class `Apple` from apple.mi
-│
-├→ Initial definition of class Apple: apple.mi
-│  │
-│  ╰─┬───────────────────╮
-│    │ // apple.mi       │
-│    │ class Apple {     │
-│    │   public {        │
-│    │     int mass = 0; │
-│    ╰───────────────────╯
-├→ Redefenition of class Apple: main.mi
-│  │
-│  ╰─┬───────────────────╮
-│    │ // main.mi        │
-│    │ import fruits;    │
-│    │ import apple;     │
-│    │ ^~~~~~~~~~~~~     │
-│    ╰───────────────────╯
-╰→ Based on origins of each class, did you
-   forget to include `#pragma once`?
-*/
