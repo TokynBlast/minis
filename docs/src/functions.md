@@ -2,10 +2,28 @@
 
 A Minis function can get quite complex, so we'll break it up into manageable parts.
 
-## Bare Function
+## Making A Function
+To make a function in Minis, you need the return type and a name for the function.
+A funciton does not need logic, as long as it has a void return type (no return, different from `void*`). If it has a return type, it must have logic.
+The logic cannot just be `return;`. Minis expects the return to be explicit. It will not make a guess on what to return.
 
-A bare funciton in Minis is one with return type, name, and logic.
-Functions have an extra return type that is only available with functions.
+To take input for a function, you include the paramaters after the name, like most languages.
+```minis
+int add(int a, int b) {}
+```
+Inside the function, there is now `a` and `b` you can use.
+
+### Setting a Default
+To set a default for a value, you do it like initalizing a variable anywhere else, like so...
+```minis
+int add (int a=1, int b=1) {}
+```
+Now, if `a` or `b` aren't provided, it will just use `1` and `1`.
+If you want to set b, but use the default for a, you would do...
+```minis
+add(b=3);
+```
+It will use default `a` (`1`), and set `b` to `3`, resulting in 4.
 
 ## Pointers
 
