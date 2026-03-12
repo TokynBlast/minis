@@ -66,7 +66,10 @@ class error {
                     : write(PipeIndent + "├→ ");
           write(parts[i][2])
         } else {
-          SplitCode = parts[i][2].split();
+          // the box
+
+          // split the code for printing :3
+          SplitCode = parts[i][2].split('\n');
 
           // not inside, so we calculate once :)
           LinesOfCode = SplitCode.len()
