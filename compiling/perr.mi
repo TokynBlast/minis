@@ -85,7 +85,6 @@ class error {
       box += "│ ╰" + ("─" * BoxWidth) + "╯\n";
     }
   }
-
   private {
     bool error = false;
   }
