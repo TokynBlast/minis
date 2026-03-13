@@ -57,7 +57,8 @@ class error {
         // |  |      ╰──╯
         // |  ╰→
         // ╰→
-        //
+
+        // dumb check for how to indent
         EndIsNear ? PipeIndent = "   " * parts[i][0]
                   : PipeIndent = "|  " * parts[i][0];
         if (parts[i][1] == IsWhat.Pointer || parts[i][1] == IsWhat.Suggestion) {
