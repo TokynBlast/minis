@@ -61,6 +61,10 @@ class error {
         // dumb check for how to indent
         EndIsNear ? PipeIndent = "   " * parts[i][0]
                   : PipeIndent = "|  " * parts[i][0];
+
+        // we have pointer and suggestion, to make intent more clear :)
+        // we could do something like one just leads to the other, like an alias,
+        // and in code, they get optomized into one :)
         if (parts[i][1] == IsWhat.Pointer || parts[i][1] == IsWhat.Suggestion) {
           EndIsNear ? write(PipeIndent + "╰→ ")
                     : write(PipeIndent + "├→ ");
