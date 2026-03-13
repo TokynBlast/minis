@@ -1,9 +1,8 @@
 # Introduction
 
 ## About
-
-Minis is a language that has gone through multiple changes, from target to runtime to purpose. It has evolved and settled into a low-level, functional, somewhat simple language designed to be safe and as fast as possible with everything it does. From not relying on the slow stdout, to use Fortran style math internally.
-The Minis language is very explicit and heavily typed language.
+Minis is a low-level, functional language, designed to be as safe and fast as possible.
+The Minis language is an explicit and heavily typed language.
 The language also aims to speed up development by including things like [the #unroll macro](./macros.md#macros).
 
 ## Setup
@@ -13,19 +12,19 @@ This is the main funciton, which returns any size of a whole number, or a bool.
 Returning a void is not allowed, and will error on build.
 
 ### Main Function
-Minis must know the entrance to your code. It will not assume you want to start at the top. You must be explicit. To make an entry, you define a main function. In the example below, I will make a main function to print "Hello, World!", then exit (return) on true. If you replace it with a whole number, this is just zero.
-
+Minis requires a main function to know what you want to do first. Many languages such as C, C++, Rust, and others do this. There is also the `_start()` function, which is placed in. It runs the `main()` function, and sets up the stack, variables, and other things. You can define your own `_start()` function. To see how to, read [this](./functions.md#making-the-_start-function-yourself).
+Here is a simple main function:
 ```minis
-bool main() {
+int main() {
   print("Hello, World!\n");
-  return true;
+  return 0; // 0 means success
 }
 ```
 > [!NOTE]
-> It is usually recommended to return an `int` type over a set size so you can utilize the full range of return error numbers.
+> Although, the main function can return anything, though it is most common to return an int type.
 
 ## Safety
-Like Rust, Minis is meant to be safe. It does this via explicit declaration, garunteed initalization, and a WYSWYG model. What you see, is what you get.
+Like Rust, Minis is meant to be safe. It does this via explicit declaration, garunteed initalization, and a WYSWYG model. What you see, is what you get. It's like C.
 Every variable must be explicitly defined.
 Minis also uses a combonation of memory ownership, RAII, and manual deletion.
 There are also other things, like minimizing dependencies. Minis cannot garuntee other code is safe. It is much easier to manage a single project instead of 443 because of dependency branching.
