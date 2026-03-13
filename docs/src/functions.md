@@ -76,3 +76,7 @@ Rather than calling add, it will just print the value `4`.
 Function return types are required. They tell the program what to expect.
 The only way to tell the program to expect anything at all. Whether it be a string, an int, etc., is with `void*`.
 Though, `void*` is really dangerous, as accepting *ANY* type can lead to corruption or misuse of data.
+
+
+## Making The _start() Function Yourself
+It is simple to make it. You just need to define `_start()`, and it will be called.
