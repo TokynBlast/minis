@@ -16,8 +16,7 @@ class error {
       bool EndIsNear = false;
       str PipeIndent = "";
       for (int i = 0; i < PartsLen; ++i) {
-        // FIXME: maybe we do `++i`?
-        i + 1 >= PartsLen ? EndIsNear = true : continue;
+        if (i + 1 >= PartsLen) { EndIsNear = true }
         // TODO: [FIXME]
         // FIXME: EndIsNear only checks if the next is the last one,
         //        but we need to check if we ever go back to the same
