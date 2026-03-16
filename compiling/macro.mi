@@ -15,7 +15,8 @@ str* macro_expand(str* code, list macros) {
     if (code[i] == '"') {
       while (true) {
         if (i > len) {
-          print("{}:{}:{}: UnclosedStrError: String was never close.\n", "file name", 0, 0);
+          // TODO: update to use new error
+          print("{}:{}:{}: Error: String was never close.\n", "file name", 0, 0);
           exit(1);
         } else if (code[i] == '"') {
           output += '"';
