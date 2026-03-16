@@ -39,8 +39,6 @@ struct ErrorCode {
 // after that, it will go back over, and change things,
 // like > and > become >>, aka, a bit shift :)
 
-// ast-asize, as in to convert
-
 // TODO: implement use of sync with, to let other take over any
 // time there is space and it's not in quotes :3
 list astasize(str code, str file_name) {
