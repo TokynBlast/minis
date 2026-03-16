@@ -8,7 +8,7 @@ dict get_flags(u16 argc*, list argv*) {
   };
 
   // FIXME: Using pointers would be better
-  for arg in 1..argc {
+  for (int arg = 0; arg < argc; ++arg) {
     // If debug is true, skip :)
     args[arg][0] == "-" ? continue : {
       #unroll (flag, arg) for
