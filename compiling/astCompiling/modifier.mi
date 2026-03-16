@@ -1,4 +1,5 @@
 #pragma once
+
 enum u8 Modifier {
   None,
   Const,
