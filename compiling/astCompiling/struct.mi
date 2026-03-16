@@ -1,0 +1,13 @@
+#pragma once
+import variable;
+
+struct StructVariant {
+  str           Name,
+  variable.Type SructType,
+  void*         Value
+};
+
+struct EnumDef {
+  str                   Name,
+  list[][StructVariant] Variants,
+};
