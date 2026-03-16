@@ -1,0 +1,8 @@
+#pragma once
+import variable;
+
+struct Function {
+  variable.Type ReturnType,
+  list Intake,
+  void* ToDo
+};

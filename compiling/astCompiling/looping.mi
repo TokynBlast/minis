@@ -1,0 +1,12 @@
+#pragma once
+
+struct While {
+  void* ToCheck,
+  void* ToDo
+};
+
+struct For {
+  void* Initalizer,
+  void* ToCheck,
+  void* ToIncrement
+};

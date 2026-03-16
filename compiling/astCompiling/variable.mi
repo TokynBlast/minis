@@ -1,0 +1,67 @@
+#pragma once
+// complex types :)
+import variables/str.mi;
+import variables/tribool.mi;
+import variables/bool.mi;
+import variables/dict.mi;
+
+enum u8 Type {
+  Str,
+  Int,
+  Float,
+  U8,
+  U16,
+  U32,
+  U64,
+  U128
+  U256,
+  U512,
+  I8,
+  I16,
+  I32,
+  I64,
+  I128,
+  I256,
+  I512,
+  List,
+  Dict,
+  Char,
+  Bool,
+  Tribool,
+  Void
+};
+
+struct Var {
+  Types Type,
+  void* Value
+};
+
+bool VerifyMatchingTypes(Var Contents) {
+  dict conv = {
+    Types.Str:typeof(str),
+    Types.Int:typeof(int),
+    Types.Float:typeof(float),
+    Types.U8:typeof(u8),
+    Types.U16:typeof(u16),
+    Types.U32:typeof(u32),
+    Types.U64:typeof(u64),
+    Types.U128:typeof(u128),
+    Types.U256:typeof(u256),
+    Types.U512:typeof(u512),
+    Types.I8:typeof(i8),
+    Types.I16:typeof(i16),
+    Types.I32:typeof(i32),
+    Types.I64:typeof(i64),
+    Types.I128:typeof(i128),
+    Types.I256:typeof(i256),
+    Types.I512:typeof(i512),
+    Types.List:typeof(list),
+    Types.Dict:typeof(dict),
+    Types.Char:typeof(char),
+    Types.Bool:typeof(bool),
+    Types.Tribool:typeof(tribool),
+    Types.Void:typeof(void),
+  };
+
+  typeof(conv[Contents.Type]) == typeof(Contents.Value) ? return true : return false;
+}

@@ -1,0 +1,13 @@
+#pragma once
+import variable;
+
+struct Class {
+  str   Name,
+  void* Public,
+  void* Private
+};
+
+stuct Init {
+  variable.Type Return,
+  void* ToDo
+};

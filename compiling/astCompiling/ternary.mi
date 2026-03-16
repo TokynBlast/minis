@@ -1,0 +1,7 @@
+#pragma once
+
+struct Ternary {
+  bool ToCheck,
+  void* IfTrue,
+  void* IfFalse
+};
