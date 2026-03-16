@@ -1,0 +1,19 @@
+import fs;
+import flags;
+
+bool import_impl(str import_path, str place_to_go*) {
+  // get import path, and append to top, using pointer instead of copying
+}
+
+int main(u16 argc, list argv) {
+  // all of code, mostly for error checking :3
+  list code;
+
+  dict Flags = flags::get_flags(argc, argv);
+
+  // Since we use this more than once,
+  // and we cannot garuntee it will be O(1) in the future.
+  u16 FileAmount = files.len();
+
+  // go through each, grab data, error on things that need errors, and then turn to LLVM, and let LLVM handle the rest :3
+}
