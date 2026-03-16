@@ -41,8 +41,8 @@ struct ErrorCode {
 
 // TODO: implement use of sync with, to let other take over any
 // time there is space and it's not in quotes :3
-list astasize(str code, str file_name) {
-  list fin_ast;
+list astasize(str code, str FileName) {
+  perr::error err = perr::error();
 
   u32 col = 1, row = 1;
 
