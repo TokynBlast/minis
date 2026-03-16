@@ -1,0 +1,6 @@
+#pragma once
+
+// maybe useless?-
+struct Import {
+  str FileToImport
+};
