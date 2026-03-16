@@ -2,6 +2,6 @@
 
 struct Ternary {
   bool ToCheck,
-  void* IfTrue,
-  void* IfFalse
+  list IfTrue,
+  list IfFalse
 };

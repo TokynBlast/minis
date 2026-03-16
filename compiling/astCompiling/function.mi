@@ -4,5 +4,5 @@ import variable;
 struct Function {
   variable.Type ReturnType,
   list Intake,
-  void* ToDo
+  list ToDo
 };

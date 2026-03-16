@@ -2,7 +2,7 @@
 
 struct While {
   void* ToCheck,
-  void* ToDo
+  list ToDo
 };
 
 struct For {
