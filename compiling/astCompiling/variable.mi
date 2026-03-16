@@ -1,9 +1,4 @@
 #pragma once
-// complex types :)
-import variables/str.mi;
-import variables/tribool.mi;
-import variables/bool.mi;
-import variables/dict.mi;
 
 enum u8 Type {
   Str,
