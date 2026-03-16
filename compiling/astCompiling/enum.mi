@@ -2,9 +2,7 @@
 import variable;
 
 struct EnumVariant {
-    str   Name,
-    list  Fields,
-    void* Value
+  str Name,
 };
 
 struct EnumDef {
