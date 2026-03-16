@@ -4,6 +4,27 @@
 // a dict has to search for a key
 list macros = [
   ["__VERSION__", "0.1.0"],
+  ["__BIGGEST_NUM__", 512],
+  // TODO: BOOTSTRAP THESE
+  ["unix"],
+  ["linux"],  // linux in general
+  // kernel versions
+  ["linuxk6"],
+  ["linuxk5"],
+  ["linuxk4"],
+  ["linuxk3"],
+
+
+  // windows
+  ["win32"],
+  ["win64"],
+
+  #unroll (ver) for [11, 10, "8_1", 8, 7, "vis" /*vista*/, "xp",
+  2000, 98, 4, "3_5", "3_1", "3_1s", 3, 2, 1]
+  in "[\"winv{ver}\"],"
+
+
+  ["mac"]
 ];
 
 str* macro_expand(str* code, list macros) {
