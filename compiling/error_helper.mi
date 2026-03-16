@@ -1,0 +1,19 @@
+#pragma once
+
+local dict ErrVals {
+  // unknown internal error
+  0x00:"This error occurs there was a problem tracing between files, functions, classes, etc.\nIt occurs if something wasn't traced, or there was no previously tracked location.",
+
+}
+
+void help(int ErrorNum) {
+  try {
+    print(ErrVals[ErrorNum])
+
+  // we don't specify what we want to catch, since at the time of writing this,
+  // we don't have `catch <thing> as e`
+  } catch {
+    print("Opps! It looks like that error code doesn't exist. Make sure you typed the write code!");
+    exit(1);
+  }
+}
