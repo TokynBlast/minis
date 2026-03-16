@@ -53,7 +53,7 @@ list astasize(str code, str FileName) {
 
   // we need to make this smarter, not just do pos:pos+20
   // We may use this to just track all sorts of info :)
-  ErrorCode ErrorInfo = {FileName, "", [{"[INTERNAL ERROR: UNKNOWN TRACE ORIGINS]", Origin.Unknown}] /* As a backup */, 0, [col, row]};
+  ErrorCode ErrorInfo = {FileName, "", [{"[INTERNAL ERROR 0x00: UNKNOWN TRACE ORIGINS]", Origin.Unknown}] /* As a backup */, 0, [col, row]};
 
   for (u64 pos = 0; pos < sz; ++pos) {
     ErrorInfo.CodeBlock = code[pos:pos+20];
