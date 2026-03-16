@@ -5,6 +5,7 @@
 // "ternary_start if_stmt var x isEQ 32 endif_stmt continue else break ternary_end"
 
 import AstVals;
+import perr;
 
 void skipWS() {
   while (pos < sz && code[pos] == ' ') {
