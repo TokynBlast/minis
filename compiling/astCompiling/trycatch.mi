@@ -1,0 +1,18 @@
+// To cut down on size, you can imagine there's Error at the end of each
+enum u16 ErrorCatches {
+  OutOfBounds,
+  Unexpeted,
+  UseAfterFree, // we try to minimize these
+}
+
+struct TryCatch {
+  // the try
+  list ToDo,
+  // the catch(s)
+  list[][list[Catch]]
+};
+
+struct Catch {
+  ErrorCatches ErrorToCatch,
+  list ToDo
+};
