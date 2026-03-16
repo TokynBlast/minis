@@ -47,32 +47,41 @@ list astasize(str code, str FileName) {
   u32 col = 1, row = 1;
 
   // to avoid calculating size over and over :3
-  static u64 sz = len(code), pos = 0;
+  static u64 sz = len(code);
 
-  for (;pos < sz; ++pos) {
-    ln_pos++;
+  list SimpleAST = [];
+
+  // we need to make this smarter, not just do pos:pos+20
+  // We may use this to just track all sorts of info :)
+  ErrorCode ErrorInfo = {FileName, "", [{"[INTERNAL ERROR: UNKNOWN TRACE ORIGINS]", Origin.Unknown}] /* As a backup */, 0, [col, row]};
+
+  for (u64 pos = 0; pos < sz; ++pos) {
+    ErrorInfo.CodeBlock = code[pos:pos+20];
+    ErrorInfo.TruePos = pos;
+
     // skip strings first :3
     // we want to keep strings intact the most
-
-    if (code[pos] == '\"') {
+    if (code[pos] == '"') {
       ++pos;
-      fin_ast.append(ast[string]);
+      str String = "";
+      SimpleAST.append(ast[dquote]);
 
-      // IN CASE OF EMERGENCY: USE THIS (used when there is no end to string!)
-      array[list[u32]] start_info = [ln, ln_pos];
+      // FIXME: No detection for '\'
       while (code[pos] != '\"') {
-        // track newlines, even through strings :)
-        if (code[pos] == '\n') { ++ln; ln_pos = 1; }
+        // incase we never find a closing point
+        if (pos >= sz) {
+          // FIXME: We need to get
+          err.print([ErrorInfo.SourceName, ErrorInfo.PosCol[0], ErrorInfo.PosCol[0],
+                    f"String {ErrorInfo.Trace[-1].TraceName} never closed"],
+                    [0, perr::IsWhat.Box, ErrorInfo.CodeBlock]);
 
-        // incase we never find the end...
-        if (pos > sz) {
-          print("{}:{}:{}: String has no end. Make sure you close it.\n",
-                 file_name, start_info[0], start_info[1]);
-
-          // there isn't any reason to continue. if we have no end to the
-          // string, it could be code inside that is meant to be a string
+          // There is no way of determining if we can continue or not,
+          // so we're forced to just exit
           exit(1);
+        } else {
+          String += code[pos];
         }
+        SimpleAST.append(String);
       }
     } else if (code[pos] == '\'') {
       // We check to make sure it becomes a single char first :3
