@@ -44,7 +44,7 @@ struct ErrorCode {
 list astasize(str code, str file_name) {
   list fin_ast;
 
-  static u32 ln = 1, ln_pos = 1;
+  u32 col = 1, row = 1;
 
   // to avoid calculating size over and over :3
   static u64 sz = len(code), pos = 0;
