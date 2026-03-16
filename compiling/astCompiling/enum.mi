@@ -6,7 +6,7 @@ struct EnumVariant {
 };
 
 struct EnumDef {
-    str name,
-    list[][EnumVariant] variants,
-    variable.Type EnumType
+  str                 Name,
+  list[][EnumVariant] Variants,
+  variable.Type       EnumType
 };
