@@ -9,9 +9,8 @@ list macros = [
 str* macro_expand(str* code, list macros) {
   str output = "";
   u64 len = code.len();
-  u64 i = 0;
 
-  while (i < len) {
+  for (u64 i = 0; i < len; ++i) {
     if (code[i] == '"') {
       while (true) {
         if (i > len) {
