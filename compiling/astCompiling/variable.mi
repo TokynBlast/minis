@@ -27,35 +27,35 @@ enum u8 Type {
 };
 
 struct Var {
-  Types Type,
+  Type Type,
   void* Value
 };
 
 bool VerifyMatchingTypes(Var Contents) {
   dict conv = {
-    Types.Str:typeof(str),
-    Types.Int:typeof(int),
-    Types.Float:typeof(float),
-    Types.U8:typeof(u8),
-    Types.U16:typeof(u16),
-    Types.U32:typeof(u32),
-    Types.U64:typeof(u64),
-    Types.U128:typeof(u128),
-    Types.U256:typeof(u256),
-    Types.U512:typeof(u512),
-    Types.I8:typeof(i8),
-    Types.I16:typeof(i16),
-    Types.I32:typeof(i32),
-    Types.I64:typeof(i64),
-    Types.I128:typeof(i128),
-    Types.I256:typeof(i256),
-    Types.I512:typeof(i512),
-    Types.List:typeof(list),
-    Types.Dict:typeof(dict),
-    Types.Char:typeof(char),
-    Types.Bool:typeof(bool),
-    Types.Tribool:typeof(tribool),
-    Types.Void:typeof(void),
+    Type.Str:typeof(str),
+    Type.Int:typeof(int),
+    Type.Float:typeof(float),
+    Type.U8:typeof(u8),
+    Type.U16:typeof(u16),
+    Type.U32:typeof(u32),
+    Type.U64:typeof(u64),
+    Type.U128:typeof(u128),
+    Type.U256:typeof(u256),
+    Type.U512:typeof(u512),
+    Type.I8:typeof(i8),
+    Type.I16:typeof(i16),
+    Type.I32:typeof(i32),
+    Type.I64:typeof(i64),
+    Type.I128:typeof(i128),
+    Type.I256:typeof(i256),
+    Type.I512:typeof(i512),
+    Type.List:typeof(list),
+    Type.Dict:typeof(dict),
+    Type.Char:typeof(char),
+    Type.Bool:typeof(bool),
+    Type.Tribool:typeof(tribool),
+    Type.Void:typeof(void),
   };
 
   typeof(conv[Contents.Type]) == typeof(Contents.Value) ? return true : return false;
