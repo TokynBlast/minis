@@ -8,7 +8,8 @@ enum class u8 IsWhat {
 
 class error {
   public {
-    void print(list header,     // basic error info
+    void print(&self,
+               list header,     // basic error info
                list[list] parts // error insides, must be 3D list
     ) {
       self.error = true;
