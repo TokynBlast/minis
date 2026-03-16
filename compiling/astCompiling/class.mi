@@ -2,12 +2,12 @@
 import variable;
 
 struct Class {
-  str   Name,
-  void* Public,
-  void* Private
+  str  Name,
+  list Public,
+  list Private
 };
 
 stuct Init {
   variable.Type Return,
-  void* ToDo
+  list ToDo
 };
