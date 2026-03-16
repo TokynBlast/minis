@@ -3,7 +3,6 @@
 // is seen as "var x eq eq 32 question continue colon break"
 // it then goes over it with a smart check, turning it into
 // "ternary_start if_stmt var x isEQ 32 endif_stmt continue else break ternary_end"
-//
 
 import AstVals;
 
