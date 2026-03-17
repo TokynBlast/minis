@@ -13,6 +13,8 @@ list macros = [
   ["linuxk5"],
   ["linuxk4"],
   ["linuxk3"],
+  ["linuxk2"],
+  ["linuxk1"],
 
 
   // windows
