@@ -1,5 +1,4 @@
 #pragma once
-
 struct While {
   void* ToCheck,
   list ToDo
