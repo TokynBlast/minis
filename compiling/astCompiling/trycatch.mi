@@ -3,7 +3,8 @@ enum u16 ErrorCatches {
   IndexOutOfBounds,
   Unknown,
   IntegerOverflow,
-  DoubleOverflow
+  DoubleOverflow,
+  UnknownTrace
 }
 
 struct TryCatch {
