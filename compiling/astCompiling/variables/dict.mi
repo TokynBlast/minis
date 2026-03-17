@@ -1,0 +1,3 @@
+#pragma once
+struct DictItem { void* Key, void* Value };
+struct DictType { list[][DictItem] Pairing };
