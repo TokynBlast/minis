@@ -38,6 +38,7 @@ enum u8 RefType {
   Raw        //  x
 }
 
+// used for making variables :3
 struct Var {
   Type TypeStored,
   RefType HowToAccess,
