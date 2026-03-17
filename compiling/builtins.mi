@@ -1,18 +1,5 @@
 import templ.mi;
 
-// Every other item :)
-struct chainLink {
-  u64 &next;
-  // Since the value could be any type, we use a pointer to a void, so we accept any type! :D
-  void* value;
-}
-
-// First item in list or string
-struct chainHeader {
-  chainLink &start;
-  u256 *length;
-}
-
 // whole number :)
 typedef wnum variant<u8, u16, u32, u64, u256, u512, i8, i16, i32, i64, i256, i512, int, time_t, size_t>;
 // any num
