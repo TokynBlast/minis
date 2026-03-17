@@ -1,0 +1,26 @@
+// joke file :)
+#pragma error("THIS SHOULD NOT BE INCLUDED;\nIT IS A JOKE FILE")
+
+struct U8 {
+  u8 bit1,
+  u8 bit2,
+  u8 bit3,
+  u8 bit4,
+  u8 bit5,
+  u8 bit6,
+  u8 bit7,
+  u8 bit8,
+};
+
+u16 GetFinal(U16 nums) {
+  u16 FinalNum = 0;
+  FinalNum += bit1; FinalNum <<= 1;
+  FinalNum += bit2; FinalNum <<= 1;
+  FinalNum += bit3; FinalNum <<= 1;
+  FinalNum += bit4; FinalNum <<= 1;
+  FinalNum += bit5; FinalNum <<= 1;
+  FinalNum += bit6; FinalNum <<= 1;
+  FinalNum += bit7; FinalNum <<= 1;
+  FinalNum += bit8;
+  return FinalNum;
+}
