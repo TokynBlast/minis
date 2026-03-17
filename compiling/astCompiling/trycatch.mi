@@ -7,14 +7,14 @@ enum u16 ErrorCatches {
   UnknownTrace
 }
 
+struct Catch {
+  ErrorCatches ErrorToCatch,
+  list ToDo
+};
+
 struct TryCatch {
   // the try
   list ToDo,
   // the catch(s)
   list[][list[Catch]]
-};
-
-struct Catch {
-  ErrorCatches ErrorToCatch,
-  list ToDo
 };
