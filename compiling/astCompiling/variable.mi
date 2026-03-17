@@ -70,5 +70,5 @@ bool VerifyMatchingTypes(Var Contents) {
     Type.Void:void,
   };
 
-  typeof(conv[Contents.Type]) == typeof(Contents.Value) ? return true : return false;
+  conv[Contents.TypeStored] == Contents.Value ? return true : return false;
 }
