@@ -2,9 +2,9 @@
 import variable;
 
 struct StructVariant {
-  str           Name,
-  variable.Type SructType,
-  void*         Value
+  str                   Name,
+  variable.Type         SructType,
+  void*                 Value
 };
 
 struct EnumDef {
