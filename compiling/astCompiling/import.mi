@@ -1,0 +1,7 @@
+#pragma once
+
+// Used for traceback
+struct Import {
+  str FileName,
+  str Contents
+};
