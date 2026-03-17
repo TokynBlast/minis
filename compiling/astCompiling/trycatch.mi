@@ -1,8 +1,9 @@
 #pragma once
 enum u16 ErrorCatches {
-  OutOfBounds,
-  Unexpeted,
-  UseAfterFree, // we try to minimize these
+  IndexOutOfBounds,
+  Unknown,
+  IntegerOverflow,
+  DoubleOverflow
 }
 
 struct TryCatch {
