@@ -39,7 +39,8 @@ enum u8 RefType {
 }
 
 struct Var {
-  Type Type,
+  Type TypeStored,
+  RefType HowToAccess,
   void* Value
 };
 
