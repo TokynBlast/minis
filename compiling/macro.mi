@@ -27,6 +27,7 @@ list macros = [
 
 
   ["mac"]
+  // TODO: add other MacOS versions
 ];
 
 str* macro_expand(str* code, list macros) {
