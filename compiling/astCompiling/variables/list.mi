@@ -1,0 +1,8 @@
+#pragma once
+import ../variable as Var;
+struct List {
+  void* Data,
+  void* Next,
+  // FIXME: This isn't garunteed to work very well.
+  list[][Var.Type] Structure
+};
