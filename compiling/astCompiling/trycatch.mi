@@ -1,6 +1,4 @@
 #pragma once
-
-// To cut down on size, you can imagine there's Error at the end of each
 enum u16 ErrorCatches {
   OutOfBounds,
   Unexpeted,
