@@ -12,7 +12,7 @@ local dict ErrVals {
 
 void help(int ErrorNum) {
   try {
-    print(ErrVals[ErrorNum])
+    print(ErrVals[ErrorNum] + "\n");
 
   // we don't specify what we want to catch, since at the time of writing this,
   // we don't have `catch <thing> as e`
