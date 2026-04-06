@@ -15,7 +15,7 @@ class error {
                list[][list[][ErrorCode:TraceBack]] parts // error insides, must be 3D list
     ) {
       self.error = true;
-      write("Error: {}:{}:{}: {}\n│\n", header[0], header[1], header[2], header[3]);
+      write("Error: {}:{}:{}: {}\n│\n", header[0], header[1][0], header[1][1], header[2]);
       int PartsLen = parts.len();
       bool EndIsNear = false;
       str PipeIndent = "";
