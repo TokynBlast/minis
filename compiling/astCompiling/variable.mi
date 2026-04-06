@@ -45,7 +45,8 @@ struct Var {
   void* Value
 };
 
-bool VerifyMatchingTypes(Var Contents) {
+// verifies types are the same :D
+bool TypeMatch(Var Contents) {
   dict conv = {
     Type.Str:str,
     Type.Int:int,
