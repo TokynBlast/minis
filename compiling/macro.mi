@@ -76,6 +76,9 @@ str* macro_expand(str* code, list macros) {
             // quote will end it :3
           }
         }
+        _ -> {
+          error.error()
+        }
       };
     } else {
       // TODO: Make it so it does replacements too :)
