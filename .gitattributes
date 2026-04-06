@@ -1,3 +1,4 @@
 # This file generates LLVM boilerplate :)
 src/maths.gen.py linguist-language=llvm
+# Since Linguist currently doesn't support Minis :(
 *.mi linguist-language=other
