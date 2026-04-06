@@ -3,7 +3,7 @@
 // static and not const, to cut down on size
 // const will insert it
 // static will get it at run time
-static str OccurWhen = "This error occurs when there is "
+static str OccurWhen = "This error occurs when there is ";
 
 local dict ErrVals {
   // unknown internal error
