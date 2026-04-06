@@ -102,7 +102,8 @@ for i as 1..6 {
 run("circuit variables", circuit, "one!two!three!four!five!aww :(", True)
 del circuit
 
-run("increment", '1++;', "2")
+run("post-increment", '1++', "2")
+run("pre-increment", '++1', "2")
 run("neg", "neg(34)", "-34")
 run("abs", "abs(-34)", "34")
 run("max", "max([1,3])", "3")
