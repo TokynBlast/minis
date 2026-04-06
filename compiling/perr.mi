@@ -12,7 +12,7 @@ class error {
 
     void print(&self,
                list header,     // basic error info
-               list[list] parts // error insides, must be 3D list
+               list[][list[][ErrorCode:TraceBack]] parts // error insides, must be 3D list
     ) {
       self.error = true;
       write("Error: {}:{}:{}: {}\n│\n", header[0], header[1], header[2], header[3]);
