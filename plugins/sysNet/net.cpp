@@ -1,1 +1,0 @@
-// define implementing of functions
