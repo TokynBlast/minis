@@ -18,7 +18,7 @@ wnum len(variant<list, str> to_count) {
   return length;
 }
 
-void println(**kwargs vals) {
+inline void println(**kwargs vals) {
   print(vals, "\n");
 }
 
