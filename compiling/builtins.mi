@@ -22,6 +22,15 @@ void println(**kwargs vals) {
   print(vals, "\n");
 }
 
+inline void writeln(**kwargs vals) {
+  write(vals, "\n");
+}
+
+// maybe redundant?
+inline void flushln(**kwargs vals) {
+  writeln(vals, "\n");
+  flush();
+}
 
 // return any value, which we can garuntee will be a number of some type.
 void* max(variant<str, list>& ToFindMax) {
