@@ -24,8 +24,7 @@ struct ErrorCode {
   str SourceName,
   str CodeBlock,
   list[TraceBack] Trace,
-  u64 TruePos,
-  arr[2][u32] PosCol
+  arr[2][u64] PosCol
 }
 
 // This function is meant to parse the whole thing in a simple
