@@ -55,7 +55,7 @@ bool isNumeric(variant<char*, str*> c) {
     }
     return true;
   #endif
-  }
+}
 
 bool isAlpha(variant<char*, str*> c) {
   #if c type is char
