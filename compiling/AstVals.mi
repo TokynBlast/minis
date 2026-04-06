@@ -186,6 +186,7 @@ enum u16 ast = {
 
 
   // this is hell-
+  // THERE HAS TO BE ANOTHER WAY 😭
   #unroll (kind) for ["Make", "Get", "Return", "Conv"]
   in "
   #unroll (size) for [\"str\", \"int\", \"float\", \"u8\", \"u16\", \"u32\",
