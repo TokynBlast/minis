@@ -1,11 +1,5 @@
-#include "../include/plugin.hpp"
-#include "../include/value.hpp"
-#include <vector>
-
-using namespace minis;
-
 // FIXME: We either need to remove ones not supported, or add support for them
-static Value os(const std::vector<Value>& args) {
+static str os() {
   #if defined(_WIN32) || defined(_WIN64)
     return Value::Str("win");
   #elif defined(__linux__) || defined(__unix__)
@@ -25,7 +19,7 @@ static Value os(const std::vector<Value>& args) {
   #endif
 }
 
-static Value cpu(const std::vector<Value>& args) {
+static str cpu() {
   #if defined(__i386__) || defined(i386)
     return Value::Str("x86");
   #elif defined(__x86_64__) || defined(M_X64)
@@ -43,23 +37,4 @@ static Value cpu(const std::vector<Value>& args) {
   #endif
 }
 
-static const PluginFunctionEntry plugin_functions[] = {
-  {"os", os},
-  {"cpu", cpu},
-  {nullptr, nullptr}
-};
-
-static bool computer_init() { return true; }
-static void computer_cleanup() {}
-
-static PluginInterface random_interface = {
-    "computer",
-    "0.0.3",
-    computer_init,
-    []() -> const PluginFunctionEntry* { return plugin_functions; },
-    computer_cleanup
-};
-
-extern "C" {
-PluginInterface* get_plugin_interface() { return &random_interface; }
-}
+static str gpu() {}
