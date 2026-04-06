@@ -1,6 +1,6 @@
 inline functions
 
-Add a zip library made with [this](https://github.com/PlutoLang/pluto-zip)
+Add a zip library designed with [this](https://github.com/PlutoLang/pluto-zip)
 
 add `sync` to pair with `with`
   `sync` will make it so operations between each will be updated
