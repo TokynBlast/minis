@@ -157,3 +157,34 @@ auto clamp(auto num, auto min, auto max) {
     _ -> num
   };
 }
+
+list sort(list ToSort) {
+  error("Sort is not implemnted yet.");
+  // Quicksort - primitive types
+  #if ToSort type is list[][int] ||
+      ToSort type is list[][bool] ||
+      ToSort type is list[][tribool] ||
+      // more hell
+      // (see AstVals.mi for context)
+      #unroll (type) for [8, 16, 32, 64, 128, 256, 512] in "
+        #unroll (sign) for ['u', 'i'] in \"ToSort type is list[][{{sign}}{type}] ||\""
+      ToSort type is list[][float]
+
+    // TODO: Add PowerSort
+
+  #elif ToSort type is list[][list]
+    // FIXME: More than one list will cause errors
+
+    // When we get to 2D lists, we need to sort...
+    for (int i = 0; i < ToSort.len(); ++i) {
+      ToSort[i] = sort(ToSort[i]);
+    }
+
+  // Radix - Faster for fixed size :)
+  #elif ToSort type is list[-inf..inf]
+
+  #else
+  // need to determine what to do :D
+
+  #endif
+}
