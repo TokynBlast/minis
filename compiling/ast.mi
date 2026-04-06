@@ -60,9 +60,8 @@ list astasize(str code, str FileName) {
     ErrorInfo.CodeBlock = code[pos:pos+20];
     ErrorInfo.TruePos = pos;
 
-    // skip strings first :3
-    // we want to keep strings intact the most
-    if (code[pos] == '"') {
+    // FIXME: floating strings (strings not attached to anything) should be illegal
+    /*if (code[pos] == '"') {
       ++pos;
       str String = "";
       SimpleAST.append(ast[dquote]);
@@ -70,8 +69,8 @@ list astasize(str code, str FileName) {
       // FIXME: No detection for '\'
       while (code[pos] != '\"') {
         // incase we never find a closing point
-        if (pos >= sz) {
-          // FIXME: We need to get
+        if (pos > sz) {
+          // FIXME: We need to get ???
           err.print([ErrorInfo.SourceName, ErrorInfo.PosCol[0], ErrorInfo.PosCol[0],
                     f"String {ErrorInfo.Trace[-1].TraceName} never closed"],
                     [0, perr::IsWhat.Box, ErrorInfo.CodeBlock]);
@@ -135,6 +134,7 @@ list astasize(str code, str FileName) {
         // so we must rely on conversion first...
         fin_ast.append((char)"\{code[++pos]}");
       }
+      */
     } else if (code[pos] == ' ') {
       skipWS();
       return;
