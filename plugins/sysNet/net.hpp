@@ -1,1 +1,0 @@
-// Define inline functions
