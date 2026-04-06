@@ -32,8 +32,6 @@ struct ErrorCode {
 // after that, it will go back over, and change things,
 // like > and > become >>, aka, a bit shift :)
 
-// TODO: implement use of sync with, to let other take over any
-// time there is space and it's not in quotes :3
 list astasize(str code, str FileName) {
   void skipWS() {
       // in proper settings, spaces are more common than tabs
