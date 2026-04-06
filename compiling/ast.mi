@@ -155,8 +155,9 @@ list astasize(str code, str FileName) {
           fin_ast.append(ast[for_kw]);
           skipWS();
           if (code[++pos] != '(') {
-            print("{}:{}:{}: Error: a for loop must have (. Make sure you didn't forget it!\n",
-                  file_name, start_info[0], start_info[1]);
+
+            err.print([ErrorInfo.SourceName, ErrorInfo.PosCol,
+                f"0x02: Expected token not found"]);
             // TODO: ... next line ...
             // We try to look for a ), or .. to let us know we can continue :)
           }
