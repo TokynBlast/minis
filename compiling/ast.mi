@@ -7,12 +7,6 @@
 import AstVals;
 import perr;
 
-void skipWS() {
-  while (pos < sz && code[pos] == ' ') {
-    ++pos;
-  }
-}
-
 enum u8 Origin {
   Import,
   Function,
@@ -56,6 +50,13 @@ list astasize(str code, str FileName) {
   ErrorCode ErrorInfo = {FileName, "", [{"[INTERNAL ERROR 0x00: UNKNOWN TRACE ORIGINS]", Origin.Unknown}] /* As a backup */, 0, [col, row]};
 
   for (u64 pos = 0; pos < sz; ++pos) {
+
+    void skipWS() {
+      while (pos < sz && code[pos] == ' ') {
+        ++pos;
+      }
+    }
+
     ErrorInfo.CodeBlock = code[pos:pos+20];
     ErrorInfo.TruePos = pos;
 
