@@ -2,8 +2,7 @@
 
 local dict ErrVals {
   // unknown internal error
-  0x00:"This error occurs there was a problem tracing between files, functions, classes, etc.\nIt occurs if something wasn't traced, or there was no previously tracked location.",
-
+  0x00:"This error occurs there was a problem tracing steps between files, functions, classes, etc.\nIt occurs if something wasn't traced, or there was no previous location.\nIt is a fallback, and less a diagnosis of code.",
 }
 
 void help(int ErrorNum) {
