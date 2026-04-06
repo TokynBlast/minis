@@ -1,5 +1,10 @@
 #pragma once
 
+// static and not const, to cut down on size
+// const will insert it
+// static will get it at run time
+static str OccurWhen = "This error occurs when there is "
+
 local dict ErrVals {
   // unknown internal error
   0x00:"This error occurs there was a problem tracing steps between files, functions, classes, etc.\nIt occurs if something wasn't traced, or there was no previous location.\nIt is a fallback, and less a diagnosis of code.",
