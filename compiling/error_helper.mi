@@ -12,7 +12,7 @@ void help(int ErrorNum) {
   // we don't specify what we want to catch, since at the time of writing this,
   // we don't have `catch <thing> as e`
   } catch {
-    print("Opps! It looks like that error code doesn't exist. Make sure you typed the write code!");
+    print("Opps! It looks like that error code doesn't exist. Make sure you typed the correct error code!");
     exit(1);
   }
 }
