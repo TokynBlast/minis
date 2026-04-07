@@ -12,6 +12,8 @@ enum u8 Origin {
   Function,
   Variable,
   TernaryOp,
+  Circuit,
+  File,
   Unknown
 }
 
