@@ -78,8 +78,6 @@ list astasize(list[][str] code, str FileName) {
                           num += isNumeric(code[pos]) ? code[pos] : { err.print(ErrorInfo, "0x03: Expected initalized value to be a number"); exit(1); };
                         }
 
-                        SimpleAST.append(ast[for_check]);
-
                         while (code[pos] != ';') {
                           // being a bit lazy :3
                           #unroll [sym, name] for [('!', "not"), ('=', "eq"), ('>', "gt"),
