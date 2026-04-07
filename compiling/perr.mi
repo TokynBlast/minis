@@ -1,10 +1,6 @@
 #pragma once
 
-enum class u8 IsWhat {
-  Box,       // Box of code
-  Pointer,   // "first definition, second definition"
-  Suggestion // "Did you forget ___?"
-}
+import tracing;
 
 class error {
   public {
