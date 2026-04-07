@@ -146,14 +146,3 @@ list astasize(list[][str] code, str FileName) {
     }
   }
 }
-/*
-General formations:
-
-  for (i in 0..4) {}
-  for varName i in u8 0 fordd u8 4 fordd u8 1 lBrace rBrace END
-  - u8 was determined, because both are constant, and can easily fit into u8 :)
-  - the "fordd u8 1" is because it is the default, and is less work later :)
-
-  int x = 32; if (x == 32) { print("hoi"); }
-  if lParen int var_name x eq eq u8 32  lBrace fnCall print lParen str DQuote hoi DQuote rParen semicolon rBrace
-*/
