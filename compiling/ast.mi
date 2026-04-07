@@ -10,7 +10,6 @@ import perr;
 enum u8 Origin {
   Import,
   Function,
-  Variable,
   TernaryOp,
   Circuit,
   File,
