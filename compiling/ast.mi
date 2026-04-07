@@ -69,7 +69,6 @@ list astasize(list[][str] code, str FileName) {
                         if (pos >= sz) { err.print(ErrorIfo, "0x02: For loop was not closed"); exit(1); }
                         // tiny performance gain due to prediction
                         elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
-                        ++pos;
                         str num = "";
                         // TODO: Make it able to work with...
                         //       ...454 ;...
