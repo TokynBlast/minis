@@ -80,7 +80,6 @@ list astasize(list[][str] code, str FileName) {
                   SimpleAST.append(ast.ast[new_var]);
                   SimpleAST.append(ast.ast[txt_to_type[i+j]]);
                   str varname;
-                  list[2][u32] start_info = [ln, ln_pos];
                   --pos;
                   while (true) {
                     ++pos;
