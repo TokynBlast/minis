@@ -61,9 +61,7 @@ list astasize(str code, str FileName) {
 
   list SimpleAST = [];
 
-  // we need to make this smarter, not just do pos:pos+20
-  // We may use this to just track all sorts of info :)
-  global ErrorCode ErrorInfo = {FileName, "", [{"[INTERNAL ERROR 0x00: UNKNOWN TRACE ORIGINS]", Origin.Unknown}] /* As a backup */, 0, [col, row]};
+  global ErrorCode ErrorInfo = {[{FileName, Origin.File}], [col, row]};
 
   for (global u64 pos = 0; pos < sz; ++pos) {
     if (code[pos] == '"') {
