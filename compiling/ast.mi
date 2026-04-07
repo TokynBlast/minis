@@ -37,7 +37,7 @@ list astasize(list[][str] code, str FileName) {
       // we use a table cause it is the easiest for now :3
 
       // we harvest up to known stoppers :)
-      list[][char] stoppers = [';', '[', '"', '\'', '{', ' ', '\n', '\\', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', '\t', '('];
+      list[][char] stoppers = [';', '[', '"', '\'', '{', ' ', '\n', '\\', ':', '\t', '(', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
       str kw = "";
       while (code[pos] !in stoppers) { kw += code[pos]; ++pos; }
       table val {
