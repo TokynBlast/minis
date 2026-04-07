@@ -66,8 +66,9 @@ list astasize(list[][str] code, str FileName) {
                       (code[pos] == ' ') -> {
                         // we first check for an = before we assume there's a space in the variable name :D
                         skipWS();
-                        if (pos >= sz) { print("Error: Complex for loop incomplete"); exit(1); }
-                        if (code[pos] != '=') {
+                        if (pos >= sz) { err.print(ErrorIfo, "0x02: For loop was not closed"); exit(1); }
+                        // tiny performance gain due to prediction
+                        elif (code[pos] != '=') {
                           print("{}:{}:{}: Error: There needs to be an '=' following a decleation. Make sure you didn't forget!\n",
                                  file_name, start_info[0], start_info[1]);
                         }
