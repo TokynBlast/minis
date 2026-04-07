@@ -7,7 +7,7 @@ class error {
     void error() {}
 
     void print(&self,
-               ErrorCode parts,
+               tracing::ErrorCode info,
                str WhatsWrong
     ) {
       self.error = true;
