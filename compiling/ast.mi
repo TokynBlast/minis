@@ -68,11 +68,7 @@ list astasize(list[][str] code, str FileName) {
                         skipWS();
                         if (pos >= sz) { err.print(ErrorIfo, "0x02: For loop was not closed"); exit(1); }
                         // tiny performance gain due to prediction
-                        elif (code[pos] != '=') {
-                          print("{}:{}:{}: Error: There needs to be an '=' following a decleation. Make sure you didn't forget!\n",
-                                 file_name, start_info[0], start_info[1]);
-                        }
-
+                        elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
                         ++pos;
 
                         str num;
