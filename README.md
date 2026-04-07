@@ -1,10 +1,6 @@
 > [!WARNING]
 > The compiler is being developed!
 
-# Aknowledgements
-There are some projects that Minis relies on, and should be noted.<br>
-For all I/O (printing, file operation, etc.), (fast io)[] was used.
-
 # Minis
 ## What is Minis?
 Minis is a language, designed to be low-level, but also high level.<br>

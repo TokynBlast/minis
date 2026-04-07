@@ -1,0 +1,5 @@
+class mouse {
+  list[][int] GetClick() {
+    // TODO: Implement click detection
+  }
+}
