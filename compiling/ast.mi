@@ -6,28 +6,7 @@
 
 import AstVals as ast;
 import perr;
-
-enum u8 Origin {
-  Import,
-  Function,
-  TernaryOp,
-  Circuit,
-  File,
-  ForLoopSetup,
-  ForLoopExecute,
-  Unknown
-}
-
-struct TraceBack {
-  str TraceName,
-  Origin SourceType,
-}
-
-struct ErrorCode {
-  str CodeBlock,
-  list[TraceBack] Trace,
-  list[2][u64] PosCol
-}
+import tracing;
 
 // This function is meant to parse the whole thing in a simple
 // format. it understands the individual characters.

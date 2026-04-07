@@ -1,0 +1,23 @@
+enum u8 Origin {
+  Import,
+  Function,
+  TernaryOp,
+  Circuit,
+  File,
+  ForLoopSetup,
+  ForLoopExecute,
+  WhileLoopSet,
+  WhileLoopExecute,
+  Unknown
+}
+
+struct TraceBack {
+  str TraceName,
+  Origin SourceType,
+}
+
+struct ErrorCode {
+  str CodeBlock,
+  list[TraceBack] Trace,
+  list[2][u64] PosCol
+}
