@@ -11,96 +11,21 @@ class error {
                str WhatsWrong
     ) {
       self.error = true;
-      int PartsLen = parts.len();
-      bool EndIsNear = false;
-      str PipeIndent = "";
-      for (int i = 0; i < PartsLen; ++i) {
-        if (i + 1 >= PartsLen) { EndIsNear = true }
-        // TODO: [FIXME]
-        // FIXME: EndIsNear only checks if the next is the last one,
-        //        but we need to check if we ever go back to the same
-        //        indentation level before we going below the current,
-        //        This is more reliable than our current method, e.x.,
-        //
-        // 0, pointer
-        // 1, box
-        // 2, pointer
-        // 3, box
-        // 1, suggestion
-        // 0, suggestion
-        //
-        // currently:
-        //
-        // │
-        // ├→ text
-        // |  ╰┬──────╮
-        // |   │ code │
-        // |   ╰──────╯
-        // |  |  ├→ text
-        // |  |  |  ╰┬──────╮
-        // |  |  |   │ code │
-        // |  |  |   ╰──────╯
-        // |  ├→ text
-        // ╰→ text
-        //
-        // should be:
-        //
-        // │
-        // ├→ text
-        // |  ├┬──────╮
-        // |  |│ code │
-        // |  |╰──────┤
-        // |  |       ╰→ text
-        // |  |         ╰┬──────╮
-        // |  |          │ code │
-        // |  |          ╰──────╯
-        // |  ╰→ text
-        // ╰→ text
+      InfoLen = info.Trace.len();
+      // consistent across every error
+      write(
+        " ┏━ [ " +
+        info.Trace[0].TraceName +
+        " ] " +
+        ("━" * (34 - info.Trace[i].TraceName.len() - i * 3) +'\n')
+      );
 
-        // dumb check for how to indent
-        EndIsNear ? PipeIndent = "   " * parts[i][0]
-                  : PipeIndent = "|  " * parts[i][0];
-
-        // we have pointer and suggestion, to make intent more clear :)
-        // we could do something like one just leads to the other, like an alias,
-        // and in code, they get optomized into one :)
-        if (parts[i][1] == IsWhat.Pointer || parts[i][1] == IsWhat.Suggestion) {
-          EndIsNear ? write(PipeIndent + "╰→ ")
-                    : write(PipeIndent + "├→ ");
-          write(parts[i][2])
-        } else {
-          // the box
-
-          // split the code for printing :3
-          SplitCode = parts[i][2].split('\n');
-
-          // not inside, so we calculate once :)
-          LinesOfCode = SplitCode.len()
-
-          // the biggest one :)
-          Max = 0;
-          MaxLen = 50;
-          for (u8 j = 0; j < LinesOfCode; ++j) {
-            u8 CurrLen = SplitCode[j].len();
-            CurrLen > Max ? Max = CurrLen : continue;
-            if (CurrLen > MaxLen) {
-              // -3 for the '...'
-              SplitCode[j] = SplitCode[j][0:MaxLen-3] + "...";
-            }
-          }
-          Max = clamp(Max, 0, MaxLen) + 2;
-          // top and bottom of box
-          TopBottomSizing = "─" * Max;
-          write(PipeIndent + "╰┬"
-              + TopBottomSizing + "╮\n");
-
-          for (u8 k = 0; k < LinesOfCode; ++k) {
-            write(PipeIndent + " │ " + SplitCode[i] + ( " " * SplitCode[i].len() - Max ) + " │\n");
-          }
-          write(PipeIndent + " ╰"  + TopBottomSizing + '╯');
-        }
+      for (u8 i = 1; i < InfoLen; ++i) {
+        str SpaceCount = " " * (i * 3);
+        write(" ┃" + SpaceCount + "┗━ [ ");
+        write(info.Trace[i].TraceName + " ] " + '\n');
       }
-      flush();
+      write("┣" + "━" * 41);
     }
   }
   private {
