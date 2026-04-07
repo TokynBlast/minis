@@ -64,7 +64,8 @@ list astasize(list[][str] code, str FileName) {
       while (code[pos] !in stoppers) { kw += code[pos]; ++pos; }
       table val {
         "for": {
-          fin_ast.append(ast[for_kw]);
+          ErrorInfo.Trace.append({"For loop", Origin.ForLoopBegin});
+          SimpleAST.append(ast[ForKW]);
           skipWS();
           if (code[++pos] != '(') {
 
