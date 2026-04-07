@@ -83,7 +83,7 @@ list astasize(str code, str FileName) {
       // we use a table cause it is the easiest for now :3
 
       // we harvest up to known stoppers :)
-      array[list[char]] stoppers = ['[', '"', '\'', '{', ' ', '\n', 0..9];
+      list[][char] stoppers = ['[', '"', '\'', '{', ' ', '\n', 0..9];
       skipWS(); // even though this is a stopper, we do it for safety
       str val;
       array[list[u32]] start_info = [ln, ln_pos];
@@ -110,7 +110,7 @@ list astasize(str code, str FileName) {
                   fin_ast.append(ast[new_var]);
                   fin_ast.append(ast[txt_to_type[i+j]]);
                   str varname;
-                  array[list[u32]] start_info = [ln, ln_pos];
+                  list[2][u32] start_info = [ln, ln_pos];
                   --pos;
                   while (true) {
                     ++pos;
