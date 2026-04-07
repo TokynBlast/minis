@@ -15,7 +15,6 @@ class error {
                str WhatsWrong
     ) {
       self.error = true;
-      write("Error: {}:{}:{}: {}\n│\n", header[0], header[1][0], header[1][1], header[2]);
       int PartsLen = parts.len();
       bool EndIsNear = false;
       str PipeIndent = "";
