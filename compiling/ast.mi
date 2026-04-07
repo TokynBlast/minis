@@ -34,25 +34,7 @@ struct ErrorCode {
 // after that, it will go back over, and change things,
 // like > and > become >>, aka, a bit shift :)
 
-list astasize(str code, str FileName) {
-  void skipWS() {
-      // in proper settings, spaces are more common than tabs
-      while (pos < sz) {
-        ++pos;
-        table code[pos] {
-          (' ' || '\t') -> ErrorInfo.PosCol[0] += 1;
-
-          // reset the x (col), and add to the y (row)
-          '\n' -> {
-            ErrorInfo.PosCol[0] = 1;
-            ErrorInfo.PosCol[1] += 1;
-          };
-
-          _ -> break;
-        } // table
-      } // while
-    } // func
-
+list astasize(list[][str] code, str FileName) {
   perr::error err = perr::error();
 
   u32 col = 1, row = 1;
