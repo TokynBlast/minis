@@ -111,7 +111,7 @@ list astasize(list[][str] code, str FileName) {
                           */
                         }
 
-                        fin_ast.append(ast[for_check]);
+                        SimpleAST.append(ast[for_check]);
 
                         while (code[pos] != ';') {
                           // being a bit lazy :3
