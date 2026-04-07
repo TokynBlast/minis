@@ -54,9 +54,9 @@ list astasize(list[][str] code, str FileName) {
             for (j:['8', "16", "32", "64", "128", "256", "512"]) {
               for (k in 0..j.len()) {
                 if ((code[++pos] == i) && (code[pos+k] == j[k])) {
-                  SimpleAST.append(ast.ast[complex_for]);
-                  SimpleAST.append(ast.ast[new_var]);
-                  SimpleAST.append(ast.ast[txt_to_type[i+j]]);
+                  // TODO: Make it properly detect...
+                  //       this is balls :l
+                  SimpleAST.append(ast::ast[MakeVarInt]);
                   str varname;
                   --pos;
                   while (true) {
