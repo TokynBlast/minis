@@ -84,7 +84,7 @@ list astasize(str code, str FileName) {
       list[][char] stoppers = ['[', '"', '\'', '{', ' ', '\n', 0..9];
       skipWS(); // even though this is a stopper, we do it for safety
       str val;
-      array[list[u32]] start_info = [ln, ln_pos];
+      list[][u32] start_info = [ln, ln_pos];
       while (code[pos] !in stoppers) { val += code[pos]; }
       table val {
         "for": {
