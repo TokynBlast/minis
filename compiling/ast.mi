@@ -72,7 +72,8 @@ list astasize(list[][str] code, str FileName) {
                         ++pos;
                         str num = "";
                         while (code[pos] != ';') {
-                          num += code[pos];
+                          num += isNumeric(code[pos]) ? code[pos] : { err.print(ErrorInfo, "0x03: Expected initalized value to be a number") };
+                          ++[pos]
                           // when more is added, expand to a full branch tree :)
                           // i got really confused... soooo... this is gonna be saved for later,
                           // so it doesn't cause problems with compiling down the road :3
