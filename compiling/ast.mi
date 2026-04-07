@@ -70,9 +70,7 @@ list astasize(list[][str] code, str FileName) {
                         // tiny performance gain due to prediction
                         elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
                         ++pos;
-
-                        str num;
-
+                        str num = "";
                         while (code[pos] != ';') {
                           num += code[pos];
                           // when more is added, expand to a full branch tree :)
