@@ -9,7 +9,7 @@ local dict ErrVals = {
   // unknown internal error
   0x00: OccurWhen + "a problem tracing steps between files, functions, classes, etc.\nIt occurs if something wasn't traced, or there was no previous location.\nIt is a fallback, and less a diagnosis of code.",
   0x01: OccurWhen + "data, without any parent. This includes any type not attached to a variable.",
-  0x02: OccurWhen + "a char that was expexted, but it was not found.\nIt can occur when a string is not completed, a list is not closed, an if statement never got the closing parentheses."
+  0x02: OccurWhen + "a token was expexted, but it wasn't found.\nIt can occur when a string is not completed, a list is not closed, an if statement never got the closing parentheses.\nThis error also covers incomplete functions, keywords, etc."
 };
 
 void help(int ErrorNum) {
