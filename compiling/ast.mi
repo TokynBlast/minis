@@ -23,7 +23,7 @@ list astasize(list[][str] code, str FileName) {
 
   list SimpleAST = [];
 
-  global ErrorCode ErrorInfo = {[{FileName, Origin.File}], [col, row]};
+  global tracing::ErrorCode ErrorInfo = {[{FileName, tracing::Origin.File}], [col, row]};
 
   for (global u64 pos = 0; pos < sz; ++pos) {
     if (code[pos] == '"') {
