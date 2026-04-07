@@ -13,6 +13,8 @@ enum u8 Origin {
   TernaryOp,
   Circuit,
   File,
+  ForLoopSetup,
+  ForLoopExecute,
   Unknown
 }
 
