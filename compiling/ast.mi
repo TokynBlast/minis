@@ -100,7 +100,6 @@ list astasize(str code, str FileName) {
             // We try to look for a ), or .. to let us know we can continue :)
           }
 
-          // complex branch
           // for (define; check; increment) {}
           for (i in ['u', 'i']) {
             for (j in ['8', "16", "32", "64", "128", "256", "512"]) {
