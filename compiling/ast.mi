@@ -4,7 +4,7 @@
 // it then goes over it with a smart check, turning it into
 // "ternary_start if_stmt var x isEQ 32 endif_stmt continue else break ternary_end"
 
-import AstVals;
+import AstVals as ast;
 import perr;
 
 enum u8 Origin {
