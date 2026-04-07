@@ -25,8 +25,8 @@ struct TraceBack {
 struct ErrorCode {
   str CodeBlock,
   list[TraceBack] Trace,
-  arr[2][u64] PosCol
   list[2][u64] PosCol
+}
 
 // This function is meant to parse the whole thing in a simple
 // format. it understands the individual characters.
