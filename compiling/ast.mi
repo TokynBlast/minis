@@ -42,7 +42,7 @@ list astasize(list[][str] code, str FileName) {
       while (code[pos] !in stoppers) { kw += code[pos]; ++pos; }
       table val {
         "for": {
-          ErrorInfo.Trace.append({"For loop", Origin.ForLoopBegin});
+          ErrorInfo.Trace.append({"For loop", tracing::Origin.ForLoopBegin});
           SimpleAST.append(ast[ForKW]);
           skipWS();
           if (code[++pos] != '(') {
