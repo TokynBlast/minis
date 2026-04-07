@@ -45,7 +45,7 @@ list astasize(list[][str] code, str FileName) {
           ErrorInfo.Trace.append({"For loop", tracing::Origin.ForLoopBegin});
           SimpleAST.append(ast[ForKW]);
           skipWS();
-          if (code[++pos] != '(') {
+          if (code[pos] != '(') {
             err.print(ErrorInfo, f"0x02: Expected token not found, '('");
           }
 
