@@ -70,6 +70,7 @@ list astasize(list[][str] code, str FileName) {
                         // tiny performance gain due to prediction
                         elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
                         str num = "";
+                        skipWS();
                         // TODO: Make it able to work with...
                         //       ...454 ;...
                         //             ^
