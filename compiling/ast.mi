@@ -65,19 +65,13 @@ list astasize(str code, str FileName) {
 
   for (global u64 pos = 0; pos < sz; ++pos) {
     if (code[pos] == '"') {
-      err.print([ErrorInfo.SourceName, ErrorInfo.PosCol,
-                f"0x01: Parentless string {ErrorInfo.Trace[-1].TraceName}"]);
+      err.print(ErrorInfo, f"0x01: Parentless string");
     } else if (code[pos] == '\'') {
-      err.print([ErrorInfo.SourceName, ErrorInfo.PosCol,
-                f"0x01: Parentless char {ErrorInfo.Trace[-1].TraceName}"]);
-    } else if (code[pos] == ' ') {
+      err.print(ErrorInfo, f"0x01: Parentless char");
+    } else if (code[pos] == ' ' || code[pos] == '\n' || code[pos] == '\t') {
       skipWS();
-      return;
-    } else if (code[pos] == '\n') { ln++; return; }
-
-    else {
-      // after handling other cases, we look to see
-      // if it may be keywords! :D
+    } else {
+      // after basic section clearing
       // we use a table cause it is the easiest for now :3
 
       // we harvest up to known stoppers :)
