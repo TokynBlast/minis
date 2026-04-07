@@ -71,6 +71,9 @@ list astasize(list[][str] code, str FileName) {
                         elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
                         ++pos;
                         str num = "";
+                        // TODO: Make it able to work with...
+                        //       ...454 ;...
+                        //             ^
                         while (code[pos] != ';') {
                           num += isNumeric(code[pos]) ? code[pos] : { err.print(ErrorInfo, "0x03: Expected initalized value to be a number"); exit(1); };
                         }
