@@ -2,7 +2,8 @@
 import ../variable;
 struct List {
   ptr Start,
-  int Size
+  int Size,
+  int Reserved
 };
 
 // for reference, and possible future implementation
