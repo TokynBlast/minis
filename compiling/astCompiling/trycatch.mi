@@ -16,5 +16,5 @@ struct TryCatch {
   // the try
   list ToDo,
   // the catch(s)
-  list[][list[Catch]]
+  list[][Catch]
 };
