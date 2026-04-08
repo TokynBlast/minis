@@ -389,9 +389,9 @@ statement = {
   | unroll_directive
   | ternary_stmt
   | block
- | namespace_call ~ ";"?
+  | namespace_call ~ ";"?
   | function_call ~ ";"?
-    | expr ~ ";"?
+  | expr ~ ";"?
   | while_stmt
   | for_loop
 }
