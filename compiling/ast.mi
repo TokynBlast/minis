@@ -21,7 +21,7 @@ list astasize(list[][str] code, str FileName) {
   // to avoid calculating size over and over :3
   static u64 sz = code.len();
 
-  list SimpleAST = [];
+  list SimpleAST, Borrowed, VarInScope, FnInScope = [];
 
   global tracing::ErrorCode ErrorInfo = {[{FileName, tracing::Origin.File}], [col, row]};
 
