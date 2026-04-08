@@ -1,5 +1,5 @@
 #pragma once
 struct String {
-  int Size,
-  list[][char] Contents
+  ptr Contents,
+  int Size
 };
