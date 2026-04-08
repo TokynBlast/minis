@@ -12,6 +12,7 @@ enum u16 ast = {
   diveq,       // /=
   peq,         // +=
   meq,         // -=
+  teq,         // *=
   isEQ,        // ==
   gt,          // >
   lt,          // <
