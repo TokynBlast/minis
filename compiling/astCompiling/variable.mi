@@ -37,7 +37,7 @@ enum u8 RefType {
   Pointer,   // *x
   Reference, // &x
   Raw        //  x
-}
+};
 
 // used for making variables :3
 struct Var {
