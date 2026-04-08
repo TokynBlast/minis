@@ -1,8 +1,7 @@
 #pragma once
 import ../variable;
 struct List {
-  void* Data,
-  void* Next,
+  ptr Start,
   // FIXME: This isn't garunteed to work very well.
   list[][variable.Type] Structure
 };
