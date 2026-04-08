@@ -5,7 +5,7 @@ enum u16 ErrorCatches {
   IntegerOverflow,
   DoubleOverflow,
   UnknownTrace
-}
+};
 
 struct Catch {
   ErrorCatches ErrorToCatch,
