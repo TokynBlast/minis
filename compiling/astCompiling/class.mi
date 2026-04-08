@@ -7,7 +7,7 @@ struct Class {
   list Private
 };
 
-stuct Init {
+struct Init {
   variable.Type Return,
   list ToDo
 };
