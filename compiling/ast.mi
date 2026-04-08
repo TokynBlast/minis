@@ -46,9 +46,9 @@ list astasize(list[][str] code, str FileName) {
   for (global u64 pos = 0; pos < sz; ++pos) {
     if (code[pos] == '"') {
       err.print(ErrorInfo, f"0x01: Parentless string");
-    } else if (code[pos] == '\'') {
+    } elif (code[pos] == '\'') {
       err.print(ErrorInfo, f"0x01: Parentless char");
-    } else if (code[pos] == ' ' || code[pos] == '\n' || code[pos] == '\t') {
+    } elif (code[pos] == ' ' || code[pos] == '\n' || code[pos] == '\t') {
       skipWS();
     } else {
       // after basic section clearing

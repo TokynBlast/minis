@@ -41,7 +41,7 @@ str* macro_expand(str* code, list macros) {
           // TODO: update to use new error
           print("{}:{}:{}: Error: String was never close.\n", "file name", 0, 0);
           exit(1);
-        } else if (code[i] == '"') {
+        } elif (code[i] == '"') {
           output += '"';
           break;
         } else {
@@ -51,7 +51,7 @@ str* macro_expand(str* code, list macros) {
           // continue if not :3
         }
       }
-    } else if (code[i] == '#') {
+    } elif (code[i] == '#') {
       ++i;
       str mac = "";
       while (code[i] != ' ') {
