@@ -160,6 +160,6 @@ def ll_gen() -> str:
   return "\n".join(chunks)
 
 output = ll_gen()
-with open("src/maths.ll", "w") as mathf:
+with open("maths.ll", "w") as mathf:
   mathf.write(output)
   mathf.close()
