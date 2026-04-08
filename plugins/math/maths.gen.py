@@ -138,7 +138,7 @@ loop_end:
 
 def ll_gen() -> str:
   chunks = ["%%struct.Keyword = type { i8*, i8* }"] # { key_ptr, value_ptr }
-  sizes = [8, 16, 32, 64, 128, 256]
+  sizes = [8, 16, 32, 64, 128, 256, 512]
 
   for size in sizes:
     chunks.append(_mult_template(size, signed=True))
