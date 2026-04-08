@@ -39,6 +39,11 @@ enum u8 RefType {
   Raw        //  x
 };
 
+enum u8 Modifier {
+  Static,
+  Const
+};
+
 // used for making variables :3
 struct Var {
   Type TypeStored,
