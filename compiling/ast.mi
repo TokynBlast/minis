@@ -91,7 +91,7 @@ list astasize(list[][str] code, str FileName) {
                         // TODO: Make it able to work with...
                         //       ...454 ;...
                         //             ^
-                        for (int i = 0; i < sz && code[pos] !in stoppers[0:-10]; ++pos) {
+                        for (int i = 0; i < sz && code[pos] !in stoppers[0:-11]; ++pos) {
                           num += isNumeric(code[pos]) ? code[pos] : { err.print(ErrorInfo, "0x03: Expected initalized value to be a number"); exit(1); };
                         }
 
