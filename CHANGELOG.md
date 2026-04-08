@@ -1,6 +1,5 @@
 ### v0.1.0
 <pre>Changed compiler to Clang/LLVM
-Add </pre>`extern "C"`<pre> to the language
 Add Python build and testing scripts
 Split VM into seperate project</pre>
 
