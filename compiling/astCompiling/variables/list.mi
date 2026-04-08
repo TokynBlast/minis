@@ -6,3 +6,42 @@ struct List {
   // FIXME: This isn't garunteed to work very well.
   list[][variable.Type] Structure
 };
+
+// for reference, and possible future implementation
+/*class list {
+  public {
+    int len(&self) { return self.length; }
+    void preserve(&self, int n) { self.capacity = n; }
+
+    void __new__(&self, **kwargs items) {
+      self.length = items.length;
+      self.capacity = self.length;
+
+      for (int i = 0; i < items.length; ++i) {
+        self.data[i] = items[i];
+      }
+    }
+
+    // for fixed size lists, where we can't go above what we have! :D
+    void* __get__(&self, int where) { return self.data[where]; }
+
+    // for list that can, and may have expanded
+    void* __get__worried__(&self, int where) {
+      if (where > self.length) {
+        // TODO: add runtime errors :3
+        print("OOB ERROR");
+        exit(1);
+      }
+      return data[where];
+    }
+
+    void __set__()
+  }
+
+  private {
+    int length;
+    int capacity;
+    ptr data;
+  }
+}
+*/
