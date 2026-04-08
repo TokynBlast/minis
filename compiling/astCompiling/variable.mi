@@ -29,7 +29,8 @@ enum u8 Type {
   Char,
   Bool,
   Tribool,
-  Void
+  Void,
+  Ptr
 };
 
 enum u8 RefType {
@@ -71,6 +72,7 @@ bool TypeMatch(Var Contents) {
     Type.Bool:bool,
     Type.Tribool:tribool,
     Type.Void:void,
+    Type.Ptr:ptr
   };
 
   conv[Contents.TypeStored] == Contents.Value ? return true : return false;
