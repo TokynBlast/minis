@@ -18,7 +18,7 @@ inline void flushln(**kwargs vals) {
 void* max(variant<str, list>& ToFindMax) {
   // FIXME: We need to make sure we're comparing same types :)
   try {
-    Biggest = ToFindMax[0];
+    int Biggest = ToFindMax[0];
   } catch {
     print("List cannot be empty");
     exit(1);
