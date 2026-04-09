@@ -1,9 +1,5 @@
 import templ.mi;
 
-inline void println(**kwargs vals) {
-  print(vals, "\n");
-}
-
 inline void writeln(**kwargs vals) {
   write(vals, "\n");
 }

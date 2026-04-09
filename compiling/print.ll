@@ -32,4 +32,6 @@ define void @print(i8* %str, i64 %len) {
     ret void
 }
 
+define void @println()
+
 declare i64 @write(i32, i8*, i64)
