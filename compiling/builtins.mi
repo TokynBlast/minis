@@ -1,15 +1,5 @@
 import templ.mi;
 
-inline void writeln(**kwargs vals) {
-  write(vals, "\n");
-}
-
-// maybe redundant?
-inline void flushln(**kwargs vals) {
-  writeln(vals, "\n");
-  flush();
-}
-
 // return any value, which we can garuntee will be a number of some type.
 // FIXME: We need to make sure we're comparing same types :)
 void* max(variant<str, list>& ToFindMax) {

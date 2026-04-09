@@ -41,6 +41,16 @@ define void @println(i8* %str, i64 %len) {
   call void @print(ptr @newline, i64 1)
 }
 
+define void @flushln() {
+  call void @flush()
+  call void @print(ptr @newline, i64 1)
+}
+
+define @writeln(i8* %str, i64 %len) {
+  call void write(i8* %str, i64 %len)
+  call void write(ptr @newline, i64 %1)
+}
+
 declare i64 @write(i32, i8*, i64)
 
 attribues #0 = { noinline }
