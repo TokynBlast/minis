@@ -41,9 +41,6 @@ flush();
 ```
 The reason there is no & (reference) next to the strings, is because the write function's bufer must own it. There is nobody else to own it, so write is forced to.
 
-## len
-This will get you the length of an input string or list. It is currently slow because of how it works. It walks the item provided until the kernel stops it and says that's outside of  it's memory.
-
 ## IsAlpha
 Returns a `bool`. It will tell you if the character(s) provided are roman characters. (A-Z, a-z).
 
