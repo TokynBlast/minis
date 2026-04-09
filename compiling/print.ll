@@ -4,6 +4,8 @@ declare i64 @writev(i32, i8*, i32)
 @iov = global [1024 x {i8*, i64}] zeroinitializer  ; up to 1024 chunks
 @iov_count = global i32 0
 
+@newline = private unnamed_addr constant [1 x i8] c"\0A", align 1
+
 ; WriteBuffer — just stores pointer and length, zero copying!
 define void @write(i8* %str, i64 %len) {
     %idx = load i32, i32* @iov_count
@@ -32,6 +34,11 @@ define void @print(i8* %str, i64 %len) {
     ret void
 }
 
-define void @println()
+define void @println(i8* %str, i64 %len) {
+  ; print the string
+  call void @print(ptr %str, i64 %len)
+  ; print the newline
+  call void @print(ptr @newline, i64 1)
+}
 
 declare i64 @write(i32, i8*, i64)
