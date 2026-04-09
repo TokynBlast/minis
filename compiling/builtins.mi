@@ -147,11 +147,26 @@ bool isLetter(str* char) {
 }
 
 auto clamp(auto num, auto min, auto max) {
-  #assert min < max
-  #assert min != max
+  #if extern min || extern max
+    if (min > max) {
+      Error(/*TODO: Fill this part in :)*/, "clamp() min arg cannot be greater than max arg\n");
+    } elif (min == max) {
+      Error(/*TODO: Fill this part in :)*/, "clamp() min arg cannot be equal to max arg\n");
+    } elif (typeof(num) != typeof(min) != typeof(max)) {
+      Error(/*TODO: Fill this part in :)*/, f"clamp() num ({typeof(num)}), min ({typeof(min)}), and max ({typeof(max)}) arg must be the same type\n");
+    }
+  #else
+    assert(min < max) else {
+      #error "clamp() min arg cannot be greater than max arg\n"
+    };
+    assert(min != max) else {
+      #error "clamp() min arg cannot be equal to max arg\n"
+    }
+  #endif
+
   return {
-    min >= num -> min,
-    max <= num -> max,
+    min > num -> min,
+    max < num -> max,
     _ -> num
   };
 }
