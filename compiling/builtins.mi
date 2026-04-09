@@ -55,22 +55,22 @@ bool isNumeric(variant<char*, str*> c) {
   #endif
 }
 
-bool isAlpha(variant<char*, str*> c) {
-  #if c type is char
-    if (c in 65..90 || c in 97..122) {
+bool isAlpha(char c) {
+  if (
+      (int(c) >= 65 && int(c) <= 90) ||
+      (int(c) >= 97 && int(c) <= 122)
+    ) {
       return true;
     }
-    return false;
-  #elif c type is str
-    for char in 0..len(c) {
-      if (c[char] in 65..90 || c[char] in 97..122) {
-        continue;
-      } else {
-        return false;
-      }
-    }
-    return true;
-  #endif
+  return false;
+}
+
+bool isAlpha(&str c) {
+  for (int i = 0; i < c.len; ++i) {
+    if (isAlpha(c[i]);) { continue; }
+    else { return false; }
+  }
+  return true;
 }
 
 // If we do...
