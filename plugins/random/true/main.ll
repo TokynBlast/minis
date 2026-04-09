@@ -15,6 +15,7 @@ entry:
     i32 2, label %macos   ; Mac
     i32 3, label %posix   ; Solaris
     i32 4, label %posix   ; OS2
+    i32 5, label %posix   ; BSD
   ]
 
 posix:
