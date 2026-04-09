@@ -75,7 +75,7 @@ hljs.registerLanguage('minis', function (hljs) {
       {
         // macros: #def, #ifdef, #if, #embed
         className: 'meta',
-        begin: /#(ifdef|def|ifndef|if|embed|unroll)\b/
+        begin: /#(ifdef|def|ifndef|if|embed|unroll|error|pragma)\b/
       },
       {
         // function names
