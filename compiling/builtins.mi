@@ -18,7 +18,7 @@ inline void flushln(**kwargs vals) {
 // FIXME: We need to make sure we're comparing same types :)
 void* max(variant<str, list>& ToFindMax) {
   // FIXME: This should be more advanced
-  #if typeof(ToFindMax) == typeof(arr)
+  #if typeof(ToFindMax) == typeof(list[-inf..inf])
     assert(ToFindMax.len >= 2) else {
       #error "Variable passed to max() must have atleast two items"
     }
