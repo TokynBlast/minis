@@ -17,14 +17,23 @@ inline void flushln(**kwargs vals) {
 // return any value, which we can garuntee will be a number of some type.
 void* max(variant<str, list>& ToFindMax) {
   // FIXME: We need to make sure we're comparing same types :)
-  try {
-    int Biggest = ToFindMax[0];
-  } catch {
-    print("List cannot be empty");
-    exit(1);
-  }
-  for i as 0..len(ToFindMax) {
-    ToFindMax[i] < &Biggest ? Biggest = ToFindMax[i] : continue;
+  // FIXME: This should be more advanced
+  #if typeof(ToFindMax) == typeof(arr)
+    assert(ToFindMax.len >= 2) else {
+      #error "Variable passed to max() must have atleast two items"
+    }
+  #else
+    if (!(ToFindMax.len >= 2)) {
+      return Error(/*TODO: This needs to have some type of error*/, "Variable passed to max() must have at least two items");
+    }
+  #endif
+
+  int Biggest = 0;
+
+  for (int i = 0; i < ToFindMax.len; ++i) {
+    if (ToFindMax[i] < Biggest) {
+      Biggest = ToFindMax[i];
+    }
   }
 }
 
