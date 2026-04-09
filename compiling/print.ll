@@ -7,7 +7,7 @@ declare i64 @writev(i32, i8*, i32)
 @newline = private unnamed_addr constant [1 x i8] c"\0A", align 1
 
 ; WriteBuffer — just stores pointer and length, zero copying!
-define void @write(i8* %str, i64 %len) {
+define void @write(i8* %str, i64 %len) #0 {
     %idx = load i32, i32* @iov_count
     %slot = getelementptr [1024 x {i8*, i64}], [1024 x {i8*, i64}]* @iov, i32 0, i32 %idx
     %ptr_field = getelementptr {i8*, i64}, {i8*, i64}* %slot, i32 0, i32 0
@@ -42,3 +42,5 @@ define void @println(i8* %str, i64 %len) {
 }
 
 declare i64 @write(i32, i8*, i64)
+
+attribues #0 = { noinline }
