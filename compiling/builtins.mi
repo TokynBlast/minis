@@ -15,8 +15,8 @@ inline void flushln(**kwargs vals) {
 }
 
 // return any value, which we can garuntee will be a number of some type.
+// FIXME: We need to make sure we're comparing same types :)
 void* max(variant<str, list>& ToFindMax) {
-  // FIXME: We need to make sure we're comparing same types :)
   // FIXME: This should be more advanced
   #if typeof(ToFindMax) == typeof(arr)
     assert(ToFindMax.len >= 2) else {
