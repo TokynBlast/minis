@@ -1,3 +1,5 @@
+; this is compiled code, from a modified C++ file
+
 ; =====================================
 ; true_rand — Windows (BCryptGenRandom)
 ; =====================================
