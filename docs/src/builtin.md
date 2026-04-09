@@ -55,3 +55,17 @@ Returns a `bool`. This funciton will tell you if the provided character(s) are a
 
 ## exit
 No return. Takes a single int. It will unwrap the stack, deallocate everything, then return the given value to the system.
+
+## assert
+The assert function checks if a value is true at compile time.<br>
+An else can be used after, to tell the compiler what to do when it is wrong.<br>
+
+As an example, this code will round to the nearest multiple of two, if x is not a multiple of two.
+```minis
+int main() {
+  int x = 32;
+  assert(x % 2 == 0) else {
+    for (; x % 2 != 0; ++x) {}
+  };
+}
+```
