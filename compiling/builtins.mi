@@ -164,11 +164,13 @@ auto clamp(auto num, auto min, auto max) {
     }
   #endif
 
-  return {
-    min > num -> min,
-    max < num -> max,
-    _ -> num
-  };
+  // return {
+  //   min > num -> min,
+  //   max < num -> max,
+  //   _ -> num
+  // };
+  num = min > num ? min : num;
+  return max < num ? max : num;
 }
 
 list sort(list ToSort) {
