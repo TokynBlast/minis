@@ -40,12 +40,12 @@ void* max(variant<str, list>& ToFindMax) {
 }
 
 bool isNumeric(variant<char*, str*> c) {
-  #if c type is char
+  #if typeof(c) == char
     if (c in 48..57) {
       return true
     }
     return false
-  #elif c type is str
+  #elif typeof(c) == str
     for char in 0..len(c) {
       if (c[char] in 48..57) {
         continue;
