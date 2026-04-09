@@ -35,6 +35,8 @@ void* max(variant<str, list>& ToFindMax) {
       Biggest = ToFindMax[i];
     }
   }
+
+  return Biggest;
 }
 
 bool isNumeric(variant<char*, str*> c) {
