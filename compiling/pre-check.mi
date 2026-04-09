@@ -1,0 +1,105 @@
+// This file takes care of checking structure.
+
+import perr;
+import tracing;
+import astCompiling/variable;
+
+&str StructCheck(&str code, str FileName) {
+  perr::error err = perr::error();
+
+  u32 col = 1, row = 1;
+
+  // to avoid calculating size over and over :3
+  static u64 sz = code.len();
+
+// TURN THESE INTO STRUCTS!!
+  // { str : variable.Var }
+  // { name : type }
+  dict[][str:variable.Var] VarInScope = {};
+  // { str : [ variable.Type , variable.Type , variable.Modifier ] }
+  // { name : [ output , input , return modifiers ] }
+  dict[][str:list[3][void*]] FnInScope = {};
+
+  global tracing::ErrorCode ErrorInfo = {[{FileName, tracing::Origin.File}], [col, row]};
+
+  void skipWS() {
+    // in proper settings, spaces are more common than tabs
+    while (pos < sz) {
+      ++pos;
+      table code[pos] {
+        (' ' || '\t') -> ErrorInfo.PosCol[0] += 1; break;
+
+        // reset the x (col), and add to the y (row)
+        '\n' -> {
+          ErrorInfo.PosCol[0] = 1;
+          ErrorInfo.PosCol[1] += 1;
+        } break;
+
+        '\r' -> {
+          ErrorInfo.PosCol[0] = 1;
+        } break;
+
+        _ -> break;
+      } // table
+    } // while
+  } // func
+
+  for (global u64 pos = 0; pos < sz; ++pos) {
+    if (code[pos] == '"') {
+      err.print(ErrorInfo, "0x01: Parentless string");
+    } elif (code[pos] == '\'') {
+      err.print(ErrorInfo, "0x01: Parentless char");
+    } elif (code[pos] == ' ' || code[pos] == '\t' || code[pos] == '\n') {
+      skipWS();
+    } else {
+      list[][char] stoppers = [';', '[', '"', '\'', '{', ' ', '\n', '\\', ':', '\t', '(', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      str kw = "";
+      while (code[pos] !in stoppers) { kw += code[pos]; ++pos; }
+      skipWS(); // skip any space between keyword and what follows
+      table kw {
+        "for": {
+          ErrorInfo.Trace.append({"For loop", tracing::Origin.ForLoopSetup});
+
+          if (code[pos] != '(') {
+            err.print(ErrorInfo, "0x02: Expected token not found, '('");
+          }
+          ++pos; // step into the parens
+          skipWS();
+
+          for (i:['u', 'i']) {
+            for (j:['8', "16", "32", "64", "128", "256", "512"]) {
+              for (k in 0..j.len()) {
+                if ((code[pos+1] == i) && (code[pos+k] == j[k])) {
+                  str varname = "";
+                  // TODO: Change this to a for loop
+                  for (int l = 0; pos < sz; ++l) {
+                    ++pos
+                    skipWS();
+                    varname += {
+                      (code[pos] == ' ') -> {
+                        if (pos >= sz) { err.print(ErrorInfo, "0x02: For loop was not closed"); exit(1); }
+                        elif (code[pos] != '=') { err.print(ErrorInfo, "0x02: Expected token not found '='"); }
+                      }
+                    } // varname +=
+                    ++pos;
+                    skipWS(); // skip space after =
+                    str num = "";
+                    for (int i = 0; i < sz && code[pos] !in stoppers[0:-11]; ++pos) {
+                      num += isNumeric(code[pos]) ? code[pos] : { err.print(ErrorInfo, "0x03: Expected initalized value to be an int"); exit(1); };
+                    }
+                    skipWS();
+
+                    while (code[pos] != ';') {
+                      if (pos+1 > sz) { err.print(ErrorCode, "0x02: No end to for loop"); } else { ++pos; }
+                    } // while
+                  } // for loop l
+                } // complicated if check
+              } // for loop k
+            } // for loop j
+          } // for loop i
+        } break; // table for
+        _ -> { err.print(ErrorInfo, f"0x02: Unknown keyword or token {kw}"); }
+      } // table
+    }
+  }
+}
