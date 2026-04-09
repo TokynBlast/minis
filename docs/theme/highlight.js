@@ -57,8 +57,8 @@ hljs.registerLanguage('minis', function (hljs) {
   return {
     name: 'Minis',
     keywords: {
-      keyword: 'return import as for while if else break class public private self void auto enum struct other self other with and sync continue',
-      type: 'u8 u16 u32 u64 u128 u256 i8 i16 i32 i64 i128 i256 int float bool tribool list dict str char auto void',
+      keyword: 'return import as for while if else break class public private self void auto with and sync continue when in elif try catch finally',
+      type: 'u8 u16 u32 u64 u128 u256 u512 i8 i16 i32 i64 i128 i256 i512 int float bool tribool list dict str char auto void vec ptr enum struct',
       literal: 'true false nil',
       built_in: 'print println clamp len write flush',
     },
@@ -75,7 +75,7 @@ hljs.registerLanguage('minis', function (hljs) {
       {
         // macros: #def, #ifdef, #if, #embed
         className: 'meta',
-        begin: /#(ifdef|def|ifndef|if|embed)\b/
+        begin: /#(ifdef|def|ifndef|if|embed|unroll)\b/
       },
       {
         // function names
