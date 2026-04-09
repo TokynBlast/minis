@@ -1,18 +1,5 @@
 import templ.mi;
 
-// FIXME: Make it get the chainHeader length value instead
-void* len(variant<list, str> to_count) {
-  u64 length = 0,
-  i = 0;
-
-  // Go till null terminator
-  while (to_count[i] != '\0') {
-    i++;
-    length++;
-  }
-  return length;
-}
-
 inline void println(**kwargs vals) {
   print(vals, "\n");
 }
