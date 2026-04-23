@@ -16,7 +16,9 @@ Inside the function, there is now `a` and `b` you can use.
 ### Setting a Default
 To set a default for a value, you do it like initalizing a variable anywhere else, like so...
 ```minis
-int add (int a=1, int b=1) {}
+int add (int a = 1, int b = 1) {
+    return a + b;
+}
 ```
 Now, if `a` or `b` aren't provided, it will just use `1` and `1`.
 If you want to set b, but use the default for a, you would do...
