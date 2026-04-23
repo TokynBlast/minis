@@ -43,9 +43,9 @@ base_type = {
   | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
   | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict"
-  | "void" | "auto"
+  | "void" | "auto" | "ptr"
 }
-variant_element = { (base_type | class_name) ~ "*"? }
+variant_element = { "&"? ~ (base_type | class_name) ~ "*"? }
 // Allow variant to close with > or not (for struct fields that end with ;)
 variant_type = { "variant" ~ "<" ~ variant_element ~ ("," ~ variant_element)* ~ ">"? }
 experimental_variant_type = { "!" ~ variant_type }
@@ -79,7 +79,7 @@ keyword = @{
   | "i8" | "i16" | "i32" | "i64"
   | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
-  | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict"
+  | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict" | "ptr"
   | "void" | "auto"
   | "const" | "static" | "variant"
   | "true" | "false" | "global" | "unknown"
@@ -102,7 +102,7 @@ ident_or_template = { template_var | identifier }
 string = { "\"" ~ (("\\" ~ ANY) | (!"\"" ~ ANY))* ~ "\"" }
 
 // Character literal
-char_literal = { "'" ~ (("\\" ~ ANY) | (!"'" ~ ANY)) ~ "'" }
+char_literal = { "'" ~ (("\\" ~ ANY) | (!"'" ~ ANY) | (" " ~ ANY)) ~ "'" }
 
 hex_number = @{ ("0x" | "0X") ~ ASCII_HEX_DIGIT+ }
 binary_number = @{ "0b" ~ ("0" | "1")+ }
@@ -257,9 +257,10 @@ for_loop = { "for" ~ ( for_dot_dot | for_c ) ~ block }
 // Function parameters
 kwargs_prefix = { "**" }
 pointer_suffix = { "*" }
+self_param = { "&"? ~ "self" }
 param_name = { keyword | identifier }
 param = { kwargs_prefix? ~ type_ref ~ pointer_suffix? ~ param_name ~ pointer_suffix? }
-param_list = { param ~ ("," ~ param)* }
+param_list = { (self_param | param) ~ ("," ~ (self_param | param))* }
 fn_param = { param | param_name }
 fn_param_list = { fn_param ~ ("," ~ fn_param)* }
 
@@ -281,7 +282,7 @@ func_decl = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_m
 // Class member (field, method, or nested access section)
 class_field = { type_ref ~ identifier ~ ("=" ~ expr)? ~ ";" }
 class_method = { type_ref ~ identifier ~ "(" ~ param_list? ~ ")" ~ ("->" ~ return_modifier)? ~ block }
-class_member = { access_section | class_field | class_method }
+class_member = { access_section | struct_decl | class_field | class_method }
 
 // Class access section
 access_section = { access_modifier ~ "{" ~ class_member* ~ "}" }
@@ -325,7 +326,7 @@ enum_value = { enum_value_name ~ (":" ~ number)? }
 enum_decl = { "enum" ~ base_type? ~ identifier ~ "=" ~ "{" ~ (enum_value ~ ","?)* ~ "}" ~ ";"? }
 
 // Struct declaration
-struct_field = { type_ref ~ identifier? ~ ("*")? ~ ";" }
+struct_field = { type_ref ~ ("*")? ~ identifier? ~ ";" }
 struct_decl = { "struct" ~ identifier ~ "{" ~ struct_field* ~ "}" }
 
 // Import statement (from vm_compile.mi)
