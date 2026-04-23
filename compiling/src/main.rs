@@ -215,13 +215,7 @@ fn default_output_path(input_path: Option<&str>, output_format: Option<&str>) ->
     Some("-MIR") => format!("{}.mir", stem),
     Some("-S") => format!("{}.s", stem),
     Some("-OBJ") => format!("{}.o", stem),
-    _ => {
-      if cfg!(target_os = "windows") {
-        format!("{}.exe", stem)
-      } else {
-        stem.to_string()
-      }
-    }
+    _ => stem.to_string(),
   };
 
   let out_path = match parent {
@@ -232,33 +226,12 @@ fn default_output_path(input_path: Option<&str>, output_format: Option<&str>) ->
 }
 
 fn detect_target_triple() -> String {
-  if cfg!(target_os = "windows") {
-    if cfg!(target_arch = "x86_64") {
-      "x86_64-pc-windows-msvc".to_string()
-    } else if cfg!(target_arch = "aarch64") {
-      "aarch64-pc-windows-msvc".to_string()
-    } else {
-      "i686-pc-windows-msvc".to_string()
-    }
-  } else if cfg!(target_os = "macos") {
-    if cfg!(target_arch = "x86_64") {
-      "x86_64-apple-macosx10.7.0".to_string()
-    } else if cfg!(target_arch = "aarch64") {
-      "aarch64-apple-darwin".to_string()
-    } else {
-      "x86_64-apple-macosx10.7.0".to_string()
-    }
-  } else if cfg!(target_os = "linux") {
-    if cfg!(target_arch = "x86_64") {
-      "x86_64-unknown-linux-gnu".to_string()
-    } else if cfg!(target_arch = "aarch64") {
-      "aarch64-unknown-linux-gnu".to_string()
-    } else {
-      "i686-unknown-linux-gnu".to_string()
-    }
-  } else {
-    // Default fallback
+  if cfg!(target_arch = "x86_64") {
     "x86_64-unknown-linux-gnu".to_string()
+  } else if cfg!(target_arch = "aarch64") {
+    "aarch64-unknown-linux-gnu".to_string()
+  } else {
+    "i686-unknown-linux-gnu".to_string()
   }
 }
 
@@ -558,12 +531,9 @@ fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
     .to_string();
 
   // Use C++ compilers since builtins.cpp is C++ code
-  let mut candidates: Vec<&str> = vec!["g++", "c++", "clang++"];
-  if cfg!(target_os = "windows") {
-    candidates = vec!["clang++", "g++", "c++"];
-  }
+  let candidates: Vec<&str> = vec!["g++", "c++", "clang++"];
 
-  let mut _last_err: Option<String> = None;
+  let mut last_err_rt: Option<String> = None;
   for tool in candidates {
     let output = Command::new(tool)
       .arg("-c")
@@ -579,10 +549,10 @@ fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
       Ok(out) if out.status.success() => return Ok(Some(runtime_obj)),
       Ok(out) => {
         let stderr = String::from_utf8_lossy(&out.stderr);
-        _last_err = Some(format!("{tool}: {stderr}"));
+        last_err_rt = Some(format!("{tool}: {stderr}"));
       }
       Err(err) => {
-        _last_err = Some(format!("{tool}: failed to start compiler: {err}"));
+        last_err_rt = Some(format!("{tool}: failed to start compiler: {err}"));
       }
     }
   }
@@ -592,22 +562,17 @@ fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
 }
 
 fn link_object(obj_path: &str, output_path: &str, extra_objects: &[String]) -> Result<(), String> {
-  let mut candidates: Vec<&str> = vec!["cc", "clang", "gcc"];
-  if cfg!(target_os = "windows") {
-    candidates = vec!["clang", "gcc", "cc"];
-  }
+  let candidates: Vec<&str> = vec!["cc", "clang", "gcc"];
 
   let mut last_err: Option<String> = None;
   for tool in candidates {
     let mut cmd = Command::new(tool);
     cmd.arg(obj_path)
       .arg("-o")
-      .arg(output_path);
+      .arg(output_path)
+      .arg("-no-pie");
     for obj in extra_objects {
       cmd.arg(obj);
-    }
-    if cfg!(target_os = "linux") {
-      cmd.arg("-no-pie");
     }
     let output = cmd
       .stdout(Stdio::piped())
@@ -965,9 +930,29 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
     eprintln!("DEBUG setHealth block_text: {:?}", inst.block_text);
   }
 
-  let mut func = FunctionContext::new(ret_ty.clone(), inst.class_name.clone(), self_name, is_main);
+  // Find the user-defined 'self' param if present (named "self" or "&self")
+  let user_self_name = inst.params.iter()
+    .find(|(_, n)| n == "self")
+    .map(|_| "self".to_string());
+
+  let mut func = FunctionContext::new(
+    ret_ty.clone(),
+    inst.class_name.clone(),
+    user_self_name.clone().or(self_name),
+    is_main,
+  );
+
   for (ty, name) in &inst.params {
-    let llvm_ty = llvm_type(ty);
+    // If this is the 'self' param in a class method, use the actual class pointer type
+    let llvm_ty = if name == "self" {
+      if let Some(cn) = &inst.class_name {
+        format!("%{}*", cn)
+      } else {
+        llvm_type(ty)
+      }
+    } else {
+      llvm_type(ty)
+    };
     let slot = func.new_temp();
     func.emit(format!("{} = alloca {}", slot, llvm_ty));
     func.emit(format!("store {} %{}, {}* {}", llvm_ty, name, llvm_ty, slot));
@@ -1009,8 +994,27 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
 }
 
 fn emit_leak_check(func: &mut FunctionContext, module: &mut ModuleContext) {
-  module.externs.insert("declare void @minis_check_leaks()".to_string());
-  func.emit("call void @minis_check_leaks()".to_string());
+  //module.externs.insert("declare void @minis_check_leaks()".to_string());
+  //func.emit("call void @minis_check_leaks()".to_string());
+}
+
+/// Emit a strdup call to make a mutable heap copy of a string pointer.
+/// Used when storing into str variables so index-writes don't segfault on the
+/// read-only string constant segment.
+/// Skips the strdup if the value is already a heap-owned pointer (i.e. from a
+/// call/malloc — identifiable because its val is a %temp register, not a bitcast
+/// of a global constant).
+fn emit_strdup(value: ValueIR, func: &mut FunctionContext, module: &mut ModuleContext) -> String {
+  // String constants look like: bitcast ([N x i8]* @.strN to i8*)
+  // Heap pointers from calls/malloc are just %tN register names.
+  // Only dup constants to avoid double-allocating call results.
+  if !value.val.starts_with("bitcast") {
+    return value.val;
+  }
+  module.externs.insert("declare i8* @strdup(i8*)".to_string());
+  let tmp = func.new_temp();
+  func.emit(format!("{} = call i8* @strdup(i8* {})", tmp, value.val));
+  tmp
 }
 
 fn default_return(llvm_ty: &str) -> String {
@@ -1071,9 +1075,44 @@ fn collect_classes(pair: pest::iterators::Pair<Rule>, module: &mut ModuleContext
     return;
   }
 
+  if pair.as_rule() == Rule::struct_decl {
+    if let Some(class_def) = parse_struct_decl_as_class(pair) {
+      module.classes.insert(class_def.name.clone(), class_def);
+    }
+    return;
+  }
+
   for inner in pair.into_inner() {
     collect_classes(inner, module);
   }
+}
+
+/// Parse a struct_decl into a ClassDef (fields only, no methods) so it gets
+/// a %Name = type { ... } LLVM type definition and can be used as a field type.
+fn parse_struct_decl_as_class(pair: pest::iterators::Pair<Rule>) -> Option<ClassDef> {
+  let mut inner = pair.into_inner();
+  let name = inner.next()?.as_str().to_string();
+  let mut fields: Vec<ClassField> = Vec::new();
+  for field_pair in inner {
+    if field_pair.as_rule() == Rule::struct_field {
+      let mut fi = field_pair.into_inner();
+      let type_pair = fi.next()?;
+      // consume optional pointer_suffix
+      let mut name_or_ptr = fi.next();
+      if let Some(ref p) = name_or_ptr {
+        if p.as_rule() == Rule::pointer_suffix {
+          name_or_ptr = fi.next();
+        }
+      }
+      let ty_str = parse_type_name(type_pair.clone())
+        .unwrap_or_else(|| type_pair.as_str().trim().to_string());
+      let field_name = name_or_ptr
+        .map(|p| p.as_str().to_string())
+        .unwrap_or_else(|| format!("_f{}", fields.len()));
+      fields.push(ClassField { ty: ty_str, name: field_name, default_val: None });
+    }
+  }
+  Some(ClassDef { name, fields, methods: Vec::new() })
 }
 
 fn has_user_main(pairs: Pairs<Rule>) -> bool {
@@ -1355,6 +1394,11 @@ fn parse_class_decl(pair: pest::iterators::Pair<Rule>) -> Option<ClassDef> {
               if let Some(method) = parse_class_method(member) {
                 methods.push(method);
               }
+            }
+            Rule::struct_decl => {
+              // Nested struct inside class — record as a field placeholder
+              // The struct itself will be collected separately by collect_structs.
+              // Nothing to add to fields/methods here.
             }
             _ => {}
           }
@@ -1684,6 +1728,20 @@ fn coerce_value_to_type(value: ValueIR, target_ty: &str, func: &mut FunctionCont
     return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
   }
 
+  // integer -> pointer
+  if int_width(&value.ty).is_some() && target_ty.ends_with('*') {
+    let tmp = func.new_temp();
+    func.emit(format!("{} = inttoptr {} {} to {}", tmp, value.ty, value.val, target_ty));
+    return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+  }
+
+  // pointer -> integer
+  if value.ty.ends_with('*') && int_width(target_ty).is_some() {
+    let tmp = func.new_temp();
+    func.emit(format!("{} = ptrtoint {} {} to {}", tmp, value.ty, value.val, target_ty));
+    return Some(ValueIR { ty: target_ty.to_string(), val: tmp });
+  }
+
   Some(value)
 }
 
@@ -1758,6 +1816,7 @@ fn emit_statement_ir_with_return(
     Rule::assignment => {
       let mut inner = inner_pair.into_inner();
       let name = inner.next().map(|p| p.as_str().to_string());
+      let _assign_op = inner.next(); // consume assign_op token (=, +=, etc.)
       let expr = inner.next();
       if let (Some(name), Some(expr)) = (name, expr) {
         if let Some(value) = emit_expr_value(expr, func, module) {
@@ -1776,7 +1835,12 @@ fn emit_statement_ir_with_return(
           }
           let slot = func.locals.get(&name).unwrap().clone();
           let stored = coerce_value_to_type(value, &slot.0, func).unwrap_or_else(|| ValueIR { ty: slot.0.clone(), val: "0".to_string() });
-          func.emit(format!("store {} {}, {}* {}", stored.ty, stored.val, slot.0, slot.1));
+          let stored_val = if slot.0 == "i8*" {
+            emit_strdup(stored, func, module)
+          } else {
+            stored.val
+          };
+          func.emit(format!("store {} {}, {}* {}", slot.0, stored_val, slot.0, slot.1));
         }
       }
       false
@@ -1796,31 +1860,59 @@ fn emit_statement_ir_with_return(
 
       let mut inner = var_decl_multi.into_inner();
       let mut type_name: Option<String> = None;
+      let mut is_inferred = false;
       let mut last_slot: Option<(String, String)> = None;
+      let mut pending_name: Option<String> = None;
       while let Some(next) = inner.next() {
         match next.as_rule() {
           Rule::type_spec | Rule::type_ref | Rule::class_name => {
             type_name = parse_type_name(next);
           }
+          Rule::inferred_type => {
+            is_inferred = true;
+          }
           Rule::identifier => {
             let name = next.as_str().to_string();
-            let type_str = type_name.as_deref().unwrap_or("int");
-            // Check if it's a class type - use %ClassName* format
-            let llvm_ty = if module.classes.contains_key(type_str) {
-              format!("%{}*", type_str)
+            if is_inferred {
+              // Defer slot allocation until we see the RHS expr and know its type
+              pending_name = Some(name);
             } else {
-              llvm_type(type_str)
-            };
-            let slot = func.new_temp();
-            func.emit(format!("{} = alloca {}", slot, llvm_ty));
-            func.locals.insert(name.clone(), (llvm_ty.clone(), slot.clone()));
-            last_slot = Some((llvm_ty, slot));
+              let type_str = type_name.as_deref().unwrap_or("int");
+              // Check if it's a class type - use %ClassName* format
+              let llvm_ty = if module.classes.contains_key(type_str) {
+                format!("%{}*", type_str)
+              } else {
+                llvm_type(type_str)
+              };
+              let slot = func.new_temp();
+              func.emit(format!("{} = alloca {}", slot, llvm_ty));
+              func.locals.insert(name.clone(), (llvm_ty.clone(), slot.clone()));
+              last_slot = Some((llvm_ty, slot));
+            }
           }
           Rule::expr => {
             if let Some(value) = emit_expr_value(next, func, module) {
-              if let Some((ty, slot)) = last_slot.clone() {
+              // If this is an inferred-type decl, allocate the slot now using the RHS type
+              if let Some(name) = pending_name.take() {
+                let llvm_ty = value.ty.clone();
+                let slot = func.new_temp();
+                func.emit(format!("{} = alloca {}", slot, llvm_ty));
+                func.locals.insert(name.clone(), (llvm_ty.clone(), slot.clone()));
+                last_slot = Some((llvm_ty.clone(), slot.clone()));
+                let stored_val = if llvm_ty == "i8*" {
+                  emit_strdup(value, func, module)
+                } else {
+                  value.val
+                };
+                func.emit(format!("store {} {}, {}* {}", llvm_ty, stored_val, llvm_ty, slot));
+              } else if let Some((ty, slot)) = last_slot.clone() {
                 let stored = coerce_value_to_type(value, &ty, func).unwrap_or_else(|| ValueIR { ty: ty.clone(), val: "0".to_string() });
-                func.emit(format!("store {} {}, {}* {}", stored.ty, stored.val, ty, slot));
+                let stored_val = if ty == "i8*" {
+                  emit_strdup(stored, func, module)
+                } else {
+                  stored.val
+                };
+                func.emit(format!("store {} {}, {}* {}", ty, stored_val, ty, slot));
               }
             }
           }
@@ -1897,6 +1989,49 @@ fn emit_statement_ir_with_return(
     }
     Rule::block => {
       emit_block_ir_with_return(inner_pair, ret_ty, func, module, allow_return)
+    }
+    Rule::index_assignment => {
+      let mut inner = inner_pair.into_inner();
+      // grammar: identifier ~ ("[" ~ expr ~ "]")+ ~ assign_op ~ expr
+      let name_pair = inner.next();
+      let idx_expr = inner.next();
+      let _assign_op = inner.next(); // consume assign_op
+      let val_expr = inner.next();
+      if let (Some(name_pair), Some(idx_expr), Some(val_expr)) = (name_pair, idx_expr, val_expr) {
+        let name = name_pair.as_str().to_string();
+        if let Some((ty, slot)) = func.locals.get(&name).cloned() {
+          let base_tmp = func.new_temp();
+          func.emit(format!("{} = load {}, {}* {}", base_tmp, ty, ty, slot));
+          let base = ValueIR { ty: ty.clone(), val: base_tmp };
+          let base_ptr = if base.ty == "i8*" {
+            Some(base)
+          } else {
+            coerce_value_to_type(base, "i8*", func)
+          };
+          if let (Some(base_ptr), Some(idx), Some(rhs)) = (
+            base_ptr,
+            emit_expr_value(idx_expr, func, module).and_then(|v| coerce_value_to_type(v, "i64", func)),
+            emit_expr_value(val_expr, func, module),
+          ) {
+            let rhs_coerced = if rhs.ty == "i8" {
+              Some(rhs)
+            } else if rhs.ty == "i8*" {
+              // string literal used as char (e.g. code[i] = " ") -- load first byte
+              let first = func.new_temp();
+              func.emit(format!("{} = load i8, i8* {}", first, rhs.val));
+              Some(ValueIR { ty: "i8".to_string(), val: first })
+            } else {
+              coerce_value_to_type(rhs, "i8", func)
+            };
+            if let Some(rhs_i8) = rhs_coerced {
+              let ptr = func.new_temp();
+              func.emit(format!("{} = getelementptr i8, i8* {}, i64 {}", ptr, base_ptr.val, idx.val));
+              func.emit(format!("store i8 {}, i8* {}", rhs_i8.val, ptr));
+            }
+          }
+        }
+      }
+      false
     }
     _ => false,
   }
@@ -2446,15 +2581,6 @@ fn emit_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, modu
       func.emit(format!("call void @exit({})", arg));
       None
     }
-    "open" => {
-      if args.len() >= 2 {
-        module.externs.insert("declare i64 @minis_open(i8*, i8*)".to_string());
-        let tmp = func.new_temp();
-        func.emit(format!("{} = call i64 @minis_open(i8* {}, i8* {})", tmp, args[0].val, args[1].val));
-        return Some(ValueIR { ty: "i64".to_string(), val: tmp });
-      }
-      None
-    }
     "mem_open" => {
       if args.len() >= 2 {
         module.externs.insert("declare i64 @minis_mem_open(i8*, i8*)".to_string());
@@ -2474,29 +2600,114 @@ fn emit_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, modu
       }
       None
     }
-    "read" => {
-      if args.is_empty() {
-        return None;
-      }
-      if args[0].ty == "i8*" {
-        module.externs.insert("declare i8* @minis_read_file(i8*)".to_string());
-        let tmp = func.new_temp();
-        func.emit(format!("{} = call i8* @minis_read_file(i8* {})", tmp, args[0].val));
-        return Some(ValueIR { ty: "i8*".to_string(), val: tmp });
-      }
+    "open" => {
+      if args.len() >= 2 {
+          // 1. Setup the standard declarations
+          module.externs.insert("declare i32 @open(i8*, i32, ...)".to_string());
+          module.externs.insert("declare void @perror(i8*)".to_string());
+          module.externs.insert("declare void @exit(i32)".to_string());
 
-      let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
-      let count = if args.len() >= 2 {
-        coerce_value_to_type(args[1].clone(), "i64", func).unwrap_or(args[1].clone())
+          let fd = func.new_temp();
+
+          // 2. The actual open call (using i8* for path, i32 for flags)
+          func.emit(format!(
+              "{} = call i32 (i8*, i32, ...) @open(i8* {}, i32 {})",
+              fd, args[0].val, args[1].val
+          ));
+
+          // 3. Check if fd == -1
+          let is_err = func.new_temp();
+          func.emit(format!("{} = icmp eq i32 {}, -1", is_err, fd));
+
+          let err_label = func.new_label("open_err");
+          let ok_label = func.new_label("open_ok");
+          func.emit(format!("br i1 {}, label %{}, label %{}", is_err, err_label, ok_label));
+
+          // 4. THE ERROR BLOCK
+          func.emit(format!("{}:", err_label));
+          // We pass the filename (args[0]) to perror so it prints "filename: No such file..."
+          func.emit(format!("call void @perror(i8* {})", args[0].val));
+          func.emit("call void @exit(i32 1)".to_string());
+          func.emit("unreachable".to_string());
+
+          // 5. THE SUCCESS BLOCK
+          func.emit(format!("{}:", ok_label));
+          return Some(ValueIR { ty: "i32".to_string(), val: fd });
+      }
+      None
+  }
+  "read" => {
+    if args.len() >= 3 {
+      // POSIX read(fd, buf, count)
+      module.externs.insert("declare i64 @read(i32, i8*, i64)".to_string());
+      let tmp = func.new_temp();
+      func.emit(format!("{} = call i64 @read(i32 {}, i8* {}, i64 {})", tmp, args[0].val, args[1].val, args[2].val));
+      return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+    }
+    if args.len() >= 1 {
+      // read("path") or read("path", "mode") -- slurp entire file into a heap buffer
+      module.externs.insert("declare i8* @fopen(i8*, i8*)".to_string());
+      module.externs.insert("declare i32 @fseek(i8*, i64, i32)".to_string());
+      module.externs.insert("declare i64 @ftell(i8*)".to_string());
+      module.externs.insert("declare void @rewind(i8*)".to_string());
+      module.externs.insert("declare i64 @fread(i8*, i64, i64, i8*)".to_string());
+      module.externs.insert("declare i32 @fclose(i8*)".to_string());
+      module.externs.insert("declare i8* @malloc(i64)".to_string());
+      module.externs.insert("declare void @perror(i8*)".to_string());
+      module.externs.insert("declare void @exit(i32)".to_string());
+
+      let path_arg = args[0].val.clone();
+      let mode_val = if args.len() >= 2 {
+        args[1].val.clone()
       } else {
-        ValueIR { ty: "i64".to_string(), val: "0".to_string() }
+        module.string_ptr("r")
       };
 
-      module.externs.insert("declare i8* @minis_read_handle(i64, i64)".to_string());
-      let tmp = func.new_temp();
-      func.emit(format!("{} = call i8* @minis_read_handle(i64 {}, i64 {})", tmp, handle.val, count.val));
-      Some(ValueIR { ty: "i8*".to_string(), val: tmp })
+      // fopen
+      let fp = func.new_temp();
+      func.emit(format!("{} = call i8* @fopen(i8* {}, i8* {})", fp, path_arg, mode_val));
+
+      // NULL check: if fp == null, perror(path) + exit(1)
+      let fp_null_cmp = func.new_temp();
+      func.emit(format!("{} = icmp eq i8* {}, null", fp_null_cmp, fp));
+      let read_fail_label = func.new_label("read_fail");
+      let read_ok_label   = func.new_label("read_ok");
+      func.emit(format!("br i1 {}, label %{}, label %{}", fp_null_cmp, read_fail_label, read_ok_label));
+      func.emit(format!("{}:", read_fail_label));
+      func.emit(format!("call void @perror(i8* {})", path_arg));
+      func.emit("call void @exit(i32 1)".to_string());
+      func.emit("unreachable".to_string());
+      func.emit(format!("{}:", read_ok_label));
+
+      // seek to end, get size, rewind
+      let seek_r = func.new_temp();
+      func.emit(format!("{} = call i32 @fseek(i8* {}, i64 0, i32 2)", seek_r, fp));
+
+      let size = func.new_temp();
+      func.emit(format!("{} = call i64 @ftell(i8* {})", size, fp));
+
+      func.emit(format!("call void @rewind(i8* {})", fp));
+
+      // malloc(size + 1), fread, null-terminate
+      let size1 = func.new_temp();
+      func.emit(format!("{} = add i64 {}, 1", size1, size));
+      let buf = func.new_temp();
+      func.emit(format!("{} = call i8* @malloc(i64 {})", buf, size1));
+
+      let nread = func.new_temp();
+      func.emit(format!("{} = call i64 @fread(i8* {}, i64 1, i64 {}, i8* {})", nread, buf, size, fp));
+
+      let null_ptr = func.new_temp();
+      func.emit(format!("{} = getelementptr i8, i8* {}, i64 {}", null_ptr, buf, size));
+      func.emit(format!("store i8 0, i8* {}", null_ptr));
+
+      let cl_r = func.new_temp();
+      func.emit(format!("{} = call i32 @fclose(i8* {})", cl_r, fp));
+
+      return Some(ValueIR { ty: "i8*".to_string(), val: buf });
     }
+    None
+  }
     "write" => {
       if args.len() >= 2 {
         let handle = coerce_value_to_type(args[0].clone(), "i64", func).unwrap_or(args[0].clone());
@@ -2719,7 +2930,16 @@ fn emit_self_field_load(field_name: &str, func: &mut FunctionContext, module: &m
 
   let self_val = func.new_temp();
   func.emit(format!("{} = load {}, {}* {}", self_val, self_ty, self_ty, self_slot));
-  let obj = ValueIR { ty: self_ty, val: self_val };
+
+  // If self is i8* (ptr self), cast to %ClassName* for GEP
+  let obj = if self_ty == "i8*" {
+    let cast = func.new_temp();
+    func.emit(format!("{} = bitcast i8* {} to %{}*", cast, self_val, class_name));
+    ValueIR { ty: format!("%{}*", class_name), val: cast }
+  } else {
+    ValueIR { ty: self_ty, val: self_val }
+  };
+
   let (field_type, ptr) = emit_field_ptr(&class_name, field_name, &obj, func, module)?;
 
   let val = func.new_temp();
@@ -2743,7 +2963,16 @@ fn emit_self_field_store(field_name: &str, value: &ValueIR, func: &mut FunctionC
 
   let self_val = func.new_temp();
   func.emit(format!("{} = load {}, {}* {}", self_val, self_ty, self_ty, self_slot));
-  let obj = ValueIR { ty: self_ty, val: self_val };
+
+  // If self is i8* (ptr self), cast to %ClassName* for GEP
+  let obj = if self_ty == "i8*" {
+    let cast = func.new_temp();
+    func.emit(format!("{} = bitcast i8* {} to %{}*", cast, self_val, class_name));
+    ValueIR { ty: format!("%{}*", class_name), val: cast }
+  } else {
+    ValueIR { ty: self_ty, val: self_val }
+  };
+
   let (field_type, ptr) = match emit_field_ptr(&class_name, field_name, &obj, func, module) {
     Some(info) => info,
     None => return false,
@@ -2758,10 +2987,23 @@ fn emit_member_access(pair: pest::iterators::Pair<Rule>, obj: ValueIR, func: &mu
   let field_name = inner.next()?.as_str().to_string();
 
   // Extract class name from object type (e.g., "%player*" -> "player")
+  // If obj is i8*/ptr self inside a class method, fall back to func.class_name
   let class_name = if obj.ty.starts_with('%') && obj.ty.ends_with('*') {
     obj.ty[1..obj.ty.len()-1].to_string()
+  } else if obj.ty == "i8*" {
+    // ptr self — resolve field via class context
+    func.class_name.clone()?
   } else {
     return None;
+  };
+
+  // If the object is i8*, cast it to %ClassName* before GEP
+  let obj = if obj.ty == "i8*" {
+    let cast = func.new_temp();
+    func.emit(format!("{} = bitcast i8* {} to %{}*", cast, obj.val, class_name));
+    ValueIR { ty: format!("%{}*", class_name), val: cast }
+  } else {
+    obj
   };
 
   let (field_type, ptr) = emit_field_ptr(&class_name, &field_name, &obj, func, module)?;
@@ -2798,10 +3040,16 @@ fn emit_index_access(pair: pest::iterators::Pair<Rule>, base: ValueIR, func: &mu
     return Some(ValueIR { ty: elem_ty, val });
   }
 
-  // For arrays/lists implemented as runtime values, call runtime function
+  // For arrays/lists implemented as runtime values, call runtime function.
+  // If base is an integer (e.g. an auto-typed str variable), coerce it to i8* first.
+  let base_ptr = if !base.ty.ends_with('*') {
+    coerce_value_to_type(base, "i8*", func)?
+  } else {
+    base
+  };
   module.externs.insert("declare i64 @minis_list_get(i8*, i64)".to_string());
   let tmp = func.new_temp();
-  func.emit(format!("{} = call i64 @minis_list_get(i8* {}, i64 {})", tmp, base.val, idx_coerced.val));
+  func.emit(format!("{} = call i64 @minis_list_get(i8* {}, i64 {})", tmp, base_ptr.val, idx_coerced.val));
   Some(ValueIR { ty: "i64".to_string(), val: tmp })
 }
 
