@@ -51,6 +51,11 @@ The private class is for safety and seperation.
 ## Initalization
 The initalization is a function that lives within the public section.
 It is called when making a new instance of a class. When running it, you can run functions, set variables, and so on, where the only limit is what you can do with Minis.
+Here is an example of making an apple:
+```minis
+Apple myApple = new Apple;
+myApple.apple("red", 2.0, 300);
+```
 
 
 ## Static Functions
