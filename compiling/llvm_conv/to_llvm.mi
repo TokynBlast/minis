@@ -1,0 +1,28 @@
+#pragma once
+import llvm_ast as llvm;
+
+///! Provides pre-made templates via inlined functions.
+///! The returned value is const, since we should have no reason to change it.
+
+
+
+
+/// Defines a function; takes the values of ret, name, code, and params.
+/// ret - the returned type
+/// name - name of the function
+/// code - the code to insert (should be computed before)
+/// params - All of the paramaters to add that will be used... or unused
+inline str FnDef(str ret, str name, str code, list &params) -> const {
+  str param_computed = "";
+  for 0..params.len {
+    param_computed += f""
+  }
+  return f"define i{ret} @{name}({params}) {{\n{code}\n}}";
+}
+
+///
+inline str Register(str name) {
+  return f"%{name}";
+}
+
+inline str

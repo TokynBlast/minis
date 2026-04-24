@@ -1,0 +1,6 @@
+enum u16 llvm_kw = {
+  FnDef, FnCall,
+  U8, U16, U32, U64, U128, U512,
+  I8, I16, I32, I64, I128, I512,
+  Register,
+};
