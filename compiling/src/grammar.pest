@@ -77,7 +77,6 @@ keyword = @{
   | "public" | "private"
   | "exit"
   | "i8" | "i16" | "i32" | "i64"
-  | "ui8" | "ui16" | "ui32" | "ui64"
   | "u8" | "u16" | "u32" | "u64"
   | "int" | "float" | "char" | "str" | "bool" | "tribool" | "list" | "dict" | "ptr"
   | "void" | "auto"
