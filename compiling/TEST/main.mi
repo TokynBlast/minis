@@ -1,0 +1,155 @@
+struct lst_item {
+  ptr next,
+  str data
+}
+
+class TmpList {
+  public {
+    ptr init(&self, str data) {
+      str first_item = { self, data };
+      // Hopefully a pointer conversion method...
+      self.start = first_item;
+      self.last_item = self.start;
+      self.len = 1;
+    }
+
+    str get(&self, ptr start, int idx) {
+      if (idx > self.len) {
+        print("OOB");
+        exit(1);
+      }
+      int i = 0;
+      ptr loc = start;
+      while (i < idx) {
+        loc = loc.next;
+      }
+      return loc.data;
+    }
+
+    int len(&self) { return self.len; }
+
+    void push(&self, str to_add) {
+      int i = 0;
+      ptr loc = start;
+      while (i < self.len) {
+        loc = loc.next;
+      }
+      lst_item addition = { self.start, to_add};
+      self.last_item = &addition;
+      self.len = self.len + 1;
+    }
+
+    void print_list(&self) {
+      int i = 0;
+      ptr loc = self.start;
+      print("[");
+      while (i < self.len) {
+        print(loc.data, ", ");
+        loc = loc.next;
+      }
+      print("]\n");
+    }
+  }
+
+  private {
+    int len;
+    ptr start;
+    ptr last_item;
+  }
+}
+
+enum u8 kw = {
+  Enum,
+  U16,
+  U8,
+  Int,
+  Return,
+  Break,
+  While,
+  U32,
+  U64,
+  I8,
+  I32,
+  I64,
+  Or,
+  IfAnd,
+  Elif,
+  If,
+  Else,
+  Auto,
+  Void,
+  List,
+  Class
+};
+
+int len(str Check) {
+  int j = 0;
+  while (Check[j] != '\0') {
+    j++;
+  }
+  return j;
+}
+
+int SkipWS(str code, int pos) {
+  int CodeLen = len(code);
+  while (pos < CodeLen) {
+    if (code[pos] == '\t' || code[pos] == '\n' || code[pos] == " "[0]) {
+      pos = pos + 1;
+    } else {
+      break;
+    }
+  }
+  return pos;
+}
+
+bool is_in(str WordToCheck, list ListToCompare) {
+  int zet = 0;
+  print("hi\n");
+  while (zet < ListToCompare.len) {
+    if (WordToCheck == ListToCompare[zet]) {
+      return true;
+    }
+    zet = zet + 1;
+  }
+  return false;
+}
+
+int main() {
+  TmpList ValidKW = new TmpList;
+  ValidKW.init("enum");
+  ValidKW.push("u16");
+  auto z = ValidKW.get(0);
+  z.print_list();
+  // list[500][str] ValidKW = [
+  //   "enum",
+  //   "u16",
+  //   "u8",
+  //   "int",
+  //   "return",
+  //   "break",
+  //   "while",
+  //   "u32",
+  //   "u64",
+  //   "i8",
+  //   "i32",
+  //   "i64",
+  //   "elif",
+  //   "else",
+  //   "void",
+  //   "auto",
+  //   "list",
+  //   "class"
+  // ];
+  print(ValidKW)
+  int CurPos = 0;
+  str code = read("TEST/main.mi");
+  CurPos = SkipWS(code, CurPos);
+  bool IsIn = is_in("enum", ValidKW);
+  print(IsIn);
+  if (IsIn) {
+    print("hiii");
+  } else {
+    print("no\n");
+  }
+  return 0;
+}
