@@ -505,60 +505,8 @@ fn compile_to_binary(ir: &str, output_path: &str, _target_triple: &str, extra_ob
     .to_string();
 
   compile_to_object(ir, &obj_path)?;
-  let mut objects: Vec<String> = extra_objects.to_vec();
-  if let Some(runtime_obj) = build_runtime_object(output_path)? {
-    objects.push(runtime_obj);
-  }
+  let objects: Vec<String> = extra_objects.to_vec();
   link_object(&obj_path, output_path, &objects)
-}
-
-fn build_runtime_object(output_path: &str) -> Result<Option<String>, String> {
-  let cwd = env::current_dir().map_err(|err| format!("failed to get cwd: {err}"))?;
-  // Try both current directory and parent directory for runtime
-  let mut runtime_src = cwd.join("src").join("runtime").join("builtins.cpp");
-  if !runtime_src.exists() {
-    if let Some(parent) = cwd.parent() {
-      runtime_src = parent.join("src").join("runtime").join("builtins.cpp");
-    }
-  }
-  if !runtime_src.exists() {
-    return Ok(None);
-  }
-
-  let runtime_obj = PathBuf::from(output_path)
-    .with_extension("runtime.o")
-    .to_string_lossy()
-    .to_string();
-
-  // Use C++ compilers since builtins.cpp is C++ code
-  let candidates: Vec<&str> = vec!["g++", "c++", "clang++"];
-
-  let mut last_err_rt: Option<String> = None;
-  for tool in candidates {
-    let output = Command::new(tool)
-      .arg("-c")
-      .arg(runtime_src.as_os_str())
-      .arg("-o")
-      .arg(&runtime_obj)
-      .arg("-fpermissive")  // Allow implicit void* conversions in C++
-      .stdout(Stdio::piped())
-      .stderr(Stdio::piped())
-      .output();
-
-    match output {
-      Ok(out) if out.status.success() => return Ok(Some(runtime_obj)),
-      Ok(out) => {
-        let stderr = String::from_utf8_lossy(&out.stderr);
-        last_err_rt = Some(format!("{tool}: {stderr}"));
-      }
-      Err(err) => {
-        last_err_rt = Some(format!("{tool}: failed to start compiler: {err}"));
-      }
-    }
-  }
-
-  // Silently skip if compilation fails (runtime optional)
-  Ok(None)
 }
 
 fn link_object(obj_path: &str, output_path: &str, extra_objects: &[String]) -> Result<(), String> {
@@ -650,6 +598,9 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
   out.push_str(&format!("source_filename = \"{}\"\n", source_name));
   out.push_str(&format!("target triple = \"{}\"\n\n", target_triple));
 
+  // MinisList runtime type — always emitted
+  out.push_str("%MinisList = type { i64, i64, i8** }\n\n");
+
   // Render struct type definitions
   for struct_def in module.render_structs() {
     out.push_str(&struct_def);
@@ -707,12 +658,38 @@ fn emit_llvm_ir(pairs: Pairs<Rule>, source_name: &str, target_triple: &str) -> S
     out.push('\n');
   }
 
+  // Determine if any list operations are used
+  let needs_list_runtime = !module.list_inits.is_empty()
+    || module.externs.iter().any(|e| e.contains("@minis_list_"));
+
+  // Remove list runtime externs — we emit define bodies instead
+  module.externs.retain(|e| !e.contains("@minis_list_"));
+
+  // Emit __minis_init to populate global list literals
+  if !module.list_inits.is_empty() {
+    let init_ir = emit_minis_init_func(&module.list_inits.clone(), &mut module);
+    functions.push(init_ir);
+  }
+
+  // Ensure malloc/realloc/printf are declared when list runtime is needed
+  if needs_list_runtime {
+    module.externs.insert("declare i8* @malloc(i64)".to_string());
+    module.externs.insert("declare i8* @realloc(i8*, i64)".to_string());
+    module.externs.insert("declare i32 @printf(i8*, ...)".to_string());
+  }
+
   let externs = module.render_externs();
   for decl in &externs {
     out.push_str(decl);
     out.push('\n');
   }
   if !externs.is_empty() {
+    out.push('\n');
+  }
+
+  // Emit list runtime as inline LLVM IR (no C file, no external runtime)
+  if needs_list_runtime {
+    out.push_str(&emit_list_runtime_ir());
     out.push('\n');
   }
 
@@ -784,6 +761,8 @@ struct ModuleContext {
   /// Maps module alias to set of function names
   #[allow(dead_code)]
   modules: HashMap<String, HashSet<String>>,
+  /// Global list literals: (global_name, [element_string, ...])
+  list_inits: Vec<(String, Vec<String>)>,
 }
 
 impl ModuleContext {
@@ -797,6 +776,7 @@ impl ModuleContext {
       global_vars: Vec::new(),
       global_map: HashMap::new(),
       modules: HashMap::new(),
+      list_inits: Vec::new(),
     }
   }
 
@@ -960,6 +940,12 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
   }
 
   let mut terminated = false;
+
+  // If this is main and we have list globals, call __minis_init first
+  if is_main && !module.list_inits.is_empty() {
+    func.emit("call void @__minis_init()".to_string());
+  }
+
   if let Ok(mut pairs) = MiniParser::parse(Rule::block, &inst.block_text) {
     if let Some(block) = pairs.next() {
       terminated = emit_block_ir(block, &ret_ty, &mut func, module);
@@ -993,9 +979,8 @@ fn emit_function_ir(inst: &FuncInstance, module: &mut ModuleContext) -> String {
   )
 }
 
-fn emit_leak_check(func: &mut FunctionContext, module: &mut ModuleContext) {
-  //module.externs.insert("declare void @minis_check_leaks()".to_string());
-  //func.emit("call void @minis_check_leaks()".to_string());
+fn emit_leak_check(_func: &mut FunctionContext, _module: &mut ModuleContext) {
+  // no-op: leak checking removed
 }
 
 /// Emit a strdup call to make a mutable heap copy of a string pointer.
@@ -1041,7 +1026,8 @@ fn llvm_type(type_name: &str) -> String {
     "float" => "double".to_string(),
     "bool" => "i1".to_string(),
     "tribool" => "i8".to_string(),
-    "str" | "list" | "dict" => "i8*".to_string(),
+    "str" | "dict" => "i8*".to_string(),
+    "list" => "%MinisList*".to_string(),
     "void" => "void".to_string(),
     _ => "i8*".to_string(),
   }
@@ -1205,8 +1191,23 @@ fn add_global_from_var_decl(pair: pest::iterators::Pair<Rule>, module: &mut Modu
   }
 
   let type_name = type_name.unwrap_or_else(|| "i64".to_string());
-  if matches!(type_name.as_str(), "str" | "list" | "dict") {
-    return Err("global string/list/dict values are not supported".to_string());
+  if matches!(type_name.as_str(), "str" | "dict") {
+    return Err(format!("global {} values are not supported", type_name));
+  }
+
+  // List globals: register as %MinisList* null and collect literal elements
+  if type_name == "list" {
+    for (name, expr) in entries {
+      module.add_global(name.clone(), "%MinisList*".to_string(), "null".to_string());
+      // Extract string elements from the literal for __minis_init
+      if let Some(expr_pair) = expr {
+        let elements = collect_list_literal_strings(expr_pair);
+        if !elements.is_empty() {
+          module.list_inits.push((name, elements));
+        }
+      }
+    }
+    return Ok(());
   }
 
   let llvm_ty = llvm_type(&type_name);
@@ -1219,6 +1220,32 @@ fn add_global_from_var_decl(pair: pest::iterators::Pair<Rule>, module: &mut Modu
     module.add_global(name, llvm_ty.clone(), init);
   }
   Ok(())
+}
+
+/// Walk an expr parse tree to collect raw string values from a list_literal.
+fn collect_list_literal_strings(pair: pest::iterators::Pair<Rule>) -> Vec<String> {
+  let mut out = Vec::new();
+  collect_strings_recursive(pair, &mut out);
+  out
+}
+
+fn collect_strings_recursive(pair: pest::iterators::Pair<Rule>, out: &mut Vec<String>) {
+  if pair.as_rule() == Rule::string {
+    // strip surrounding quotes and unescape
+    let raw = pair.as_str();
+    let inner = &raw[1..raw.len()-1];
+    // Basic unescape: \n \t \\ \"
+    let s = inner
+      .replace("\\n", "\n")
+      .replace("\\t", "\t")
+      .replace("\\\\", "\\")
+      .replace("\\\"", "\"");
+    out.push(s);
+    return;
+  }
+  for child in pair.into_inner() {
+    collect_strings_recursive(child, out);
+  }
 }
 
 fn default_global_init(llvm_ty: &str) -> String {
@@ -2511,6 +2538,10 @@ fn emit_print(args: Vec<ValueIR>, func: &mut FunctionContext, module: &mut Modul
 
 fn emit_print_value(arg: &ValueIR, func: &mut FunctionContext, module: &mut ModuleContext) {
   match arg.ty.as_str() {
+    "%MinisList*" => {
+      module.externs.insert("declare void @minis_print_list(%MinisList*)".to_string());
+      func.emit(format!("call void @minis_print_list(%MinisList* {})", arg.val));
+    }
     "i1" => {
       let true_ptr = module.string_ptr("true");
       let false_ptr = module.string_ptr("false");
@@ -2575,7 +2606,7 @@ fn emit_call(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, modu
       None
     }
     "exit" => {
-      emit_leak_check(func, module);
+      //emit_leak_check(func, module);
       module.externs.insert("declare void @exit(i64)".to_string());
       let arg = args.get(0).map(|v| format!("{} {}", v.ty, v.val)).unwrap_or("i64 0".to_string());
       func.emit(format!("call void @exit({})", arg));
@@ -2986,12 +3017,19 @@ fn emit_member_access(pair: pest::iterators::Pair<Rule>, obj: ValueIR, func: &mu
   let mut inner = pair.into_inner();
   let field_name = inner.next()?.as_str().to_string();
 
+  // .len on a MinisList — call minis_list_len
+  if obj.ty == "%MinisList*" && field_name == "len" {
+    module.externs.insert("declare i64 @minis_list_len(%MinisList*)".to_string());
+    let tmp = func.new_temp();
+    func.emit(format!("{} = call i64 @minis_list_len(%MinisList* {})", tmp, obj.val));
+    return Some(ValueIR { ty: "i64".to_string(), val: tmp });
+  }
+
   // Extract class name from object type (e.g., "%player*" -> "player")
   // If obj is i8*/ptr self inside a class method, fall back to func.class_name
   let class_name = if obj.ty.starts_with('%') && obj.ty.ends_with('*') {
     obj.ty[1..obj.ty.len()-1].to_string()
   } else if obj.ty == "i8*" {
-    // ptr self — resolve field via class context
     func.class_name.clone()?
   } else {
     return None;
@@ -3021,6 +3059,14 @@ fn emit_index_access(pair: pest::iterators::Pair<Rule>, base: ValueIR, func: &mu
   let idx = emit_expr_value(idx_expr, func, module)?;
   let idx_coerced = coerce_value_to_type(idx, "i64", func)?;
 
+  // %MinisList* — call minis_list_get
+  if base.ty == "%MinisList*" {
+    module.externs.insert("declare i8* @minis_list_get(%MinisList*, i64)".to_string());
+    let tmp = func.new_temp();
+    func.emit(format!("{} = call i8* @minis_list_get(%MinisList* {}, i64 {})", tmp, base.val, idx_coerced.val));
+    return Some(ValueIR { ty: "i8*".to_string(), val: tmp });
+  }
+
   // For strings (i8*), return a character (i8)
   if base.ty == "i8*" {
     let ptr = func.new_temp();
@@ -3040,17 +3086,12 @@ fn emit_index_access(pair: pest::iterators::Pair<Rule>, base: ValueIR, func: &mu
     return Some(ValueIR { ty: elem_ty, val });
   }
 
-  // For arrays/lists implemented as runtime values, call runtime function.
-  // If base is an integer (e.g. an auto-typed str variable), coerce it to i8* first.
-  let base_ptr = if !base.ty.ends_with('*') {
-    coerce_value_to_type(base, "i8*", func)?
-  } else {
-    base
-  };
-  module.externs.insert("declare i64 @minis_list_get(i8*, i64)".to_string());
+  // Fallback: coerce to i8* and call minis_list_get
+  let base_ptr = coerce_value_to_type(base, "i8*", func)?;
+  module.externs.insert("declare i8* @minis_list_get(%MinisList*, i64)".to_string());
   let tmp = func.new_temp();
-  func.emit(format!("{} = call i64 @minis_list_get(i8* {}, i64 {})", tmp, base_ptr.val, idx_coerced.val));
-  Some(ValueIR { ty: "i64".to_string(), val: tmp })
+  func.emit(format!("{} = call i8* @minis_list_get(%MinisList* {}, i64 {})", tmp, base_ptr.val, idx_coerced.val));
+  Some(ValueIR { ty: "i8*".to_string(), val: tmp })
 }
 
 fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext, module: &mut ModuleContext) -> Option<ValueIR> {
@@ -3112,6 +3153,29 @@ fn emit_expr_value(pair: pest::iterators::Pair<Rule>, func: &mut FunctionContext
       } else {
         emit_arith_expr(pair, func, module)
       }
+    }
+    Rule::list_literal => {
+      module.externs.insert("declare %MinisList* @minis_list_new()".to_string());
+      module.externs.insert("declare void @minis_list_push(%MinisList*, i8*)".to_string());
+      let list_tmp = func.new_temp();
+      func.emit(format!("{} = call %MinisList* @minis_list_new()", list_tmp));
+      for elem_pair in pair.into_inner() {
+        if let Some(elem_val) = emit_expr_value(elem_pair, func, module) {
+          let elem_ptr = if elem_val.ty == "i8*" {
+            elem_val.val.clone()
+          } else if elem_val.ty.ends_with('*') {
+            let cast = func.new_temp();
+            func.emit(format!("{} = bitcast {} {} to i8*", cast, elem_val.ty, elem_val.val));
+            cast
+          } else {
+            let cast = func.new_temp();
+            func.emit(format!("{} = inttoptr {} {} to i8*", cast, elem_val.ty, elem_val.val));
+            cast
+          };
+          func.emit(format!("call void @minis_list_push(%MinisList* {}, i8* {})", list_tmp, elem_ptr));
+        }
+      }
+      Some(ValueIR { ty: "%MinisList*".to_string(), val: list_tmp })
     }
     Rule::number => Some(ValueIR { ty: "i64".to_string(), val: pair.as_str().to_string() }),
     Rule::float => Some(ValueIR { ty: "double".to_string(), val: pair.as_str().to_string() }),
@@ -3675,6 +3739,124 @@ fn expand_type_choices(choices: &[TypeChoice]) -> Vec<Vec<String>> {
 fn mangle_name(base: &str, types: &[String]) -> String {
   let suffix = types.join("__");
   format!("_minis__{}__{}", base, suffix)
+}
+
+/// Emit a `define void @__minis_init()` that allocates and populates all
+/// global list literals, then stores them into their `@Name` globals.
+fn emit_minis_init_func(list_inits: &[(String, Vec<String>)], module: &mut ModuleContext) -> String {
+  let mut lines: Vec<String> = Vec::new();
+  let mut t = 0usize;
+  let mut next = || { let s = format!("%t{}", t); t += 1; s };
+
+  for (name, elements) in list_inits {
+    // %list = call %MinisList* @minis_list_new()
+    let list_tmp = next();
+    lines.push(format!("  {} = call %MinisList* @minis_list_new()", list_tmp));
+    for elem in elements {
+      let str_ptr = module.string_ptr(elem);
+      let push_tmp = next(); // unused result
+      lines.push(format!("  call void @minis_list_push(%MinisList* {}, i8* {})", list_tmp, str_ptr));
+      let _ = push_tmp;
+    }
+    lines.push(format!("  store %MinisList* {}, %MinisList** @{}", list_tmp, name));
+  }
+  lines.push("  ret void".to_string());
+
+  format!("define void @__minis_init() {{\n{}\n}}\n", lines.join("\n"))
+}
+
+fn emit_list_runtime_ir() -> String {
+  r#"; ---- MinisList runtime ----
+
+define %MinisList* @minis_list_new() {
+  %raw = call i8* @malloc(i64 24)
+  %list = bitcast i8* %raw to %MinisList*
+  %len_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 0
+  store i64 0, i64* %len_ptr
+  %cap_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 1
+  store i64 8, i64* %cap_ptr
+  %data_raw = call i8* @malloc(i64 64)
+  %data_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 2
+  %data_typed = bitcast i8* %data_raw to i8**
+  store i8** %data_typed, i8*** %data_ptr
+  ret %MinisList* %list
+}
+
+define void @minis_list_push(%MinisList* %list, i8* %item) {
+  %len_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 0
+  %cap_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 1
+  %data_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 2
+  %len = load i64, i64* %len_ptr
+  %cap = load i64, i64* %cap_ptr
+  %need_grow = icmp sge i64 %len, %cap
+  br i1 %need_grow, label %grow, label %store_item
+grow:
+  %new_cap = mul i64 %cap, 2
+  %new_bytes = mul i64 %new_cap, 8
+  %data_old = load i8**, i8*** %data_ptr
+  %data_raw = bitcast i8** %data_old to i8*
+  %new_raw = call i8* @realloc(i8* %data_raw, i64 %new_bytes)
+  %new_data = bitcast i8* %new_raw to i8**
+  store i8** %new_data, i8*** %data_ptr
+  store i64 %new_cap, i64* %cap_ptr
+  br label %store_item
+store_item:
+  %cur_data = load i8**, i8*** %data_ptr
+  %slot = getelementptr i8*, i8** %cur_data, i64 %len
+  store i8* %item, i8** %slot
+  %new_len = add i64 %len, 1
+  store i64 %new_len, i64* %len_ptr
+  ret void
+}
+
+define i8* @minis_list_get(%MinisList* %list, i64 %idx) {
+  %data_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 2
+  %data = load i8**, i8*** %data_ptr
+  %slot = getelementptr i8*, i8** %data, i64 %idx
+  %val = load i8*, i8** %slot
+  ret i8* %val
+}
+
+define i64 @minis_list_len(%MinisList* %list) {
+  %len_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 0
+  %len = load i64, i64* %len_ptr
+  ret i64 %len
+}
+
+@.ml_open  = private unnamed_addr constant [2 x i8] c"[\00"
+@.ml_sep   = private unnamed_addr constant [3 x i8] c", \00"
+@.ml_close = private unnamed_addr constant [3 x i8] c"]\0A\00"
+@.ml_sfmt  = private unnamed_addr constant [4 x i8] c"\22%s\22\00"
+define void @minis_print_list(%MinisList* %list) {
+entry:
+  %len_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 0
+  %len = load i64, i64* %len_ptr
+  call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.ml_open, i32 0, i32 0))
+  br label %lc
+lc:
+  %i = phi i64 [ 0, %entry ], [ %i2, %dp ]
+  %done = icmp sge i64 %i, %len
+  br i1 %done, label %le, label %cs
+cs:
+  %sn = icmp sgt i64 %i, 0
+  br i1 %sn, label %ps, label %dp
+ps:
+  call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.ml_sep, i32 0, i32 0))
+  br label %dp
+dp:
+  %dp_ptr = getelementptr %MinisList, %MinisList* %list, i32 0, i32 2
+  %dp_data = load i8**, i8*** %dp_ptr
+  %dp_slot = getelementptr i8*, i8** %dp_data, i64 %i
+  %dp_elem = load i8*, i8** %dp_slot
+  call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.ml_sfmt, i32 0, i32 0), i8* %dp_elem)
+  %i2 = add i64 %i, 1
+  br label %lc
+le:
+  call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.ml_close, i32 0, i32 0))
+  ret void
+}
+; ---- end MinisList runtime ----
+"#.to_string()
 }
 
 fn mangle_method_name(class_name: &str, method_name: &str) -> String {
