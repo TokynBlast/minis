@@ -325,8 +325,8 @@ enum_value = { enum_value_name ~ (":" ~ number)? }
 enum_decl = { "enum" ~ base_type? ~ identifier ~ "=" ~ "{" ~ (enum_value ~ ","?)* ~ "}" ~ ";"? }
 
 // Struct declaration
-struct_field = { type_ref ~ ("*")? ~ identifier? ~ ";" }
-struct_decl = { "struct" ~ identifier ~ "{" ~ struct_field* ~ "}" }
+struct_field = { type_ref ~ ("*")? ~ identifier ~ (","| ";")? }
+struct_decl = { "struct" ~ identifier ~ "{" ~ struct_field* ~ ";"? ~ "}" ~ ";"? }
 
 // Import statement (from vm_compile.mi)
 import_kw = @{ "import" ~ word_boundary }
