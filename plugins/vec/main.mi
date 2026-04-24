@@ -1,0 +1,18 @@
+class vec {
+  public {
+    bool new(&self, list[][void*] items, usize ChunkSizes) {
+      assert(ChunkSizes%2 == 0) else {
+        #error "Chunk sizes must be to a power of two."
+      };
+      self.ChunkSize = ChunkSizes;
+    }
+    void append(&self, void* item) {}
+    void remove(&self, usize item) {}
+  }
+  private {
+    int Cap;       // all we have allocated
+    int Size;      // number of elements
+    int ChunkSize; // allocation size of chunks
+    ptr Data;
+  }
+}
