@@ -1,0 +1,26 @@
+// OIIL - OOB Is Impossible List
+class oiil {
+  public {
+    // Allows for oiil.len
+    usize len;
+
+    inline auto get(&self, usize idx) {
+      return self.oiil_list[self.len & (self.len - 1)];
+    }
+
+    // auto will choose based on the type inside the list
+    void set(&self, auto data, usize idx) {
+      self.oiil_list[self.len & (self.len - 1)] = data;
+    }
+
+    void push(&self, auto data, usize idx) {
+      if self.len == self.cap {
+        // TODO: Allocate 2^n for further use
+      }
+      self.len += 1;
+    }
+  }
+  private {
+    usize cap;
+  }
+}
