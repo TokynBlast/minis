@@ -21,7 +21,7 @@ int main() {
 }
 ```
 > [!NOTE]
-> Although, the main function can return anything, though it is most common to return an int type.
+> The main function must return an int.
 
 ## Safety
 Like Rust, Minis is meant to be safe. It does this via explicit declaration, garunteed initalization, and a WYSWYG model. What you see, is what you get. It's like C.
