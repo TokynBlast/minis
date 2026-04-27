@@ -80,3 +80,32 @@ Though, `void*` is really dangerous, as accepting *ANY* type can lead to corrupt
 
 ## Making The _start() Function Yourself
 It is simple to make it. You just need to define `_start()`, and it will be called.
+""
+
+### Convert On Pass - COP
+Minis has a special feature for functions.
+You can tell a function, to try and convert the type if it's not already in the expected type! This is called `Convert On Pass`.
+Lets take the following function:
+```minis
+int add(int a, int b)
+{
+    returb a + b;
+}
+```
+If you were to call...
+```minis
+float a = 32.0;
+float b = 4.0;
+float value = add(a, b);
+```
+It would error, because it expected an int.
+However, we can slightly modify it to auto convert:
+```minis
+##int add(int a, int b)
+{
+    return a + b;
+}
+```
+The `##` at the beginning tells it to convert on pass.
+Double `#` tells it to convert them all.
+A single `#` will only convert the attached pass or return.
